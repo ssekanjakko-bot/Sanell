@@ -1,65 +1,140 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState, useEffect } from 'react'
+import { auth } from '@/lib/firebase'
+import { signOut } from 'firebase/auth'
+import { db } from '@/lib/firebase'
+import { collection, onSnapshot } from 'firebase/firestore'
+import Link from 'next/link'
+import { useRouter, usePathname } from 'next/navigation'
+
+const COFFEE_BROWN = '#6F4E37'
+const COFFEE_LIGHT = '#A67B5B'
+
+const TOP_TABS = [
+  { name: 'Movies', href: '/movies' }, // Links to your existing app/movies/page.tsx
+  { name: 'Stores', href: '/stores' },
+  { name: 'Invoices', href: '/invoices' },
+  { name: 'Receipts', href: '/receipts' },
+]
+
+const CATEGORIES = [
+  { name: 'Vehicles', icon: '🚗' }, { name: 'Phones', icon: '📱' },
+  { name: 'Houses & Rentals', icon: '🏠' }, { name: 'Electronics', icon: '💻' },
+  { name: 'Home, Furniture & Appliances', icon: '🛋️' }, { name: 'Health', icon: '💊' },
+  { name: 'Fashion', icon: '👗' }, { name: 'Sports, Arts & Outdoor', icon: '⚽' },
+  { name: 'Babies & Kids', icon: '🧸' }, { name: 'Animals & Pets', icon: '🐶' },
+  { name: 'Agriculture & Food', icon: '🌾' }, { name: 'Commercial Equipment & Tools', icon: '🔧' },
+  { name: 'Repair & Construction', icon: '🔨' }, { name: 'Stationery', icon: '📚' },
+  { name: 'Services', icon: '❤️' }, { name: 'Jobs', icon: '📢' },
+]
+
+// Admin is removed from here. Hidden. Only accessible via /admin URL
+const BOTTOM_NAV = [
+  { name: 'Home', icon: '🏠', href: '/' },
+  { name: 'Chat', icon: '💬', href: '/' },
+  { name: 'Stores', icon: '🏪', href: '/' },
+  { name: 'Profile', icon: '👤', href: '/profile' },
+]
+
+export default function HomePage() {
+  const [products, setProducts] = useState<any[]>([])
+  const [selectedCategory, setSelectedCategory] = useState('All')
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+  const pathname = usePathname()
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'products'), (snap) => {
+      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setLoading(false)
+    })
+    return () => unsub()
+  }, [])
+
+  const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.category === selectedCategory)
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen pb-24" style={{ backgroundColor: '#FDF8F3' }}>
+      <div className="bg-white shadow-sm sticky top-0 z-20">
+        <div className="p-3 flex justify-between items-center border-b">
+          <div className="flex items-center gap-2">
+            <button onClick={() => router.push('/')}>☰</button>
+            <h1 className="font-bold" style={{ color: COFFEE_BROWN }}>Sanel Ug</h1>
+            <Link href="/about" className="text-xs text-gray-500">About</Link>
+          </div>
+          <div className="flex gap-2 text-xs">
+            <Link href="/get-app" className="border px-2 py-1 rounded">Get App</Link>
+            <Link href="/tools" className="border px-2 py-1 rounded">Tools</Link>
+            <Link href="/support" className="border px-2 py-1 rounded">Support</Link>
+            <select className="border px-2 py-1 rounded"><option>Uganda</option><option>Kenya</option></select>
+            <button
+              onClick={() => signOut(auth)}
+              className="border px-2 py-1 rounded"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <div className="p-3"><input placeholder="Search products" className="w-full p-2 border rounded-lg text-sm" /></div>
+
+        <div className="flex gap-2 px-3 pb-2 overflow-x-auto">
+          {TOP_TABS.map(tab => (
+            <Link
+              key={tab.name}
+              href={tab.href}
+              className={`px-3 py-1 rounded text-sm whitespace-nowrap ${pathname === tab.href ? 'text-white' : 'bg-gray-100'}`}
+              style={{ backgroundColor: pathname === tab.href ? COFFEE_BROWN : '' }}
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              {tab.name}
+            </Link>
+          ))}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+
+      {/* Main Page = Stores */}
+      <div className="bg-white p-4">
+        <div className="grid grid-cols-4 gap-4">
+          <button onClick={() => setSelectedCategory('All')} className={`flex flex-col items-center text-xs ${selectedCategory === 'All' ? 'font-bold' : ''}`} style={{ color: selectedCategory === 'All' ? COFFEE_BROWN : '#666' }}>
+            <div className="text-2xl mb-1">🏪</div><span>All</span>
+          </button>
+          {CATEGORIES.map(cat => (
+            <button key={cat.name} onClick={() => setSelectedCategory(cat.name)} className={`flex flex-col items-center text-xs ${selectedCategory === cat.name ? 'font-bold' : ''}`} style={{ color: selectedCategory === cat.name ? COFFEE_BROWN : '#666' }}>
+              <div className="text-2xl mb-1">{cat.icon}</div><span className="text-center leading-tight">{cat.name}</span>
+            </button>
+          ))}
         </div>
-      </main>
+      </div>
+
+      <div className="p-4">
+        <p className="font-bold mb-3" style={{ color: COFFEE_BROWN }}>Listings {selectedCategory !== 'All' && `- ${selectedCategory}`} ({filteredProducts.length})</p>
+        {loading && <p className="text-center py-10">Loading...</p>}
+        {filteredProducts.length === 0 && !loading && <p className="text-center py-20 text-gray-500">No listings yet. Tap the + button to post.</p>}
+        <div className="grid grid-cols-2 gap-4">
+          {filteredProducts.map(p => (
+            <div key={p.id} className="bg-white border rounded-lg overflow-hidden shawdow-sm">
+              {p.images?.[0] && <img src={p.images[0]} className="w-full h-200 object-cover bg-black p-2" alt={p.title} />}
+              <div className="p-3">
+                <span className="text-xs px-2 py-1 rounded-full text-white mb-1 inline-block" style={{ backgroundColor: COFFEE_LIGHT }}>{p.category}</span>
+                <p className="font-bold text-sm mb-1 line-clamp-1" style={{ color: COFFEE_BROWN }}>{p.title}</p>
+                <p className="font-bold mb-2" style={{ color: COFFEE_BROWN }}>{p.price?.toLocaleString()} UGX</p>
+                <a href={`https://wa.me/${p.whatsapp}`} target="_blank" className="block w-full text-white text-center py-1.5 rounded text-sm font-medium" style={{ backgroundColor: '#25D366' }}>Contact on WhatsApp</a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom Nav - No Admins icon */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-16">
+        {BOTTOM_NAV.map(item => (
+          <Link key={item.name} href={item.href} className={`flex flex-col items-center text-xs ${pathname === item.href ? 'font-bold' : 'text-gray-600'}`} style={{ color: pathname === item.href ? COFFEE_BROWN : '' }}>
+            <span className="text-xl">{item.icon}</span><span>{item.name}</span>
+          </Link>
+        ))}
+        <Link href="/sell" className="absolute bottom-6 w-14 h-14 rounded-full text-white flex items-center justify-center text-3xl shadow-lg" style={{ backgroundColor: COFFEE_BROWN }}>+</Link>
+      </div>
     </div>
-  );
+  )
 }
