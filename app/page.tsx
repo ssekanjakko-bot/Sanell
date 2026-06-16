@@ -68,8 +68,7 @@ export default function HomePage() {
             <Link href="/tools" className="border px-2 py-1 rounded">Tools</Link>
             <Link href="/support" className="border px-2 py-1 rounded">Support</Link>
             <select className="border px-2 py-1 rounded"><option>Uganda</option><option>Kenya</option></select>
-            
-            </button>
+          
           </div>
         </div>
 
