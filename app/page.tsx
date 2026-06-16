@@ -20,7 +20,7 @@ const TOP_TABS = [
 
 const CATEGORIES = [
   { name: 'Vehicles', icon: '🚗' }, { name: 'Phones', icon: '📱' },
-  { name: 'Houses & Rentals', icon: '🏠' }, { name: 'Electronics', icon: '💻' },
+  { name: 'Hostels & Rentals', icon: '🏠' }, { name: 'Electronics', icon: '💻' },
   { name: 'Home, Furniture & Appliances', icon: '🛋️' }, { name: 'Health', icon: '💊' },
   { name: 'Fashion', icon: '👗' }, { name: 'Sports, Arts & Outdoor', icon: '⚽' },
   { name: 'Babies & Kids', icon: '🧸' }, { name: 'Animals & Pets', icon: '🐶' },
@@ -68,11 +68,11 @@ export default function HomePage() {
             <Link href="/tools" className="border px-2 py-1 rounded">Tools</Link>
             <Link href="/support" className="border px-2 py-1 rounded">Support</Link>
             <select className="border px-2 py-1 rounded"><option>Uganda</option><option>Kenya</option></select>
-            <button
-              onClick={() => signOut(auth)}
-              className="border px-2 py-1 rounded"
-            >
-              Logout
+            
+            
+              
+            
+        
             </button>
           </div>
         </div>
