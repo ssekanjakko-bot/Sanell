@@ -10,7 +10,7 @@ import {
   updateProfile,
   signOut,
   onAuthStateChanged,
-  User
+  Us
 } from 'firebase/auth'
 import { app } from '@/lib/firebase' // Only needs auth
 
