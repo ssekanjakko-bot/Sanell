@@ -14,7 +14,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [pasetPassword] = useState('')
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
 
