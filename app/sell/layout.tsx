@@ -1,28 +1,15 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import {
-  auth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  linkWithPhoneNumber,
-  RecaptchaVerifier,
-  updateProfile,
-  signOut,
-  onAuthStateChanged,
-  Us
-} from 'firebase/auth'
-import { app } from '@/lib/firebase' // Only needs auth
+import { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, linkWithPhoneNumber, RecaptchaVerifier, updateProfile, signOut, onAuthStateChanged, User } from '@/lib/firebase'
 
 export default function SellLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const [ready, setReady] = useState(false)
 
   const [mode, setMode] = useState<'signup' | 'login'>('signup')
   const [step, setStep] = useState<'form' | 'otp'>('form')
-  const [loading, setLoading] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [confirmation, setConfirmation] = useState<any>(null)
 
   const [fullName, setFullName] = useState('')
@@ -31,149 +18,113 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
 
-  // 1. Firebase remembers user forever. This runs on every page load
+  // 1. Firebase remembers the account: name, email, phone, password
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser)
-      setAuthLoading(false)
+    const stop = onAuthStateChanged(auth, u => {
+      setUser(u) 
+      setReady(true)
     })
-    return () => unsub()
+    return () => stop()
   }, [])
 
-  // 2. Create reCAPTCHA 1 time only. Fixes `invalid code` forever
+  // 2. reCAPTCHA once only
   useEffect(() => {
     if (!recaptchaRef.current) {
-      recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible'
-      })
+      recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' })
     }
-    return () => {
-      try { recaptchaRef.current?.clear() } catch {}
-      recaptchaRef.current = null
-    }
+    return () => { try { recaptchaRef.current?.clear() } catch {} }
   }, [])
 
-  const getFullPhone = () => `+256${phone.replace(/\D/g, '')}`
+  const phoneE164 = `+256${phone.replace(/\D/g, '')}`
 
-  // 3. SIGNUP / LOGIN - Step 1
-  const handleSubmit = async () => {
-    if (!email ||!password ||!phone) return alert('Fill Email, Password, Phone')
-    if (mode === 'signup' &&!fullName) return alert('Enter Full Name')
-    setLoading(true)
-
+  const submit = async () => {
+    if (!email || !password || !phone) return alert('Fill Email, Password, Phone')
+    if (mode === 'signup' && !fullName) return alert('Enter Full Name')
+    setBusy(true)
     try {
-      const phoneE164 = getFullPhone()
-
       if (mode === 'signup') {
-        // A. Create account in Firebase Auth with Email + Password
-        const userCred = await createUserWithEmailAndPassword(auth, email, password)
-        // B. Save Full Name to Firebase Auth profile
-        await updateProfile(userCred.user, { displayName: fullName })
-        // C. Send OTP to link phone
-        const conf = await linkWithPhoneNumber(userCred.user, phoneE164, recaptchaRef.current!)
+        // 1. Create account in Firebase: Email + Password
+        const cred = await createUserWithEmailAndPassword(auth, email, password)
+        // 2. Save Name to Firebase account
+        await updateProfile(cred.user, { displayName: fullName })
+        // 3. Send OTP to Phone
+        const conf = await linkWithPhoneNumber(cred.user, phoneE164, recaptchaRef.current!)
         setConfirmation(conf)
       } else {
-        // LOGIN: Sign in with Email + Password
-        const userCred = await signInWithEmailAndPassword(auth, email, password)
-        // If phone not linked yet, send OTP
-        if (!userCred.user.phoneNumber) {
-          const conf = await linkWithPhoneNumber(userCred.user, phoneE164, recaptchaRef.current!)
+        const cred = await signInWithEmailAndPassword(auth, email, password)
+        if (!cred.user.phoneNumber) {
+          const conf = await linkWithPhoneNumber(cred.user, phoneE164, recaptchaRef.current!)
           setConfirmation(conf)
         } else {
-          // Phone already verified, go to sale page
-          return
+          return // Already has phone, skip OTP
         }
       }
       setStep('otp')
-    } catch (e: any) {
-      alert(e.code === 'auth/email-already-in-use'
-       ? 'Email exists. Click Login tab.'
-        : e.message)
-      // Reset reCAPTCHA so they can try again
-      recaptchaRef.current?.clear()
-      recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' })
-    } finally {
-      setLoading(false)
+    } catch (err: any) {
+      alert(err.message)
     }
+    setBusy(false)
   }
 
-  // 4. VERIFY OTP - Step 2. This completes signup/login
-  const verifyOTP = async () => {
-    if (otp.length!== 6) return alert('Enter 6 digit code')
-    setLoading(true)
+  const verify = async () => {
+    if (otp.length !== 6) return alert('6 digit code')
+    setBusy(true)
     try {
       await confirmation.confirm(otp)
-      // Success! Firebase Auth now has: email, password, phone, displayName
-      // User is logged in. Modal will auto close due to onAuthStateChanged
-    } catch (e: any) {
-      alert('Wrong OTP: ' + e.message)
-    } finally {
-      setLoading(false)
+      await auth.currentUser?.reload() 
+      setUser(auth.currentUser) // This makes "Welcome, Name" appear
+    } catch (err: any) {
+      alert('Wrong OTP: ' + err.message)
     }
+    setBusy(false)
   }
 
-  const logout = async () => {
-    await signOut(auth)
-    setStep('form')
-  }
+  const logout = () => signOut(auth)
 
-  // Loading state while Firebase checks if user is logged in
-  if (authLoading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>
-  }
+  if (!ready) return <div className="h-screen grid place-items-center">Loading...</div>
 
-  // CASE 1: User is logged in -> Show sale page. No modal.
+  // CASE 1: Logged in -> Show "Welcome, Name" + Sale page. page.tsx untouched
   if (user) {
     return (
       <>
-        <div id="recaptcha-container"></div> {/* Still needed for Firebase */}
-        <div className="p-4 border-b flex justify-between items-center">
-          <div>Welcome, {user.displayName || user.email}</div>
-          <button onClick={logout} className="text-red-600">Logout</button>
-        </div>
-        {children} {/* This is your sale page.tsx. Untouched */}
+        <div id="recaptcha-container"></div>
+        
+        {/* This bar is in layout.tsx only. Your page.tsx is not touched */}
+        <header className="p-4 border-b bg-white flex justify-between items-center shadow-sm">
+          <h1 className="text-lg font-semibold">Welcome, {user.displayName || user.email?.split('@')[0]}</h1>
+          <button onClick={logout} className="text-red-600 text-sm px-3 py-1 border rounded">Logout</button>
+        </header>
+
+        {children} {/* This is your sale page.tsx. 0 lines changed */}
       </>
     )
   }
 
-  // CASE 2: User is NOT logged in -> Show Auth Modal
+  // CASE 2: Not logged in -> Show popup: Name, Email, Phone, OTP
   return (
     <>
-      <div id="recaptcha-container"></div> {/* No folder needed */}
-
-      <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-xl w-full max-w-sm">
+      <div id="recaptcha-container"></div>
+      <div className="fixed inset-0 bg-black/70 grid place-items-center p-4 z-50">
+        <div className="bg-white w-full max-w-sm rounded-lg p-5 shadow-xl">
           <div className="flex mb-4 border-b">
-            <button onClick={() => {setMode('signup'); setStep('form')}}
-              className={`flex-1 pb-2 ${mode==='signup'? 'border-b-2 border-blue-600 font-bold' : ''}`}>
-              Sign Up
-            </button>
-            <button onClick={() => {setMode('login'); setStep('form')}}
-              className={`flex-1 pb-2 ${mode==='login'? 'border-b-2 border-blue-600 font-bold' : ''}`}>
-              Login
-            </button>
+            <button onClick={() => { setMode('signup'); setStep('form') }} className={`flex-1 pb-2 ${mode==='signup'?'border-b-2 border-black font-bold':''}`}>Sign Up</button>
+            <button onClick={() => { setMode('login'); setStep('form') }} className={`flex-1 pb-2 ${mode==='login'?'border-b-2 border-black font-bold':''}`}>Login</button>
           </div>
 
-          {step === 'form'? (
+          {step === 'form' ? (
             <div className="space-y-3">
-              {mode === 'signup' && <input placeholder="Full Name" value={fullName} onChange={e=>setFullName(e.target.value)} className="w-full border p-2 rounded"/>}
-              <input type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full border p-2 rounded"/>
-              <div className="flex border rounded"><span className="p-2 bg-gray-100">+256</span>
-                <input placeholder="77XXXXXXX" value={phone} onChange={e=>setPhone(e.target.value)} className="flex-1 p-2 outline-none"/>
-              </div>
-              <input type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full border p-2 rounded"/>
-              <button onClick={handleSubmit} disabled={loading} className="w-full bg-blue-600 text-white p-2 rounded disabled:opacity-50">
-                {loading? 'Please wait...' : mode === 'signup'? 'Sign Up' : 'Login'}
-              </button>
+              {mode === 'signup' && <input className="w-full border p-2 rounded" placeholder="Full Name" value={fullName} onChange={e=>setFullName(e.target.value)}/>}
+              <input className="w-full border p-2 rounded" type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
+              <div className="flex border rounded"><span className="p-2 bg-gray-100">+256</span><input className="flex-1 p-2 outline-none" placeholder="77XXXXXXX" value={phone} onChange={e=>setPhone(e.target.value)}/></div>
+              <input className="w-full border p-2 rounded" type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)}/>
+              <button className="w-full bg-black text-white p-2 rounded" disabled={busy} onClick={submit}>{busy?'Sending OTP...':'Continue'}</button>
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-center">Code sent to {getFullPhone()}</p>
-              <input placeholder="6-digit code" maxLength={6} value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,''))} className="w-full border p-3 text-center text-2xl tracking-widest rounded"/>
-              <button onClick={verifyOTP} disabled={loading} className="w-full bg-green-600 text-white p-2 rounded disabled:opacity-50">
-                {loading? 'Verifying...' : 'Verify'}
-              </button>
-              <button onClick={() => setStep('form')} className="w-full text-sm">Back</button>
+              <p className="text-center text-sm">We sent a 6-digit code to {phoneE164}</p>
+              <input className="w-full border p-3 text-center text-2xl tracking-[0.5em] rounded" maxLength={6} placeholder="------" value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,''))}/>
+              <button className="w-full bg-green-600 text-white p-2 rounded" disabled={busy} onClick={verify}>{busy?'Verifying...':'Verify & Enter Sale Page'}</button>
+              <button className="w-full text-sm text-gray-600" onClick={()=>setStep('form')}>Back</button>
             </div>
           )}
         </div>
