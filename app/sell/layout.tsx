@@ -15,7 +15,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [phone, setPhone] = useState('')
+  const [phone, s
   const [otp, setOtp] = useState('')
 
   // 1. Check if user is already logged in
