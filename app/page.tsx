@@ -109,7 +109,7 @@ export default function HomePage() {
         <div className="grid grid-cols-2 gap-4">
           {filteredProducts.map(p => (
             <div key={p.id} className="bg-white border rounded-lg overflow-hidden shawdow-sm">
-              {p.images?.[0] && <img src={p.images[0]} className="w-full h-200 object-cover bg-black p-2" alt={p.title} />}
+              {p.images?.[0] && <img src={p.images[0]} className="w-full h-48 object-cover bg-black p-2" alt={p.title} />}
               <div className="p-3">
                 <span className="text-xs px-2 py-1 rounded-full text-white mb-1 inline-block" style={{ backgroundColor: COFFEE_LIGHT }}>{p.category}</span>
                 <p className="font-bold text-sm mb-1 line-clamp-1" style={{ color: COFFEE_BROWN }}>{p.title}</p>
