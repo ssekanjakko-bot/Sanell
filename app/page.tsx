@@ -87,7 +87,6 @@ export default function HomePage() {
           ))}
         </div>
       </div>
-
       {/* Main Page = Stores */}
       <div className="bg-white">
         <div className="grid grid-cols-4 gap-4">
