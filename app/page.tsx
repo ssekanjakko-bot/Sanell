@@ -89,7 +89,7 @@ export default function HomePage() {
       </div>
 
       {/* Main Page = Stores */}
-      <div className="bg-zinc-900 md:bg-white text-black p-4 rounded w-full max-w-sm mx-4 border-zinc-700">
+      <div className="bg-white">
         <div className="grid grid-cols-4 gap-4">
           <button onClick={() => setSelectedCategory('All')} className={`flex flex-col items-center text-xs ${selectedCategory === 'All' ? 'font-bold' : ''}`} style={{ color: selectedCategory === 'All' ? COFFEE_BROWN : '#666' }}>
             <div className="text-2xl mb-1">🏪</div><span>All</span>
@@ -102,7 +102,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="bg-zinc-900 md:bg-white text-white md:text-black p-4 rounded w-full max-w-sm mx-4 border-zinc-700">
+      <div className="p-4">
         <p className="font-bold mb-3" style={{ color: COFFEE_BROWN }}>Listings {selectedCategory !== 'All' && `- ${selectedCategory}`} ({filteredProducts.length})</p>
         {loading && <p className="text-center py-10">Loading...</p>}
         {filteredProducts.length === 0 && !loading && <p className="text-center py-20 text-gray-500">No listings yet. Tap the + button to post.</p>}
