@@ -89,7 +89,7 @@ export default function HomePage() {
       </div>
 
       {/* Main Page = Stores */}
-      <div className="bg-white p-4">
+      <div className="bg-zinc-900 md:bg-white text-black p-4 rounded w-full max-w-sm mx-4 border-zinc-700">
         <div className="grid grid-cols-4 gap-4">
           <button onClick={() => setSelectedCategory('All')} className={`flex flex-col items-center text-xs ${selectedCategory === 'All' ? 'font-bold' : ''}`} style={{ color: selectedCategory === 'All' ? COFFEE_BROWN : '#666' }}>
             <div className="text-2xl mb-1">🏪</div><span>All</span>
