@@ -79,7 +79,7 @@ export default function HomePage() {
             <Link
               key={tab.name}
               href={tab.href}
-              className={`px-3 py-1 rounded text-sm whitespace-nowrap ${pathname === tab.href ?  ' bg-[${COFFEE_BROWN}] text-white' : 'bg-zinc-800 text-zinc-300 border-zinc-700'}`}
+              className={`px-3 py-1 rounded-md text-sm whitespace-nowrap font-medium border ${pathname === tab.href ?  'text-white' : 'bg-zinc-800 text-zinc-300 border-zinc-700'}`}
               style={{ backgroundColor: pathname === tab.href ? COFFEE_BROWN : '' }}
             >
               {tab.name}
