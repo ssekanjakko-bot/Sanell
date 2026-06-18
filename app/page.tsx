@@ -55,7 +55,7 @@ export default function HomePage() {
   const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.category === selectedCategory)
 
   return (
-    <div className="min-h-screen pb-24" style={{ backgroundColor: '#FDF8F3' }}>
+    <div className="min-h-screen pb-24 bg-zinc-900 md:bg- [#FDF8F3]">
       <div className="bg-white shadow-sm sticky top-0 z-20">
         <div className="p-3 flex justify-between items-center border-b">
           <div className="flex items-center gap-2">
