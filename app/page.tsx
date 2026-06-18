@@ -64,22 +64,22 @@ export default function HomePage() {
             <Link href="/about" className="text-xs text-gray-500">About</Link>
           </div>
           <div className="flex gap-2 text-xs">
-            <Link href="/get-app" className="border px-2 py-1 rounded">Get App</Link>
-            <Link href="/tools" className="border px-2 py-1 rounded">Tools</Link>
-            <Link href="/support" className="border px-2 py-1 rounded">Support</Link>
-            <select className="border px-2 py-1 rounded"><option>Uganda</option><option>Kenya</option></select>
+            <Link href="/get-app" className="border border-zinc-700 bg-zinc-800 text-white px-3 py-1.5 rounded-md text-sm">Get App</Link>
+            <Link href="/tools" className="border border-zinc-700 bg-zinc-800 text-white px-3 py-1.5 rounded-md text-sm">Tools</Link>
+            <Link href="/support" className="border border-zinc-700 bg-zinc-800 text-white px-3 py-1.5 rounded-md text-sm">Support</Link>
+            <select className="border  border-zinc-700 bg-zinc-800 text-white px-3 py-1.5 rounded-md text-sm"><option>Uganda</option><option>Kenya</option></select>
           
           </div>
         </div>
 
-        <div className="p-3"><input placeholder="Search products" className="w-full p-2 border rounded-lg text-sm" /></div>
+        <div className="p-3"><input placeholder="Search products" className="w-full p-3 bg-zinc-800 text-white border-zinc-700  rounded-lg text-sm placehold:text-zinc-400 " /></div>
 
         <div className="flex gap-2 px-3 pb-2 overflow-x-auto">
           {TOP_TABS.map(tab => (
             <Link
               key={tab.name}
               href={tab.href}
-              className={`px-3 py-1 rounded text-sm whitespace-nowrap ${pathname === tab.href ? 'text-white' : 'bg-gray-100'}`}
+              className={`px-3 py-1 rounded text-sm whitespace-nowrap ${pathname === tab.href ?  ' bg-[${COFFEE_BROWN}] text-white' : 'bg-zinc-800 text-zinc-300 border-zinc-700'}`}
               style={{ backgroundColor: pathname === tab.href ? COFFEE_BROWN : '' }}
             >
               {tab.name}
