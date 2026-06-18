@@ -100,7 +100,6 @@ export default function HomePage() {
           ))}
         </div>
       </div>
-
       <div className="p-4">
         <p className="font-bold mb-3" style={{ color: COFFEE_BROWN }}>Listings {selectedCategory !== 'All' && `- ${selectedCategory}`} ({filteredProducts.length})</p>
         {loading && <p className="text-center py-10">Loading...</p>}
