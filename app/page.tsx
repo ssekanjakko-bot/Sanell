@@ -102,7 +102,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="bg-zinc-900 md:bg-white text-white md:text-black p-4 rounded w-full max-w-sm mx-4 border-zinc-700">
         <p className="font-bold mb-3" style={{ color: COFFEE_BROWN }}>Listings {selectedCategory !== 'All' && `- ${selectedCategory}`} ({filteredProducts.length})</p>
         {loading && <p className="text-center py-10">Loading...</p>}
         {filteredProducts.length === 0 && !loading && <p className="text-center py-20 text-gray-500">No listings yet. Tap the + button to post.</p>}
