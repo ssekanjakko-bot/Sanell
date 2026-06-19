@@ -13,7 +13,7 @@ interface Movie {
   id: string;
   title: string;
   description: string;
-  releaseDate: string;
+  releaseDate: strin
   duration: string;
   genre: string[];
   director: string;
