@@ -3,12 +3,16 @@ import { useState, FormEvent, ChangeEvent } from "react"
 import { useRouter } from "next/navigation"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { collection, addDoc, serverTimestamp, Timestamp } from "firebase/firestore"
-import { storage, db, auth } from "./lib/firebase" // <- your firebase init
+import { storage, db, auth } from "../../lib/firebase" // <- your firebase init
 
 interface MovieForm {
   title: string
   description: string
   youtubeId: string
+  genre?:string[]
+  director?:string
+  cast?:string 
+  posterUrl?:string
 }
 
 export default function AdminPage(): JSX.Element {
