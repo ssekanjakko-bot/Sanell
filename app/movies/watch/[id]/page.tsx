@@ -7,8 +7,7 @@ import Link from "next/link"
 
 export default function WatchPage() {
   const { id } = useParams()
-  const [movie, setMovie] = useState<any>(null)
-
+  const [movie, setMovie] = useState<an
   useEffect(() => {
     if(!id) return
     getDoc(doc(db, "movies", id as string)).then(snap => {
