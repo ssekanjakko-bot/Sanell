@@ -15,7 +15,7 @@ interface Movie {
           title: string;
           description: string;
           releaseDate: string;
-          duration: string;
+          durati
           genre: string[];
           director: string;
           cast: string;
