@@ -17,6 +17,7 @@ interface Movie {
           releaseDate: string;
           duration: string;
           genre: string[];
+          youtubeId:string;
           director: string;
           cast: string;
           videoUrl: string;
