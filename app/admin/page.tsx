@@ -1,131 +1,102 @@
 "use client"
 import { useState, FormEvent, ChangeEvent } from "react"
-import { useRouter } from "next/navigation"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { collection, addDoc, serverTimestamp, Timestamp } from "firebase/firestore"
-import {  db, storage, auth } from ".lib/firebase" // <- your firebase init
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"
+import { db, storage, auth } from "../../lib/firebase"
 
 interface MovieForm {
   title: string
   description: string
   youtubeId: string
-  genre?:string[]
-  director?:string
-  cast?:string 
-  posterUrl?:string
+  genre?: string[]
+  director?: string
+  cast?: string
+  posterUrl: string
+  createdBy: string
+  createdAt: any
 }
 
-export default function AdminPage(): JSX.Element {
-  const [form, setForm] = useState<MovieForm>({
-    title: "",
-    description: "",
-    youtubeId: ""
-  })
+export default function AdminPage() {
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
+  const [youtubeId, setYoutubeId] = useState("")
   const [posterFile, setPosterFile] = useState<File | null>(null)
-  const [loading, setLoading] = useState<boolean>(false)
-  const router = useRouter()
+  const [loading, setLoading] = useState(false)
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setForm(prev => ({...prev, [name]: value }))
-  }
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setPosterFile(e.target.files[0])
-    }
-  }
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-
-    if (!posterFile ||!form.title ||!form.youtubeId) {
-      alert("Title, YouTube ID, and Poster are required")
-      return
-    }
-
-    const user = auth.currentUser
-    if (!user) {
-      alert("You must be logged in as admin")
-      return
-    }
+    if (!posterFile) return alert("Select a poster image first")
 
     setLoading(true)
     try {
-      // 1. Upload poster to Storage
-      const posterRef = ref(storage, `posters/${Date.now()}_${posterFile.name}`)
-      const uploadSnap = await uploadBytes(posterRef, posterFile)
+      const fileRef = ref(storage, `posters/${Date.now()}-${posterFile.name}`)
+      const snap = await uploadBytes(fileRef, posterFile)
+      const posterUrl = await getDownloadURL(snap.ref)
 
-      // 2. Get HTTPS download URL automatically
-      const posterUrl: string = await getDownloadURL(uploadSnap.ref)
+      const movieData: MovieForm = {
+        title,
+        description,
+        youtubeId,
+        posterUrl,
+        createdBy: auth.currentUser?.uid || "admin",
+        createdAt: serverTimestamp()
+      }
 
-      // 3. Save to Firestore - no manual link copy needed
-      await addDoc(collection(db, "movies"), {
-        title: form.title,
-        description: form.description,
-        youtubeId: form.youtubeId, // just the ID: dQw4w9WgXcQ
-        posterUrl: posterUrl, // full https link
-        createdAt: serverTimestamp() as Timestamp,
-        adminId: user.uid // r76GyBE2EduiosQsdSFCity42
-      })
-
-      alert("Movie added successfully!")
-      setForm({ title: "", description: "", youtubeId: "" })
+      await addDoc(collection(db, "movies"), movieData)
+      alert("Movie added successfully")
+      setTitle("")
+      setDescription("")
+      setYoutubeId("")
       setPosterFile(null)
-      router.push("/movies")
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error? err.message : "Unknown error"
-      console.error(err)
-      alert("Error: " + errorMessage)
+    } catch (error) {
+      console.error(error)
+      alert("Error: " + String(error))
     }
     setLoading(false)
   }
 
   return (
-    <div className="max-w-lg mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Add New Movie</h1>
+    <main className="max-w-2xl mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-6">Add Movie</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
-          name="title"
-          placeholder="Movie Title: CLEANER"
-          value={form.title}
-          onChange={handleInputChange}
-          className="w-full p-2 border rounded"
+          placeholder="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
           required
+          className="w-full border p-2 rounded"
+        />
+        <textarea
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
+          className="w-full border p-2 rounded"
         />
         <input
           type="text"
-          name="youtubeId"
-          placeholder="YouTube ID only: dQw4w9WgXcQ"
-          value={form.youtubeId}
-          onChange={handleInputChange}
-          className="w-full p-2 border rounded"
+          placeholder="YouTube ID, ex: dQw4w9WgXcQ"
+          value={youtubeId}
+          onChange={(e) => setYoutubeId(e.target.value)}
           required
-        />
-        <textarea
-          name="description"
-          placeholder="Description"
-          value={form.description}
-          onChange={handleInputChange}
-          className="w-full p-2 border rounded"
-          rows={3}
+          className="w-full border p-2 rounded"
         />
         <input
           type="file"
           accept="image/*"
-          onChange={handleFileChange}
-          className="w-full"
+          onChange={(e) => setPosterFile(e.target.files?.[0] || null)}
           required
+          className="w-full"
         />
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-black text-white p-2 rounded disabled:opacity-50"
+          className="bg-black text-white px-6 py-2 rounded disabled:opacity-50"
         >
-          {loading? "Adding..." : "Add Movie"}
+          {loading? "Uploading..." : "Add Movie"}
         </button>
       </form>
-    </div>
+    </main>
   )
 }
