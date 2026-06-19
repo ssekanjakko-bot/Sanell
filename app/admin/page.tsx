@@ -215,7 +215,7 @@ export default function AdminPage() {
                                         <input className="border p-2 w-full mb-2 rounded" placeholder="Duration e.g. 2h 10m" value={duration} onChange={e => setDuration(e.target.value)} />
                                         <input className="border p-2 w-full mb-2 rounded" placeholder="Director" value={director} onChange={e => setDirector(e.target.value)} />
                                         <input className="border p-2 w-full mb-2 rounded" placeholder="Cast, comma separated" value={cast} onChange={e => setCast(e.target.value)} />
-
+                                        <input placeholder="youTube ID" value={from.youtubeId} onChange={e => setfrom ({...form,youtubeId:e.target.value})} className="w-full p-3 bg-gray-800 rounded"/>
                                         <div className="mb-2">
                                                   <label className="font-semibold">Genre:</label>
                                                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
