@@ -1,138 +1,288 @@
-"use client"
-import { useState, useEffect } from "react"
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy } from "firebase/firestore"
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { db, storage } from "../lib/firebase"
-import Link from "next/link"
+"use client";
 
-const CATS = ["Action", "Adventure"Anime", "TV shows", "Comedy", "Sex,love and crime", "Documentary", "Family", "Fantasy", "Horror"]
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+          ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject
+} from "firebase/storage";
+import {
+          addDoc, collection, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy
+} from "firebase/firestore";
+import { db, storage } from "@/lib/firebase";
 
-type Movie = {id: string, title: string, desc: string, youtubeId: string, posterUrl: string, director: string, cast: string, genre: string[]}
+interface Movie {
+          id: string;
+          title: string;
+          description: string;
+          releaseDate: string;
+          duration: string;
+          genre: string[];
+          director: string;
+          cast: string;
+          videoUrl: string;
+          posterUrl: string;
+          videoPath?: string;
+          posterPath?: string;
+          createdAt?: any;
+}
 
-export default function Admin() {
-  const [movies, setMovies] = useState<Movie[]>([])
-  const [form, setForm] = useState({title:"", desc:"", youtubeId:"", director:"", cast:"", genre:[] as string[]})
-  const [posterFile, setPosterFile] = useState<File | null>(null)
-  const [editId, setEditId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+export default function AdminPage() {
+          const router = useRouter();
+          const [movies, setMovies] = useState<Movie[]>([]);
+          const [editingId, setEditingId] = useState<string | null>(null);
 
-  const loadMovies = async () => {
-    const snap = await getDocs(query(collection(db, "movies"), orderBy("createdAt", "desc")))
-    setMovies(snap.docs.map(d => ({id: d.id,...d.data()} as Movie)))
-  }
-  useEffect(() => { loadMovies() }, [])
+          // Form state
+          const [title, setTitle] = useState("");
+          const [description, setDescription] = useState("");
+          const [releaseDate, setReleaseDate] = useState("");
+          const [duration, setDuration] = useState("");
+          const [genre, setGenre] = useState<string[]>([]);
+          const [director, setDirector] = useState("");
+          const [cast, setCast] = useState("");
+          const [videoFile, setVideoFile] = useState<File | null>(null);
+          const [posterFile, setPosterFile] = useState<File | null>(null);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if(!form.title ||!form.youtubeId || form.genre.length === 0)
-      return alert("Title, YouTube ID, and 1+ Category are required")
-    if(!posterFile &&!editId) return alert("Poster image is required for new movies")
+          // Upload state
+          const [isUploading, setIsUploading] = useState(false);
+          const [uploadProgress, setUploadProgress] = useState(0);
+          const [uploadStatus, setUploadStatus] = useState("");
 
-    setLoading(true)
-    let posterUrl = editId? movies.find(m => m.id === editId)!.posterUrl : ""
+          // 1. Fetch movies live from Firestore
+          useEffect(() => {
+                    const q = query(collection(db, "movies"), orderBy("createdAt", "desc"));
+                    const unsubscribe = onSnapshot(q, (snapshot) => {
+                              const moviesData: Movie[] = snapshot.docs.map(docSnap => ({
+                                        id: docSnap.id,
+                                        ...docSnap.data()
+                              } as Movie));
+                              setMovies(moviesData);
+                    });
+                    return () => unsubscribe();
+          }, []);
 
-    if(posterFile) {
-      const posterRef = ref(storage, `posters/${Date.now()}-${posterFile.name}`)
-      const snap = await uploadBytes(posterRef, posterFile)
-      posterUrl = await getDownloadURL(snap.ref)
-    }
+          const resetForm = () => {
+                    setTitle("");
+                    setDescription("");
+                    setReleaseDate("");
+                    setDuration("");
+                    setGenre([]);
+                    setDirector("");
+                    setCast("");
+                    setVideoFile(null);
+                    setPosterFile(null);
+                    setEditingId(null);
+                    setUploadProgress(0);
+                    setUploadStatus("");
+          };
 
-    const data = {...form, posterUrl, createdAt: editId? movies.find(m => m.id === editId)!.createdAt : serverTimestamp()}
+          const handleGenreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                    const { value, checked } = e.target;
+                    if (checked) {
+                              setGenre([...genre, value]);
+                    } else {
+                              setGenre(genre.filter(g => g !== value));
+                    }
+          };
 
-    if(editId) {
-      await updateDoc(doc(db, "movies", editId), data)
-      setEditId(null)
-    } else {
-      await addDoc(collection(db, "movies"), data)
-    }
+          // 2. Add or Update Movie
+          const handleSubmit = async (e: React.FormEvent) => {
+                    e.preventDefault();
+                    if (!editingId && (!videoFile || !posterFile)) {
+                              alert("Please select both a video and a poster image.");
+                              return;
+                    }
 
-    setForm({title:"", desc:"", youtubeId:"", director:"", cast:"", genre:[]})
-    setPosterFile(null)
-    setLoading(false)
-    loadMovies()
-  }
+                    setIsUploading(true);
+                    setUploadProgress(0);
+                    setUploadStatus("Starting...");
 
-  const handleEdit = (movie: Movie) => {
-    setEditId(movie.id)
-    setForm({title: movie.title, desc: movie.desc, youtubeId: movie.youtubeId, director: movie.director, cast: movie.cast, genre: movie.genre})
-    setPosterFile(null)
-    window.scrollTo({top: 0, behavior: 'smooth'})
-  }
+                    try {
+                              let videoUrl = "";
+                              let posterUrl = "";
+                              let videoPath = "";
+                              let posterPath = "";
 
-  const handleDelete = async (id: string) => {
-    if(confirm("Delete this movie?")) {
-      await deleteDoc(doc(db, "movies", id))
-      loadMovies()
-    }
-  }
+                              // Upload new Poster if selected
+                              if (posterFile) {
+                                        setUploadStatus("Uploading poster 0%");
+                                        posterPath = `posters/${Date.now()}_${posterFile.name}`;
+                                        const posterRef = ref(storage, posterPath);
+                                        const posterSnap = await uploadBytes(posterRef, posterFile);
+                                        posterUrl = await getDownloadURL(posterSnap.ref);
+                              } else if (editingId) {
+                                        const oldMovie = movies.find(m => m.id === editingId);
+                                        posterUrl = oldMovie?.posterUrl || "";
+                                        posterPath = oldMovie?.posterPath || "";
+                              }
 
-  const toggleGenre = (cat: string) => {
-    setForm(prev => ({...prev, genre: prev.genre.includes(cat)? prev.genre.filter(g => g!== cat) : [...prev.genre, cat]}))
-  }
+                              // Upload new Video if selected - with progress
+                              if (videoFile) {
+                                        setUploadStatus("Uploading video 0%");
+                                        videoPath = `videos/${Date.now()}_${videoFile.name}`;
+                                        const videoRef = ref(storage, videoPath);
+                                        const uploadTask = uploadBytesResumable(videoRef, videoFile);
 
-  return (
-    <main className="bg-black text-white min-h-screen p-4 md:p-6">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Admin Panel</h1>
-          <Link href="/" className="bg-gray-700 px-4 py-2 rounded">View Site</Link>
-        </div>
+                                        videoUrl = await new Promise<string>((resolve, reject) => {
+                                                  uploadTask.on(
+                                                            "state_changed",
+                                                            (snapshot) => {
+                                                                      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                                                      setUploadProgress(Math.round(progress));
+                                                                      const mbTransferred = (snapshot.bytesTransferred / 1024 / 1024).toFixed(1);
+                                                                      const mbTotal = (snapshot.totalBytes / 1024 / 1024).toFixed(1);
+                                                                      setUploadStatus(`Uploading video: ${Math.round(progress)}% - ${mbTransferred}MB / ${mbTotal}MB`);
+                                                            },
+                                                            (error) => reject(error),
+                                                            async () => {
+                                                                      const url = await getDownloadURL(uploadTask.snapshot.ref);
+                                                                      resolve(url);
+                                                            }
+                                                  );
+                                        });
+                              } else if (editingId) {
+                                        const oldMovie = movies.find(m => m.id === editingId);
+                                        videoUrl = oldMovie?.videoUrl || "";
+                                        videoPath = oldMovie?.videoPath || "";
+                              }
 
-        <form onSubmit={handleSave} className="bg-gray-900 p-6 rounded-lg mb-8 space-y-4">
-          <h2 className="text-2xl font-bold">{editId? "Edit Movie" : "Add New Movie"}</h2>
+                              setUploadStatus("Saving to database...");
+                              const movieData = {
+                                        title, description, releaseDate, duration, genre, director, cast,
+                                        videoUrl, posterUrl, videoPath, posterPath,
+                                        updatedAt: new Date()
+                              };
 
-          <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Movie Title *" className="w-full p-3 bg-gray-800 rounded"/>
-          <textarea value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} placeholder="Description" rows={3} className="w-full p-3 bg-gray-800 rounded"/>
-          <input value={form.youtubeId} onChange={e => setForm({...form, youtubeId: e.target.value})} placeholder="YouTube Video ID * Ex: dQw4w9WgXcQ" className="w-full p-3 bg-gray-800 rounded"/>
+                              if (editingId) {
+                                        await updateDoc(doc(db, "movies", editingId), movieData);
+                                        alert("Movie updated!");
+                              } else {
+                                        await addDoc(collection(db, "movies"), { ...movieData, createdAt: new Date() });
+                                        alert("Movie added!");
+                              }
 
-          <div>
-            <label className="block mb-1">Poster Image {editId && "- leave empty to keep current"}</label>
-            <input type="file" accept="image/*" onChange={e => setPosterFile(e.target.files?.[0] || null)} className="w-full p-2 bg-gray-800 rounded file:bg-red-600 file:text-white file:border-none file:rounded file:px-4 file:py-2"/>
-          </div>
+                              resetForm();
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input value={form.director} onChange={e => setForm({...form, director: e.target.value})} placeholder="Director" className="w-full p-3 bg-gray-800 rounded"/>
-            <input value={form.cast} onChange={e => setForm({...form, cast: e.target.value})} placeholder="Cast" className="w-full p-3 bg-gray-800 rounded"/>
-          </div>
+                    } catch (error: any) {
+                              console.error("Error:", error);
+                              setUploadStatus(`Error: ${error.code}`);
+                              alert(`Failed: ${error.message}`);
+                    } finally {
+                              setIsUploading(false);
+                    }
+          };
 
-          <div>
-            <p className="mb-2">Categories *</p>
-            <div className="flex flex-wrap gap-2">
-              {CATS.map(cat => (
-                <button type="button" key={cat} onClick={() => toggleGenre(cat)} className={`px-4 py-2 rounded-full text-sm ${form.genre.includes(cat)? "bg-red-600" : "bg-gray-700"}`}>
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
+          // 3. Edit: fill form with movie data
+          const handleEdit = (movie: Movie) => {
+                    setEditingId(movie.id);
+                    setTitle(movie.title);
+                    setDescription(movie.description);
+                    setReleaseDate(movie.releaseDate);
+                    setDuration(movie.duration);
+                    setGenre(movie.genre || []);
+                    setDirector(movie.director);
+                    setCast(movie.cast);
+                    setVideoFile(null);
+                    setPosterFile(null);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+          };
 
-          <div className="flex gap-3">
-            <button type="submit" disabled={loading} className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded font-bold disabled:opacity-50">
-              {loading? "Saving..." : editId? "Update Movie" : "Add Movie"}
-            </button>
-            {editId && <button type="button" onClick={() => {setEditId(null); setForm({title:"", desc:"", youtubeId:"", director:"", cast:"", genre:[]}); setPosterFile(null)}} className="bg-gray-600 px-6 py-2 rounded font-bold">Cancel</button>}
-          </div>
-        </form>
+          // 4. Delete movie + files from Storage
+          const handleDelete = async (movie: Movie) => {
+                    if (!confirm(`Delete "${movie.title}"? This cannot be undone.`)) return;
 
-        <h2 className="text-2xl font-bold mb-4">All Movies</h2>
-        <div className="space-y-3">
-          {movies.map(m => (
-            <div key={m.id} className="bg-gray-900 p-4 rounded-lg flex items-center justify-between gap-4">
-              <div className="flex gap-4 items-center overflow-hidden">
-                <img src={m.posterUrl} alt={m.title} className="w-16 h-24 object-cover rounded flex-shrink-0"/>
-                <div className="overflow-hidden">
-                  <p className="font-bold truncate">{m.title}</p>
-                  <p className="text-sm text-gray-400 truncate">{m.genre.join(", ")}</p>
-                </div>
-              </div>
-              <div className="flex gap-2 flex-shrink-0">
-                <button onClick={() => handleEdit(m)} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold">Edit</button>
-                <button onClick={() => handleDelete(m.id)} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-semibold">Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </main>
-  )
+                    try {
+                              await deleteDoc(doc(db, "movies", movie.id));
+
+                              if (movie.videoPath) await deleteObject(ref(storage, movie.videoPath)).catch(() => { });
+                              if (movie.posterPath) await deleteObject(ref(storage, movie.posterPath)).catch(() => { });
+
+                              alert("Movie deleted");
+                    } catch (error: any) {
+                              console.error("Delete error:", error);
+                              alert("Failed to delete: " + error.message);
+                    }
+          };
+
+          return (
+                    <div className="container mx-auto p-4 max-w-4xl">
+                              <h1 className="text-2xl font-bold mb-4">{editingId ? "Edit Movie" : "Add Movie"}</h1>
+
+                              {/* FORM */}
+                              <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-8">
+                                        <input className="border p-2 w-full mb-2 rounded" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} required />
+                                        <textarea className="border p-2 w-full mb-2 rounded" placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
+                                        <input type="date" className="border p-2 w-full mb-2 rounded" value={releaseDate} onChange={e => setReleaseDate(e.target.value)} />
+                                        <input className="border p-2 w-full mb-2 rounded" placeholder="Duration e.g. 2h 10m" value={duration} onChange={e => setDuration(e.target.value)} />
+                                        <input className="border p-2 w-full mb-2 rounded" placeholder="Director" value={director} onChange={e => setDirector(e.target.value)} />
+                                        <input className="border p-2 w-full mb-2 rounded" placeholder="Cast, comma separated" value={cast} onChange={e => setCast(e.target.value)} />
+
+                                        <div className="mb-2">
+                                                  <label className="font-semibold">Genre:</label>
+                                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
+                                                            {["Action", "Comedy", "Popular Movie", "C-Drama", "Sci-Fi", "Most Popular", "Anime", "DC Movies", "Marvel Movies", "Trending Now", "💖Romance", " Thriller", "Documentary", "Family", "Fantasy", " adventure", "Horror"].map(g => (
+                                                                      <label key={g} className="flex items-center">
+                                                                                <input type="checkbox" value={g} checked={genre.includes(g)} onChange={handleGenreChange} className="mr-2" />
+                                                                                {g}
+                                                                      </label>
+                                                            ))}
+                                                  </div>
+                                        </div>
+
+                                        <div className="mb-2">
+                                                  <label className="font-semibold">Video File {editingId && "(leave empty to keep current)"}</label>
+                                                  <input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files?.[0] || null)} className="border p-2 w-full rounded" />
+                                        </div>
+                                        <div className="mb-4">
+                                                  <label className="font-semibold">Poster Image {editingId && "(leave empty to keep current)"}</label>
+                                                  <input type="file" accept="image/*" onChange={e => setPosterFile(e.target.files?.[0] || null)} className="border p-2 w-full rounded" />
+                                        </div>
+
+                                        {/* Progress Bar */}
+                                        {isUploading && (
+                                                  <div className="mt-4 w-full mb-4">
+                                                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                                                      <div className="bg-red-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                                                            </div>
+                                                            <p className="text-sm text-center mt-2">{uploadStatus}</p>
+                                                  </div>
+                                        )}
+
+                                        <div className="flex gap-2">
+                                                  <button type="submit" disabled={isUploading} className="bg-red-600 text-white px-4 py-2 rounded disabled:opacity-50">
+                                                            {isUploading ? "Uploading..." : editingId ? "Update Movie" : "Add Movie"}
+                                                  </button>
+                                                  {editingId && <button type="button" onClick={resetForm} className="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>}
+                                        </div>
+                              </form>
+
+                              {/* MOVIE LIST WITH EDIT/DELETE */}
+                              <h2 className="text-xl font-bold mb-2">Posted Movies</h2>
+                              <div className="overflow-x-auto">
+                                        <table className="min-w-full bg-white border rounded">
+                                                  <thead>
+                                                            <tr className="bg-gray-100">
+                                                                      <th className="border px-4 py-2 text-left">Poster</th>
+                                                                      <th className="border px-4 py-2 text-left">Title</th>
+                                                                      <th className="border px-4 py-2 text-left">Date</th>
+                                                                      <th className="border px-4 py-2 text-left">Actions</th>
+                                                            </tr>
+                                                  </thead>
+                                                  <tbody>
+                                                            {movies.map(movie => (
+                                                                      <tr key={movie.id}>
+                                                                                <td className="border px-4 py-2"><img src={movie.posterUrl} alt={movie.title} className="w-16 h-24 object-cover rounded" /></td>
+                                                                                <td className="border px-4 py-2">{movie.title}</td>
+                                                                                <td className="border px-4 py-2">{movie.releaseDate}</td>
+                                                                                <td className="border px-4 py-2">
+                                                                                          <button onClick={() => handleEdit(movie)} className="bg-blue-500 text-white px-3 py-1 rounded mr-2">Edit</button>
+                                                                                          <button onClick={() => handleDelete(movie)} className="bg-red-500 text-white px-3 py-1 rounded">Delete</button>
+                                                                                </td>
+                                                                      </tr>
+                                                            ))}
+                                                  </tbody>
+                                        </table>
+                                        {movies.length === 0 && <p className="text-center mt-4 text-gray-500">No movies yet.</p>}
+                              </div>
+                    </div>
+          );
 }
