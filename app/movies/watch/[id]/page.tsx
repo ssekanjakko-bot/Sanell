@@ -4,8 +4,7 @@ import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import Link from 'next/link'
-
+import Link from 'next/li
 export default function MovieWatchPage() {
   const params = useParams()
   const id = params.id as string
