@@ -10,7 +10,7 @@ interface MovieForm {
   youtubeId:
   genre?: string[]
   director?: string
-  cast?: string
+  ca
   posterUrl: string
   createdBy: string
   createdAt: any
