@@ -5,7 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { db, storage } from "../lib/firebase"
 import Link from "next/link"
 
-const CATS = ["Action", "Adventure", "Anime", "TV shows", "Comedy", "Sex,love and crime", "Documentary", "Family", "Fantasy", "Horror"]
+const CATS = ["Action", "Adventure"Anime", "TV shows", "Comedy", "Sex,love and crime", "Documentary", "Family", "Fantasy", "Horror"]
 
 type Movie = {id: string, title: string, desc: string, youtubeId: string, posterUrl: string, director: string, cast: string, genre: string[]}
 
