@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, Bell, Tv, Film, PlayCircle, User, ChevronRight } from 'lucide-react'
+import { Search, Bell, Home ,Tv, Film, PlayCircle, User, ChevronRight } from 'lucide-react'
 import { db } from '@/lib/firebase'
 import { collection, getDocs, query, orderBy } from 'firebase/firestore'
 
