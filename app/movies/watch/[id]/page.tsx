@@ -9,7 +9,7 @@ interface Movie {
   title: string
   description: string
   youtubeId: string
-  genre: string[]
+  genre: 
   director?: string
   cast?: string
   posterUrl: string
