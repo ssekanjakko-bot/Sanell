@@ -40,6 +40,7 @@ export default function AdminPage() {
           const [genre, setGenre] = useState<string[]>([]);
           const [director, setDirector] = useState("");
           const [cast, setCast] = useState("");
+           const [youtubeId, setYoutubeId] = useState("")
           const [videoFile, setVideoFile] = useState<File | null>(null);
           const [posterFile, setPosterFile] = useState<File | null>(null);
 
