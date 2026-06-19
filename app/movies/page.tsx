@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, Bell, Home ,Tv, Film, PlayCircle, User, ChevronRight } from 'lucide-react'
 import { db } from '@/lib/firebase'
-import { collection, getDocs, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, query, o } from 'firebase/firestore'
 
 type Movie = {
   id: string
