@@ -11,9 +11,7 @@ interface Movie {
   youtubeId: string
   genre: string[]
   director: string
-  cast: string
-  posterUrl: string
-  createdAt: any
+  
 }
 
 const ALL_CATEGORIES = ["Action", "Adventure", "Anime", "TV shows", "Comedy", "Sex,love and crime", "Documentary", "Family", "Fantasy", "Horror"]
