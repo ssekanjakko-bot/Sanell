@@ -11,9 +11,7 @@ interface Movie {
   youtubeId: string
   genre: string[]
   director?: string
-  cast?: string
-  posterUrl: string
-}
+  cast?: str
 
 export default function WatchPage() {
   const { id } = useParams()
