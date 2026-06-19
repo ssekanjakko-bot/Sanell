@@ -7,7 +7,7 @@ import { db } from "@/lib/firebase";
 import Link from "next/link";
 
 type Movie = {
-          id: string;
+          id: s
           title: string;
           description: string;
           releaseDate: string;
