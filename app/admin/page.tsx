@@ -7,7 +7,7 @@ import { db, storage, auth } from "../../lib/firebase"
 interface MovieForm {
   title: string
   description: string
-  youtubeId: string
+  youtubeId:
   genre?: string[]
   director?: string
   cast?: string
