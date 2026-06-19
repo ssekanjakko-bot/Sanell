@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState } from "react"
 import { doc, getDoc } from "firebase/firestore"
-import { db } from "../../lib/firebase"
+import { db } from "../../../lib/firebase" // <- 3 dots up: watch -> movies -> app -> lib
 import { useParams } from "next/navigation"
 import Link from "next/link"
 
@@ -10,24 +10,29 @@ interface Movie {
   description: string
   youtubeId: string
   genre: string[]
-  director?: 
+  director?: string
   cast?: string
   posterUrl: string
 }
 
 export default function WatchPage() {
-  const { id } = useParams()
+  const params = useParams()
+  const id = params.id as string
   const [movie, setMovie] = useState<Movie | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetch = async () => {
-      const snap = await getDoc(doc(db, "movies", id as string))
+    const fetchMovie = async () => {
+      if (!id) return
+      const snap = await getDoc(doc(db, "movies", id))
       if (snap.exists()) setMovie(snap.data() as Movie)
+      setLoading(false)
     }
-    fetch()
+    fetchMovie()
   }, [id])
 
-  if (!movie) return <div className="bg-black text-white p-8">Loading...</div>
+  if (loading) return <div className="bg-black text-white p-8">Loading...</div>
+  if (!movie) return <div className="bg-black text-white p-8">Movie not found</div>
 
   return (
     <main className="bg-black min-h-screen text-white">
