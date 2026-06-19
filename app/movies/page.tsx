@@ -10,7 +10,7 @@ type Movie = {
     title: string
     year: number
     genre: string
-    description: string
+    descriptio
     videoUrl: string
     posterUrl: string
     category: string
