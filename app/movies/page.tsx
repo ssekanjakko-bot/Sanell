@@ -49,7 +49,7 @@ export default function HomePage() {
       <h2 className="text-2xl font-bold mb-4">Recent</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {filtered.map(m => (
-          <Link href={`/movies/${m.id}`} key={m.id} className="block">
+          <Link href={`/watch/${m.id}`} key={m.id} className="block">
             <img src={m.posterUrl} alt={m.title} className="w-full h-60 object-cover rounded"/>
             <p className="mt-2 font-bold">{m.title}</p>
           </Link>
