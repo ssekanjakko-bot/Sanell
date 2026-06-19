@@ -8,8 +8,7 @@ interface Movie {
   id: string
   title: string
   genre: string[]
-  posterUrl: string
-}
+  posterUrl: s
 
 const CATEGORIES = ["All", "Action", "Adventure", "Anime", "TV shows", "Comedy", "Sex,love and crime", "Documentary", "Family", "Fantasy", "Horror"]
 
