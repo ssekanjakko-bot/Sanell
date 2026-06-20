@@ -8,7 +8,7 @@ import Link from "next/link";
 
 type Movie = {
           id: string;
-          title: string;
+          t
           description: string;
           releaseDate: string;
           duration: string;
