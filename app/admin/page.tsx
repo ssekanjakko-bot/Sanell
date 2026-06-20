@@ -13,15 +13,15 @@ import { db, storage } from "@/lib/firebase";
 interface Movie {
           id: string;
           title: string;
-          description: str
+          description: string;
           releaseDate: string;
           duration: string;
           genre: string[];
-          youtubeId:string;
           director: string;
           cast: string;
           videoUrl: string;
           posterUrl: string;
+          youtubeUrl: string;
           videoPath?: string;
           posterPath?: string;
           createdAt?: any;
@@ -40,7 +40,7 @@ export default function AdminPage() {
           const [genre, setGenre] = useState<string[]>([]);
           const [director, setDirector] = useState("");
           const [cast, setCast] = useState("");
-           const [youtubeId, setYoutubeId] = useState("")
+          const [youtubeUrl, setYoutubeUrl] = useState("");
           const [videoFile, setVideoFile] = useState<File | null>(null);
           const [posterFile, setPosterFile] = useState<File | null>(null);
 
@@ -70,6 +70,7 @@ export default function AdminPage() {
                     setGenre([]);
                     setDirector("");
                     setCast("");
+                    setYoutubeUrl("");
                     setVideoFile(null);
                     setPosterFile(null);
                     setEditingId(null);
@@ -89,11 +90,14 @@ export default function AdminPage() {
           // 2. Add or Update Movie
           const handleSubmit = async (e: React.FormEvent) => {
                     e.preventDefault();
-                    if (!editingId && (!videoFile || !posterFile)) {
-                              alert("Please select both a video and a poster image.");
+                    if (!editingId && !posterFile) {
+                              alert("Please select a poster image.");
                               return;
                     }
-
+                    if (!editingId && !videoFile && !youtubeUrl) {
+                              alert("please select a video file or provide a YouTube URL.");
+                              return;
+                    }
                     setIsUploading(true);
                     setUploadProgress(0);
                     setUploadStatus("Starting...");
@@ -150,7 +154,7 @@ export default function AdminPage() {
                               setUploadStatus("Saving to database...");
                               const movieData = {
                                         title, description, releaseDate, duration, genre, director, cast,
-                                        videoUrl, posterUrl, videoPath, posterPath,
+                                        videoUrl, posterUrl, youtubeUrl, videoPath, posterPath,
                                         updatedAt: new Date()
                               };
 
@@ -183,6 +187,7 @@ export default function AdminPage() {
                     setGenre(movie.genre || []);
                     setDirector(movie.director);
                     setCast(movie.cast);
+                    setYoutubeUrl(movie.youtubeUrl || "");
                     setVideoFile(null);
                     setPosterFile(null);
                     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -217,7 +222,7 @@ export default function AdminPage() {
                                         <input className="border p-2 w-full mb-2 rounded" placeholder="Duration e.g. 2h 10m" value={duration} onChange={e => setDuration(e.target.value)} />
                                         <input className="border p-2 w-full mb-2 rounded" placeholder="Director" value={director} onChange={e => setDirector(e.target.value)} />
                                         <input className="border p-2 w-full mb-2 rounded" placeholder="Cast, comma separated" value={cast} onChange={e => setCast(e.target.value)} />
-                                        <input placeholder="youTube ID:dQw49WgXcQ" value={from.youtubeId|| ' '} onChange={e => setfrom ({...form,youtubeId:e.target.value})} className="w-full p-3 bg-gray-800 rounded mt-2"/>
+                                        <input className="border p-2 w-full mb-2 rounded" placeholder="YouTube URL (optional)" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} />
                                         <div className="mb-2">
                                                   <label className="font-semibold">Genre:</label>
                                                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
