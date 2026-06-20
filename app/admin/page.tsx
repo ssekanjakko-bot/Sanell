@@ -13,7 +13,7 @@ import { db, storage } from "@/lib/firebase";
 interface Movie {
           id: string;
           title: string;
-          description: string;
+          description: str
           releaseDate: string;
           duration: string;
           genre: string[];
