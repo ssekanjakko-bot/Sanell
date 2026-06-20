@@ -5,10 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Link from "next/link";
+import { match } from "assert/strict";
 
 type Movie = {
           id: string;
-          t
+          title: string;
           description: string;
           releaseDate: string;
           duration: string;
@@ -17,7 +18,15 @@ type Movie = {
           cast: string;
           videoUrl: string;
           posterUrl: string;
+          youtubeUrl: string;
 };
+
+const getYouTubeId = (url: string) => {
+          if (!url) return null;
+          const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+          const match = url.match(regExp);
+          return (match && match[2].length === 11) ? match[2] : null;
+}
 
 export default function WatchPage() {
           const { id } = useParams<{ id: string }>();
@@ -62,17 +71,38 @@ export default function WatchPage() {
                                         <h1 className="font-bold text-lg truncate">{movie.title}</h1>
                               </header>
 
-                              <div className="max-w-6xl mx-auto px-4 py-6">
-                                        <div className="aspect-video w-full rounded-lg overflow-hidden bg-black">
-                                                  <video
-                                                            src={movie.videoUrl}
-                                                            poster={movie.posterUrl}
-                                                            controls
-                                                            autoPlay
-                                                            className="w-full h-full"
-                                                  />
+                              <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+                                        {/* MP4 Player - shows if videoUrl exists */}
+                                        {movie.videoUrl && (<div>
+                                                  <h3 className="text-lg font-bold mb-2">Direct Play</h3>
+                                                  <div className="aspect-vidoe rounded-lg overflow-hidden bg-black">
+                                                            <video
+                                                                      src={movie.videoUrl}
+                                                                      poster={movie.posterUrl}
+                                                                      controls
+                                                                      autoPlay
+                                                                      className="w-full h-full"
+                                                            />
+                                                  </div>
                                         </div>
+                                        )}
 
+                                        {/* YouTube Player -shows if youtubeUrl exists */}
+                                        {movie.youtubeUrl && getYouTubeId(movie.youtubeUrl) && (<div>
+                                                  <h3 className="text-lg font-bold mb-2">YouTube</h3>
+                                                  <iframe
+                                                            src={'https://www.youtube.com/embed/${getYouTudeId(movie.youtubeUrl)}'}
+                                                            className="w-full aspect-vidoe rounded-ig"
+                                                            frameBorder="0"
+                                                            allow="accelerometer; autoplay; clipboard-write; encryted-media; gyroscope; picture-in-picture"
+
+                                                  ></iframe>
+                                        </div>
+                                        )}
+                                        {/* Fallback if both are empty  */}
+                                        {!movie.videoUrl && !movie.youtubeUrl && (
+                                                  <p className="text-center text-zinc-400">No video source available.</p>
+                                        )}
                                         <div className="mt-6 grid md:grid-cols-[200px_1fr] gap-6">
                                                   <img src={movie.posterUrl} alt={movie.title} className="w-full rounded-lg hidden md:block" />
                                                   <div>
