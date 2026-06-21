@@ -27,7 +27,7 @@ const getYouTubeId = (url: string) => {
           const regExp  = url.match(regExp);
 
          return match? match[2] : null;
-}
+};
 
 export default function WatchPage() {
           const { id } = useParams<{ id: string }>();
