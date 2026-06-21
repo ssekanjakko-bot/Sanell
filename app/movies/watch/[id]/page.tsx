@@ -24,8 +24,7 @@ const getYouTubeId = (url: string) => {
           if (!url) return null;
  // works for:watch?v=ID, youtu.be/ID, embed/ID,etc
           const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]{11}).*/;
-          const regExp  = url.match(regExp);
-
+          const match = url.match(regExp);
          return match? match[2] : null;
 }
 
