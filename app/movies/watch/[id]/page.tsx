@@ -64,6 +64,10 @@ export default function WatchPage() {
 
           const genreText = Array.isArray(movie.genre) ? movie.genre.join(", ") : movie.genre;
 
+         console.log("1. ID from URL :" , id );
+         console.log("2. Raw youtubeUrl from Firestore:", movie.youtubeUrl);
+        console.log("3. Extracted  video ID:" getYouTUbeId(movie.youtubeUrl));
+
           return (
                     <main className="min-h-screen bg-black text-white">
                               <header className="p-4 flex items-center gap-4 border-b border-zinc-800">
