@@ -25,7 +25,7 @@ const getYouTubeId = (url: string) => {
           if (!url) return null;
           const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
           const match = url.match(regExp);
-          return (match && match[1].length === 11) ? match[1] : null;
+          return (match && match[3].length === 11) ? match[3] : null;
 }
 
 export default function WatchPage() {
@@ -91,7 +91,7 @@ export default function WatchPage() {
                                         {movie.youtubeUrl && getYouTubeId(movie.youtubeUrl) && (<div>
                                                   <h3 className="text-lg font-bold mb-2">YouTube</h3>
                                                   <iframe
-                                                            src={'https://www.youtube.com/embed/${getyoutubeId(movie.youtubeUrl)}'}
+                                                            src={'https://www.youtube.com/embed/${getYouTubeId(movie.youtubeUrl)}'}
                                                             className="w-full aspect-vidoe rounded-ig"
                                                             frameBorder="0"
                                                             allow="accelerometer; autoplay; clipboard-write; encryted-media; gyroscope; picture-in-picture"
