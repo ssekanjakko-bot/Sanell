@@ -91,7 +91,7 @@ export default function WatchPage() {
                                         {movie.youtubeUrl && getYouTubeId(movie.youtubeUrl) && (<div>
                                                   <h3 className="text-lg font-bold mb-2">YouTube</h3>
                                                   <iframe
-                                                            src={'https://www.youtube.com/embed/${getYouTudeId(movie.youtubeUrl)}'}
+                                                            src={'https://www.youtube.com/embed/${getyoutubeId(movie.youtubeUrl)}'}
                                                             className="w-full aspect-vidoe rounded-ig"
                                                             frameBorder="0"
                                                             allow="accelerometer; autoplay; clipboard-write; encryted-media; gyroscope; picture-in-picture"
