@@ -66,7 +66,7 @@ export default function WatchPage() {
 
          console.log("1. ID from URL :" , id );
          console.log("2. Raw youtubeUrl from Firestore:", movie.youtubeUrl);
-        console.log("3. Extracted  video ID:", getYouTUbeId(movie.youtubeUrl));
+        console.log("3. Extracted  video ID:", getYouTubeId(movie.youtubeUrl));
 
           return (
                     <main className="min-h-screen bg-black text-white">
