@@ -5,7 +5,7 @@ MetadataRoute.Sitemap{
   return [
    {
      url:'https://sanel-ug.online',
-     lastModified: newDate(),
+     lastModified: new Date(),
      changeFrequency: 'weekly',
      priority:1,
     }
