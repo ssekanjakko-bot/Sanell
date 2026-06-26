@@ -58,7 +58,7 @@ export default function MoviesPage() {
         })
     }, [selectedCategory, searchQuery, movies])
 
-    const moviesToShow = showAll ? filteredMovies : filteredMovies.slice(0, 6)
+    const moviesToShow = showAll ? filteredMovies : filteredMovies.slice(0, 1000)
     const recentMovies = movies.slice(0, 3)
 
     if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>
