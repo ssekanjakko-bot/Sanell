@@ -281,7 +281,7 @@ export default function SellPage() {
                                         </div>
                               </form>
                            {/* Delivery Section -Added after from */}
-                             <div className = " mt-6 mb-10 p-5 broder rounded-xl bg-amber-50 border-amber-200 text-center">
+                             <div className = " mt-6 mb-10 p-5 border rounded-xl bg-amber-50 border-amber-200 text-center">
                              <h3 className= "text-lg font-bold text-[#6F4E37] mb-2">
                               🛵 Need Delivery?
                              </h3>
@@ -304,7 +304,7 @@ export default function SellPage() {
                              {/* Call Button */}
                             <a
                              href="tel:+2567757604330"
-                             className="flex-1 flex item-center justify- center gap-2 bg-[#6F4E37] hover:bg-[#5A3E2C] text-white font-semibold py-3 px-4 rounded-lg shadow-sw transition "
+                             className="flex-1 flex items-center justify-center gap-2 bg-[#6F4E37] hover:bg-[#5A3E2C] text-white font-semibold py-3 px-4 rounded-lg shadow-sw transition "
                             >
                            <span>☎️</span> Call Us
                            </a>
