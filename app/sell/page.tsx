@@ -281,7 +281,7 @@ export default function SellPage() {
                                         </div>
                               </form>
                            {/* Delivery Section -Added after from */}
-                             <div className = " mt-6 mb-10 p-5 border rounded-xl bg-amber-50 border-amber-200 text-center">
+                             <div className =" mt-6 mb-10 p-5 border rounded-xl bg-amber-50 border-amber-200 text-center">
                              <h3 className= "text-lg font-bold text-[#6F4E37] mb-2">
                               🛵 Need Delivery?
                              </h3>
@@ -293,17 +293,17 @@ export default function SellPage() {
                              <div className="flex gap-3">
                               {/* WhatsApp Button */}
                              <a
-                              herf="https://wa.me/256775760430?text=Hi%20Sanel%20Delivery,%20I%20need%20delivery%20for%20my%20product"
+                              href="https://wa.me/256775760430?text=Hi%20Sanel%20Delivery,%20I%20need%20delivery%20for%20my%20product"
                               target="_blank"
                               rel="nooperner noreferrer"
-                              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shawdow-sm transition"
+                              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shawdow-sm. transition"
                               >
                              <span>💬</span>WhatsApp
                              </a>
 
                              {/* Call Button */}
                             <a
-                             href="tel:+2567757604330"
+                             href="tel:+256775760430"
                              className="flex-1 flex items-center justify-center gap-2 bg-[#6F4E37] hover:bg-[#5A3E2C] text-white font-semibold py-3 px-4 rounded-lg shadow-sw transition "
                             >
                            <span>☎️</span> Call Us
