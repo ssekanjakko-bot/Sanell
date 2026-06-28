@@ -280,6 +280,37 @@ export default function SellPage() {
                                                   )}
                                         </div>
                               </form>
+                           {/* Delivery Section -Added after from */}
+                             <div className = " mt-6 mb-10 p-5 broder rounded-xl bg-amber-50 border-amber-200 text-center">
+                             <h3 className= "text-lg font-bold text-[#6F4E37] mb-2">
+                              🛵 Need Delivery?
+                             </h3>
+                             <p className="text-sm text-gray-700 mb-4">
+                              We can carry out deliveries for you at affordable prices.
+                              Contact us through WhatsApp or give us a call directly.
+                              </p>
+
+                             <div className="flex gap-3">
+                              {/* WhatsApp Button */}
+                             <a
+                              herf="https://wa.me/256775760430?text=Hi%20Sanel%20Delivery,%20I%20need%20delivery%20for%20my%20product"
+                              target="_blank"
+                              rel="nooperner noreferrer"
+                              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shawdow-sm transition"
+                              >
+                             <span>💬</span>WhatsApp
+                             </a>
+
+                             {/* Call Button */}
+                            <a
+                             href="tel:+2567757604330"
+                             className="flex-1 flex item-center justify- center gap-2 bg-[#6F4E37] hover:bg-[#5A3E2C] text-white font-semibold py-3 px-4 rounded-lg shadow-sw transition "
+                            >
+                           <span>☎️</span> Call Us
+                           </a>
+                        </div>
+                      </div>
+                              
 
                               {/* My Products List */}
                               <h2 className="text-2xl font-bold mb-4" style={{ color: COFFEE_BROWN }}>
