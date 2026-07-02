@@ -138,9 +138,9 @@ export default function MoviesPage() {
             <nav className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md border-t border-gray-800">
                 <div className="flex justify-around items-center h-16">
                     <Link href="/" className="flex flex-col items-center text-gray-400"><Home className="w-6 h-6" /><span className="text-xs">Home</span></Link>
-                    <Link href="/series" className="flex flex-col items-center text-gray-400"><Tv className="w-6 h-6" /><span className="text-xs">Series</span></Link>
+                    <Link href="/series" className="flex flex-col items-center text-gray-400"><Tv className="w-6 h-6" /><span className="text-xs">Movie</span></Link>
                     <Link href="/movies" className="flex flex-col items-center text-red-600"><Film className="w-6 h-6" /><span className="text-xs">Movie</span></Link>
-                    <Link href="/tv" className="flex flex-col items-center text-gray-400"><PlayCircle className="w-6 h-6" /><span className="text-xs">TV Show</span></Link>
+                    <Link href="/tv" className="flex flex-col items-center text-gray-400"><PlayCircle className="w-6 h-6" /><span className="text-xs">Movie</span></Link>
                     <Link href="/profile" className="flex flex-col items-center text-gray-400"><User className="w-6 h-6" /><span className="text-xs">Profile</span></Link>
                 </div>
             </nav>
