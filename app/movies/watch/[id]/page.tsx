@@ -1,4 +1,4 @@
-"use client";
+noo"use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -69,7 +69,7 @@ export default function WatchPage() {
     <main className="min-h-screen bg-black text-white">
       <div className="max-w-6xl mx-auto px-4 py-6">
         <Link href="/" className="text-zinc-400 hover:text-white mb-4 inline-block">
-          ← Back to Home
+          ← Back to Movies
         </Link>
 
         {/* Player Section */}
