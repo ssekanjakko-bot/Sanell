@@ -12,10 +12,10 @@ const COFFEE_BROWN = '#6F4E37'
 const COFFEE_LIGHT = '#A67B5B'
 
 const TOP_TABS = [
-  { name: 'Movies', href: '/movies' }, // Links to your existing app/movies/page.tsx
-  { name: 'Stores', href: '/stores' },
-  { name: 'Invoices', href: '/invoices' },
-  { name: 'Receipts', href: '/receipts' },
+  { name: '🎥Movies', href: '/movies' }, // Links to your existing app/movies/page.tsx
+  { name: '🏪Stores', href: '/stores' },
+  { name: '🧾Invoices', href: '/invoices' },
+  { name: '🔖Receipts', href: '/receipts' },
 ]
 
 const CATEGORIES = [
