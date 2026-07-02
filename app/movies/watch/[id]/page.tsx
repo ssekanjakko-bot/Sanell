@@ -69,7 +69,7 @@ export default function WatchPage() {
     <main className="min-h-screen bg-black text-white">
       <div className="max-w-6xl mx-auto px-4 py-6">
         <Link href="/movies" className="text-zinc-400 hover:text-white mb-4 inline-block">
-          ← Back
+          ← Back to Movies
         </Link>
 
         {/* Player Section */}
