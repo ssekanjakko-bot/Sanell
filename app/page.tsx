@@ -64,10 +64,10 @@ export default function HomePage() {
             <Link href="/about" className="text-xs text-gray-500">About</Link>
           </div>
           <div className="flex gap-2 text-xs">
-            <Link href="/get-app" className="border border-zinc-700 bg-zinc-800 text-white px-2 py-1 rounded-md text-sm">Get App</Link>
-            <Link href="/tools" className="border border-zinc-700 bg-zinc-800 text-white px-2 py-1 rounded-md text-sm">Tools</Link>
-            <Link href="/support" className="border border-zinc-700 bg-zinc-800 text-white px-2 py-1 rounded-md text-sm">Support</Link>
-            <select className="border  border-zinc-700 bg-zinc-800 text-white px-2 py-1 rounded-md text-sm"><option>Uganda</option><option>Kenya</option></select>
+            <Link href="/get-app" className="border border-zinc-700 bg-zinc-800 text-white px-1 py-1 rounded-md text-sm">Get App</Link>
+            <Link href="/tools" className="border border-zinc-700 bg-zinc-800 text-white px-1 py-1 rounded-md text-sm">Tools</Link>
+            <Link href="/support" className="border border-zinc-700 bg-zinc-800 text-white px-1 py-1 rounded-md text-sm">Support</Link>
+            <select className="border  border-zinc-700 bg-zinc-800 text-white px-1 py-1 rounded-md text-sm"><option>Uganda</option><option>Kenya</option></select>
           
           </div>
         </div>
