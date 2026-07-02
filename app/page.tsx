@@ -67,7 +67,7 @@ export default function HomePage() {
             <Link href="/get-app" className="border border-zinc-700 bg-zinc-800 text-white px-0.5 py-0.5 rounded-md text-sm">GetApp</Link>
             <Link href="/tools" className="border border-zinc-700 bg-zinc-800 text-white px-0.5 py-0.5 rounded-md text-sm">Tools</Link>
             <Link href="/support" className="border border-zinc-700 bg-zinc-800 text-white px-0.5 py-0.5 rounded-md text-sm">Support</Link>
-            <select className="border  border-zinc-700 bg-zinc-800 text-white px-0.5 py-0.5rounded-md text-sm"><option>Uganda</option><option>Kenya</option></select>
+            <select className="border  border-zinc-700 bg-zinc-800 text-white px-0.5 py-0.5rounded-md text-sm"><option>MUBS</option><option>OTHER</option></select>
           
           </div>
         </div>
