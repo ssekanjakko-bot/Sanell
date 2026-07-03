@@ -82,7 +82,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
     <>
       <div id="recaptcha"></div>
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
-        <div className="bg-white p-4 rounded w-80">
+        <div className="bg-amber-900 p-4 rounded-lg w-[90%] max-w-sm shadow-lg border- amber-700">
           <div className="flex mb-3">
             <button onClick={() => {setMode('signup'); setStep('form')}} className={`flex-1 ${mode==='signup'?'font-bold border-b-2':''}`}>SignUp</button>
             <button onClick={() => {setMode('login'); setStep('form')}} className={`flex-1 ${mode==='login'?'font-bold border-b-2':''}`}>Login</button>
@@ -90,11 +90,11 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
 
           {step === 'form' ? (
             <>
-              {mode === 'signup' && <input placeholder="Name" className="border w-full p-2 mb-2" value={name} onChange={e=>setName(e.target.value)}/>}
-              <input placeholder="Email" className="border w-full p-2 mb-2" value={email} onChange={e=>setEmail(e.target.value)}/>
-              <div className="flex border mb-2"><span className="p-2">+256</span><input placeholder="77XXXXXXX" className="flex-1 p-2" value={phone} onChange={e=>setPhone(e.target.value)}/></div>
-              <input placeholder="Password" type="password" className="border w-full p-2 mb-2" value={password} onChange={e=>setPassword(e.target.value)}/>
-              <button onClick={submit} className="bg-blue-600 text-white w-full p-2">Continue</button>
+              {mode === 'signup' && <input placeholder="Name" className="border border -amber-700 w-full p-3 mb-3 rounded-md bg-amber-50 text-amber-950 placeholder:text-amber-700" value={name} onChange={e=>setName(e.target.value)}/>}
+              <input placeholder="Email" className="border border-amber-700 w-full p-3 mb-3 rounded-md bh-amber-50 text-amber-950 placeholder:text-amber-700" value={email} onChange={e=>setEmail(e.target.value)}/>
+              <div className="flex border border-amber-700 mb-3 rounded-md bg-amber-50"><span className="p-3 text-amber-950">+256</span><input placeholder="77XXXXXXX" className="flex-1 p-3 bg-transparent text-amber-950" value={phone} onChange={e=>setPhone(e.target.value)}/></div>
+              <input placeholder="Password" type="password" className="border border-amber-700 w-full p-3 mb-3 rounded-md bg-amber-50 text-amber-950 placeholder:text-amber-700" value={password} onChange={e=>setPassword(e.target.value)}/>
+              <button onClick={submit} className="bg-amber-700 hover:bg-amber-800 text-white font-semibold w-full p-3 rounded-md">Continue</button>
             </>
           ) : (
             <>
