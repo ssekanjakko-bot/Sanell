@@ -114,7 +114,7 @@ export default function HomePage() {
                 <p className="font-bold mb-2" style={{ color: COFFEE_BROWN }}>{p.price?.toLocaleString()} UGX</p>
                 <a href={`https://wa.me/${p.whatsapp}?text=${encodeURlComponent('Hi,I'm interested in this product at Sanel Uganda 🇺🇬\n\n`+  
                       '*${p.title}*\n'+
-                       'price: ${p.price?.toLocalString()} 
+                       'price: ${p.price?.toLocaleString()} 
                       UGX\n' + 
                          'Category:${p.category}\n'+ 
                          'Image: ${p.images?.[0] || 'No image' }
