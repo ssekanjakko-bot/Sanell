@@ -117,7 +117,7 @@ export default function HomePage() {
                       `*${p.title}*\n` +
                        `price: ${p.price?.toLocaleString()} 
                       UGX\n` + 
-                         `Category:${p.category}\n` + 
+                         `Category: ${p.category}\n` + 
                          `Image: ${p.images?.[0] || 'No image' }\n\n` +
                          `Is it still available?`)}`} 
                    target="_blank" 
