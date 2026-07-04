@@ -115,13 +115,13 @@ export default function HomePage() {
                 <a 
                    href={`https://wa.me/${p.whatsapp}?text=$encodeURIComponent('Hi,I'm interested in this product at Sanel Uganda 🇺🇬\n\n`+ 
                              '*${p.title}*\n'+
-                           'price: ${p.price?.toLocalstring()}
+                           'price: ${p.price?.toLocalString()}
                       UGX\n' +
                            'Category:${p.category}\n'+ 
                             'Image: ${p.images?.[0] || 'No image' } \n\n'+
                             'Is it still available?'
        )}'} 
-           target="blank" 
+           target="_blank" 
             className="block w-full text-white text-center py-1.5 rounded text-sm font-medium" style={{ backgroundColor: '#25D366' }}>Contact on WhatsApp>
           </a>
               </div>
