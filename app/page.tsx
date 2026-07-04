@@ -112,16 +112,18 @@ export default function HomePage() {
                 <span className="text-xs px-2 py-1 rounded-full text-white mb-1 inline-block" style={{ backgroundColor: COFFEE_LIGHT }}>{p.category}</span>
                 <p className="font-bold text-sm mb-1 line-clamp-1" style={{ color: COFFEE_BROWN }}>{p.title}</p>
                 <p className="font-bold mb-2" style={{ color: COFFEE_BROWN }}>{p.price?.toLocaleString()} UGX</p>
-                <a href={`https://wa.me/${p.whatsapp}? text=$endcodeURIComponent('Hi,I'm interested in this product at Sanel Uganda 🇺🇬\n\n`+ 
+                <a 
+                   href={`https://wa.me/${p.whatsapp}?text=$endcodeURIComponent('Hi,I'm interested in this product at Sanel Uganda 🇺🇬\n\n`+ 
                              '*${p.title}*\n'+
                            'price: ${p.price?.toLocalstring()}
                       UGX\n' +
                            'Category:${p.category}\n'+ 
-                            'Image: ${p.Image?.[0] || 'No image' } \n\n'+
+                            'Image: ${p.image?.[0] || 'No image' } \n\n'+
                             'Is it still available?'
        )}'} 
            target="blank" 
-            className="block w-full text-white text-center py-1.5 rounded text-sm font-medium" style={{ backgroundColor: '#25D366' }}>Contact on WhatsApp</a>
+            className="block w-full text-white text-center py-1.5 rounded text-sm font-medium" style={{ backgroundColor: '#25D366' }}>Contact on WhatsApp>
+          </a>
               </div>
             </div>
           ))}
