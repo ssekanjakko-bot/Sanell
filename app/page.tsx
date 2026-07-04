@@ -1,7 +1,6 @@
 'use client'
 
-impo
-rt { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { auth } from '@/lib/firebase'
 import { signOut } from 'firebase/auth'
 import { db } from '@/lib/firebase'
@@ -120,7 +119,7 @@ export default function HomePage() {
                          'Category:${p.category}\n'+ 
                          'Image: ${p.images?.[0] || 'No image' } \n\n' +
                          'Is it still available?')}'} 
-                   target="blank" 
+                   target="_blank" 
                    className="block w-full text-white text-center py-1.5 rounded text-sm font-medium" style={{ backgroundColor: '#25D366' }}
                 > 
                Contact on WhatsApp
