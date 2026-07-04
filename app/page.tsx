@@ -120,7 +120,7 @@ export default function HomePage() {
                          'Image: ${p.images?.[0] || 'No image' }
                           \n\n' +
                          'Is it still available?')}'} 
-                   target="blank" 
+                   target="_blank" 
                    className="block w-full text-white text-center py-1.5 rounded text-sm font-medium" style={{ backgroundColor: '#25D366' }}
                 > 
                Contact on WhatsApp
