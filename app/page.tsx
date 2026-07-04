@@ -113,13 +113,14 @@ export default function HomePage() {
                 <p className="font-bold text-sm mb-1 line-clamp-1" style={{ color: COFFEE_BROWN }}>{p.title}</p>
                 <p className="font-bold mb-2" style={{ color: COFFEE_BROWN }}>{p.price?.toLocaleString()} UGX</p>
                   <a href={`https://wa.me/${p.whatsapp}?text=${encodeURlComponent(
-                      `Hi,Im interested in this product at Sanel Uganda 🇺🇬\n\n`+  
-                      `*${p.title}*\n` +
-                       `price: ${p.price?.toLocaleString()} 
-                      UGX\n` + 
-                         `Category: ${p.category}\n` + 
-                         `Image: ${p.images?.[0] || 'No image' }\n\n` +
-                         `Is it still available?`)}`} 
+                      `Hi,Im interested in this product at Sanel Uganda 🇺🇬
+
+                         
+                      *${p.title}*
+                       price: ${p.price?.toLocaleString()} UGX
+                         Category: ${p.category}
+                         Image: ${p.images?.[0] || 'No image' }
+                         Is it still available?`)}`} 
                    target="_blank" 
                    className="block w-full text-white text-center py-1.5 rounded text-sm font-medium" style={{ backgroundColor: '#25D366' }}
                 > 
