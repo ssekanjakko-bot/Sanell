@@ -69,7 +69,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
     return (
       <>
         <div id="recaptcha"></div>
-        <div className="p-3 border-b flex justify-between bg-white">
+        <div className="p-3 border-b  flex justify-between bg-white text-amber-900 font-semibold">
           <b>Welcome, {user.displayName}</b>
           <button onClick={() => signOut(auth)}>Logout</button>
         </div>
