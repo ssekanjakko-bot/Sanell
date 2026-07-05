@@ -188,7 +188,7 @@ export default function SellPage() {
                               {/* Form */}
                               <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-lg mb-10 border-t-4" style={{ borderColor: COFFEE_BROWN }}>
                                         <input
-                                                  className="w-full p-3 border rounded focus:ring-2"
+                                                  className="w-full p-3 border rounded text-black placeholder:text-gray-600" 
                                                   style={{ borderColor: COFFEE_LIGHT }}
                                                   placeholder="Product Title"
                                                   value={title}
@@ -196,7 +196,7 @@ export default function SellPage() {
                                                   required
                                         />
                                         <textarea
-                                                  className="w-full p-3 border rounded focus:ring-2"
+                                                  className="w-full p-3 border rounded text-black placeholder:text-gray-600"
                                                   style={{ borderColor: COFFEE_LIGHT }}
                                                   placeholder="Description"
                                                   value={description}
@@ -207,7 +207,7 @@ export default function SellPage() {
 
                                         <div className="grid md:grid-cols-3 gap-4">
                                                   <input
-                                                            className="w-full p-3 border rounded focus:ring-2"
+                                                            className="w-full p-3 border rounded text-black placeholder:text-gray-600"
                                                             style={{ borderColor: COFFEE_LIGHT }}
                                                             type="number"
                                                             placeholder="Price UGX"
@@ -217,7 +217,7 @@ export default function SellPage() {
                                                             min="0"
                                                   />
                                                   <select
-                                                            className="w-full p-3 border rounded focus:ring-2 bg-white"
+                                                            className="w-full p-3 border rounded text-black placeholder:text-gray-600"
                                                             style={{ borderColor: COFFEE_LIGHT, color: COFFEE_BROWN }}
                                                             value={category}
                                                             onChange={e => setCategory(e.target.value)}
@@ -226,7 +226,7 @@ export default function SellPage() {
                                                             {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                                                   </select>
                                                   <input
-                                                            className="w-full p-3 border rounded focus:ring-2"
+                                                            className="w-full p-3 border rounded text-black placeholder:text-gray-600"
                                                             style={{ borderColor: COFFEE_LIGHT }}
                                                             placeholder="WhatsApp: 2567xxxxxxx"
                                                             value={whatsapp}
