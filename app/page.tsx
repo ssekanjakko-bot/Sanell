@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect , useRef } from 'react'
 import { auth } from '@/lib/firebase'
 import { signOut } from 'firebase/auth'
 import { db } from '@/lib/firebase'
@@ -43,7 +43,21 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
-
+  const [banners, setBanners] =useState<string[]>([]); // Empty for now. Admin will fill this later 
+  const scrollRef = 
+  useRef<HTMLDivElement>(null);
+  useEffect (() => {
+    const el = scrollRef.current;
+    if (!el || banners.lenght === 0) 
+return;// won't run if empty 
+    let i = 0;
+    const timer = setIntervals (() => { 
+       i = (i + 1) % banners.length; 
+       el. scrollTo({ left: 1 *  
+       el.clientWidth, behavior: "smooth " }); 
+           }, 4000); 
+return () => clearlnterval(timer); 
+},[banners.length]);
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'products'), (snap) => {
       setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
@@ -87,6 +101,19 @@ export default function HomePage() {
           ))}
         </div>
       </div>
+      {banners.length > 0 && ( 
+      <div className="px-3 pt-3 pb-4">
+      <div 
+         ref={scrollRef}
+         className="flex overflow-x-auto snap-x snap-mandatory hide-scollerbar"
+     > 
+           {banner.map((src,i) => ( 
+           <img key={i} src={src}
+            className="w-full flex-shrink-0 h-40 rounded-xl px-1 object-cover" />
+          ))}
+     </div>
+  </div>
+)}
       {/* Main Page = Stores */}
       <div className="bg-white">
         <div className="grid grid-cols-4 gap-4">
