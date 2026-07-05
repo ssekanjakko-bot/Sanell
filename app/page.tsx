@@ -107,7 +107,7 @@ return () => clearInterval(timer);
          ref={scrollRef}
          className="flex overflow-x-auto snap-x snap-mandatory hide-scollerbar"
      > 
-           {banner.map((src,i) => ( 
+           {banners.map((src,i) => ( 
            <img key={i} src={src}
             className="w-full flex-shrink-0 h-40 rounded-xl px-1 object-cover" />
           ))}
