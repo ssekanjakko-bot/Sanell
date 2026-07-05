@@ -56,7 +56,7 @@ return;// won't run if empty
        el. scrollTo({ left: 1 *  
        el.clientWidth, behavior: "smooth" }); 
            }, 4000); 
-return () => clearlnterval(timer); 
+return () => clearInterval(timer); 
 },[banners.length]);
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'products'), (snap) => {
