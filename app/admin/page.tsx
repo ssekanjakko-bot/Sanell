@@ -215,7 +215,7 @@ export default function AdminPage() {
                               <h1 className="text-2xl font-bold mb-4">{editingId ? "Edit Movie" : "Add Movie"}</h1>
 
                               {/* FORM */}
-                              <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-8">
+                              <form onSubmit={handleSubmit} className="bg-gray shadow-md rounded px-8 pt-6 pb-8 mb-8">
                                         <input className="border p-2 w-full mb-2 rounded" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} required />
                                         <textarea className="border p-2 w-full mb-2 rounded" placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
                                         <input type="date" className="border p-2 w-full mb-2 rounded" value={releaseDate} onChange={e => setReleaseDate(e.target.value)} />
