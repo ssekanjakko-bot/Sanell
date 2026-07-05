@@ -51,7 +51,7 @@ export default function HomePage() {
     if (!el || banners.length === 0) 
 return;// won't run if empty 
     let i = 0;
-    const timer = setIntervals (() => { 
+    const timer = setInterval (() => { 
        i = (i + 1) % banners.length; 
        el. scrollTo({ left: 1 *  
        el.clientWidth, behavior: "smooth " }); 
