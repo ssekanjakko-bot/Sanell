@@ -54,7 +54,7 @@ return;// won't run if empty
     const timer = setInterval (() => { 
        i = (i + 1) % banners.length; 
        el. scrollTo({ left: 1 *  
-       el.clientWidth, behavior: "smooth " }); 
+       el.clientWidth, behavior: "smooth" }); 
            }, 4000); 
 return () => clearlnterval(timer); 
 },[banners.length]);
