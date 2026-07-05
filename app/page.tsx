@@ -48,7 +48,7 @@ export default function HomePage() {
   useRef<HTMLDivElement>(null);
   useEffect (() => {
     const el = scrollRef.current;
-    if (!el || banners.lenght === 0) 
+    if (!el || banners.length === 0) 
 return;// won't run if empty 
     let i = 0;
     const timer = setIntervals (() => { 
