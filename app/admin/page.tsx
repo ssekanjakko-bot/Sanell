@@ -110,7 +110,7 @@ export default function AdminPage() {
   })
   
   setCurrentBanner({imageUrl: url, linkUrl: bannerLink})
-  setBannerLoading(false)
+  setBannerLink(false)
   alert('Banner saved ✅')
 }
 
