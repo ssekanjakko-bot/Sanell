@@ -328,15 +328,7 @@ useEffect(() => {
                                      type="file"
                                      accept="image/jpeg,image/png,image/webp"
                                      onChange={e =>
-                                  const file = e.target.files?.[0] || null
-                                                        if (file &&!
-                                                    file.type.startsWith('image/')){
-                                                             alert('Images only bro')
-                                                             e.target.value = ''
-                                                           return  
-                                                   }
-                                                setBannerFile(file)
-                                             }}
+                                 setBannerFile(e.target.files?.[0] || null)}
                                         className="mb-3"
                                        />
                                     <input
