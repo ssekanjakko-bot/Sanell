@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { auth } from '@/lib/firebase'
 import { 
-  onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, 
+  onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail,
   updateProfile, linkWithPhoneNumber, RecaptchaVerifier, signOut, User 
 } from 'firebase/auth'
 
@@ -95,7 +95,24 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
               <div className="flex border border-amber-700 mb-3 rounded-md bg-amber-50"><span className="p-3 text-amber-950">+256</span><input placeholder="77XXXXXXX" className="flex-1 p-3 bg-transparent text-amber-950" value={phone} onChange={e=>setPhone(e.target.value)}/></div>
               <input placeholder="Password" type="password" className="border border-amber-700 w-full p-3 mb-3 rounded-md bg-amber-50 text-amber-950 placeholder:text-amber-700" value={password} onChange={e=>setPassword(e.target.value)}/>
               <button onClick={submit} className="bg-amber-700 hover:bg-amber-800 text-white font-semibold w-full p-3 rounded-md">Continue</button>
-            </>
+           {/* ADD THIS HERE */}
+            { mode ==== 'login' && ( 
+              <button 
+                   onClick= {async () =>{
+                             if(!email) return alert('Enter your email first');
+                              try {
+                                   await sendPasswordRestEmail(auth, email);
+                                   alert('check your email for a rest link✅');
+                                  } catch (e: any) {
+                                                    alert('check your email if the account exists');//hide if user exists or not 
+                                 }
+                             }}
+                              className="text-sm text-amber-200 underline mt-2"
+                              >
+                            Forgot Password?
+                       </button>
+                 )}
+          </>
           ) : (
             <>
               <p className="text-center mb-2">Code to {phoneFull}</p>
