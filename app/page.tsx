@@ -62,6 +62,7 @@ return () => clearInterval(timer);
     const unsub = onSnapshot(collection(db, 'products'), (snap) => {
       setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
       setLoading(false)
+console.log("Banners array:", banners)
     })
     return () => unsub()
   }, [])
