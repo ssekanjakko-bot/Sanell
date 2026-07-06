@@ -101,7 +101,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
                    onClick= {async () =>{
                              if(!email) return alert('Enter your email first');
                               try {
-                                   await sendPasswordRestEmail(auth, email);
+                                   await sendPasswordResetEmail(auth, email);
                                    alert('check your email for a rest link✅');
                                   } catch (e: any) {
                                                     alert('check your email if the account exists');//hide if user exists or not 
