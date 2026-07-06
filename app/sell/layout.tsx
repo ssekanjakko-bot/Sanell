@@ -96,7 +96,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
               <input placeholder="Password" type="password" className="border border-amber-700 w-full p-3 mb-3 rounded-md bg-amber-50 text-amber-950 placeholder:text-amber-700" value={password} onChange={e=>setPassword(e.target.value)}/>
               <button onClick={submit} className="bg-amber-700 hover:bg-amber-800 text-white font-semibold w-full p-3 rounded-md">Continue</button>
            {/* ADD THIS HERE */}
-            { mode ==== 'login' && ( 
+            { mode === 'login' && ( 
               <button 
                    onClick= {async () =>{
                              if(!email) return alert('Enter your email first');
