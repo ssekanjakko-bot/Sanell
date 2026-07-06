@@ -111,7 +111,7 @@ export default function AdminPage() {
   })
   
   setCurrentBanner({imageUrl: url, linkUrl: bannerLink})
-  setBannerLink(false)
+  setBannerLink('')
   alert('Banner saved ✅')
 }
 
