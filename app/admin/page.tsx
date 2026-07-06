@@ -9,6 +9,9 @@ import {
           addDoc, collection, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy
 } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
+import { useState, useEffect } from 'react'
 
 interface Movie {
           id: string;
@@ -31,7 +34,9 @@ export default function AdminPage() {
           const router = useRouter();
           const [movies, setMovies] = useState<Movie[]>([]);
           const [editingId, setEditingId] = useState<string | null>(null);
-
+          const [bannerFile,setBannerFile]=useState<File   | null>(null)
+          const [bannerLink, setBannerLink] = useState(false)
+          const  [currentBanner, setCurrentBanner] = useState<any>(null)
           // Form state
           const [title, setTitle] = useState("");
           const [description, setDescription] = useState("");
@@ -88,6 +93,34 @@ export default function AdminPage() {
           };
 
           // 2. Add or Update Movie
+           const handleBannerUpload = async () => {
+  if (!bannerFile) return alert('Pick an image first')
+  if (!bannerFile.type.startsWith('image/')) return alert('Images only.jpg,.png,.webp')
+  if (bannerFile.size > 2 * 1024 * 1024) return alert('Image too big. Keep it under 2MB')
+  
+  setBannerLoading(true)
+  const storageRef = ref(storage, `banners/banner_${Date.now()}.${bannerFile.name.split('.').pop()}`)
+  const snap = await uploadBytes(storageRef, bannerFile)
+  const url = await getDownloadURL(snap.ref)
+
+  await setDoc(doc(db, 'banners', 'activeBanner'), {
+    imageUrl: url,
+    linkUrl: bannerLink || '#',
+    active: true,
+    updatedAt: serverTimestamp()
+  })
+  
+  setCurrentBanner({imageUrl: url, linkUrl: bannerLink})
+  setBannerLoading(false)
+  alert('Banner saved ✅')
+}
+
+useEffect(() => {
+  getDoc(doc(db, 'banners', 'activeBanner')).then(snap => {
+    if (snap.exists()) setCurrentBanner(snap.data())
+  })
+}, [])
+
           const handleSubmit = async (e: React.FormEvent) => {
                     e.preventDefault();
                     if (!editingId && !posterFile) {
@@ -288,6 +321,33 @@ export default function AdminPage() {
                                                             ))}
                                                   </tbody>
                                         </table>
+                              {/* BANNER UPLOAD */}
+                               <div className="mt-10 p-6 bg-gray-50 rounded-2x1 border">
+                                 <h2 className="text-x1 font-bold mb-4">Homepage Banner</h2>
+                                   <input 
+                                     type="file"
+                                     accept="image/jpeg,image/png,image/webp"
+                                     onChange={e =>
+                                  const file = e.target.files?.[0] || null
+                                                        if (file &&!
+                                                    file.type.startsWith('image/')){
+                                                             alert('Images only bro')
+                                                             e.target.value = ''
+                                                           return  
+                                                   }
+                                                setBannerFile(file)
+                                             }}
+                                        className="mb-3"
+                                       />
+                                    <input
+                                        type="text"
+                                        placeholder="Banner link URL e.g. https://sanel-ug.online/promo"
+                                          value={bannerLink}
+                                         onChange={e => 
+                                    setBannerLink(e.target.value)}
+                                       className="w-full border rounded p-2 mb-3"
+                                     />
+                              
                                         {movies.length === 0 && <p className="text-center mt-4 text-gray-500">No movies yet.</p>}
                               </div>
                     </div>
