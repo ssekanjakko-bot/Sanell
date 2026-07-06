@@ -11,7 +11,7 @@ import {
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
-import { useState, useEffect } from 'react'
+
 
 interface Movie {
           id: string;
