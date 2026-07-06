@@ -343,7 +343,7 @@ useEffect(() => {
                                      disabled={bannerLoading} className="p-4 py-2    bg-black text-white rounded-lg">
                                       {bannerLoading? 'Uploading....': 'Save Banner'}
                                    </button>
-                               
+                               </div>
                                         {movies.length === 0 && <p className="text-center mt-4 text-gray-500">No movies yet.</p>}
                             </div> 
                      </div>
