@@ -97,7 +97,7 @@ export default function AdminPage() {
   if (!bannerFile.type.startsWith('image/')) return alert('Images only.jpg,.png,.webp')
   if (bannerFile.size > 2 * 1024 * 1024) return alert('Image too big. Keep it under 2MB')
   
-  setBannerLoading(true)
+  setBannerLink(true)
   const storageRef = ref(storage, `banners/banner_${Date.now()}.${bannerFile.name.split('.').pop()}`)
   const snap = await uploadBytes(storageRef, bannerFile)
   const url = await getDownloadURL(snap.ref)
