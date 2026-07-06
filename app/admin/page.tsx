@@ -345,7 +345,7 @@ useEffect(() => {
                                    </button>
                                </div>
                                         {movies.length === 0 && <p className="text-center mt-4 text-gray-500">No movies yet.</p>}
-                              </div>
+                              
                     </div>
           );
 }
