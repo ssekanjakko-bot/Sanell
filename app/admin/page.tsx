@@ -34,7 +34,7 @@ export default function AdminPage() {
           const [movies, setMovies] = useState<Movie[]>([]);
           const [editingId, setEditingId] = useState<string | null>(null);
           const [bannerFile,setBannerFile]=useState<File   | null>(null)
-          const [bannerLink, setBannerLink] = useState(false)
+          const [bannerLink, setBannerLink] = useState<string>('')
           const  [currentBanner, setCurrentBanner] = useState<any>(null)
           // Form state
           const [title, setTitle] = useState("");
