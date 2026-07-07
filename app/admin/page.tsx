@@ -95,24 +95,34 @@ export default function AdminPage() {
           // 2. Add or Update Movie
            const handleBannerUpload = async () => {
   if (!bannerFile) return alert('Pick an image first')
-  if (!bannerFile.type.startsWith('image/')) return alert('Images only.jpg,.png,.webp')
-  if (bannerFile.size > 2 * 1024 * 1024) return alert('Image too big. Keep it under 2MB')
-      setBannerLoading(true)
-
-  const storageRef = ref(storage, `banners/banner_${Date.now()}.${bannerFile.name.split('.').pop()}`)
-  const snap = await uploadBytes(storageRef, bannerFile)
-  const url = await getDownloadURL(snap.ref)
-
-  await setDoc(doc(db, 'banners', 'activeBanner'), {
-    imageUrl: url,
-    linkUrl: bannerLink || '#',
-    active: true,
-    updatedAt: serverTimestamp()
-  })
   
-  setCurrentBanner({imageUrl: url, linkUrl: bannerLink})
-  setBannerLoading(false)
-  alert('Banner saved ✅')
+  try {
+    setBannerLoading(true)
+    console.log("1. Starting upload", bannerFile.name, bannerFile.size)
+
+    const storageRef = ref(storage, `banners/banner_${Date.now()}.jpg`)
+    const snap = await uploadBytes(storageRef, bannerFile)
+    console.log("2. Uploaded to storage")
+
+    const url = await getDownloadURL(snap.ref)
+    console.log("3. Got URL:", url)
+
+    await setDoc(doc(db, 'banners', 'activeBanner'), {
+      imageUrl: url,
+      linkUrl: bannerLink || '#',
+      active: true,
+      updatedAt: serverTimestamp()
+    })
+    console.log("4. Saved to Firestore")
+    
+    alert('Banner saved ✅')
+  } catch (e: any) {
+    console.error("UPLOAD ERROR:", e.code, e.message) // <- this will tell us the real error
+    alert("Upload failed: " + e.code) 
+  } finally {
+    setBannerLoading(false) // <- this unsticks the button
+    console.log("5. Done")
+  }
 }
 
 useEffect(() => {
