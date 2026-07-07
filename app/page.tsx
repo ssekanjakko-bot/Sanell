@@ -66,6 +66,17 @@ console.log("Banners array:", banners)
     })
     return () => unsub()
   }, [])
+ // Fetch the active banner from Firestore
+useEffect(() => {
+  const unsub = onSnapshot(doc(db, 'banners', 'activeBanner'), (snap) => {
+    if (snap.exists()) {
+      setBanners([snap.data().imageUrl]) // put the 1 banner URL in the array
+    } else {
+      setBanners([])
+    }
+  })
+  return () => unsub()
+}, [])
 
   const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.category === selectedCategory)
 
