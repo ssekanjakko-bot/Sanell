@@ -113,17 +113,16 @@ useEffect(() => {
           ))}
         </div>
       </div>
-      {banners.length > 0 && ( 
-      <div className="px-3 pt-3 pb-4">
-      <div 
-         ref={scrollRef}
-         className="flex overflow-x-auto snap-x snap-mandatory hide-scollerbar"
-     > 
-           {banners.map((src,i) => ( 
-           <img key={i} src={src}
-            className="w-full flex-shrink-0 h-40 rounded-xl px-1 object-cover" />
-          ))}
-     </div>
+      {{banners.length > 0 && (
+  <div ref={scrollRef} className="w-full overflow-x-auto scroll-smooth flex snap-x">
+    {banners.map((url, i) => (
+      <img 
+        key={i} 
+        src={url} 
+        className="w-full h-56 object-cover flex-shrink-0 snap-start" 
+        alt="banner"
+      />
+    ))}
   </div>
 )}
       {/* Main Page = Stores */}
