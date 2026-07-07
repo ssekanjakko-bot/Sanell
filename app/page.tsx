@@ -4,7 +4,7 @@ import { useState, useEffect , useRef } from 'react'
 import { auth } from '@/lib/firebase'
 import { signOut } from 'firebase/auth'
 import { db } from '@/lib/firebase'
-import { collection, onSnapshot } from 'firebase/firestore'
+import { collection,  doc ,onSnapshot } from 'firebase/firestore'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 
