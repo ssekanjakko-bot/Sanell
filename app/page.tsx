@@ -113,7 +113,7 @@ useEffect(() => {
           ))}
         </div>
       </div>
-      {{banners.length > 0 && (
+      {banners.length > 0 && (
   <div ref={scrollRef} className="w-full overflow-x-auto scroll-smooth flex snap-x">
     {banners.map((url, i) => (
       <img 
