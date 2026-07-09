@@ -98,7 +98,17 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className="p-3"><input placeholder="Search products" className="w-full p-3 bg-zinc-800 text-white border-zinc-700  rounded-lg text-sm placehold:text-zinc-400 " /></div>
+        <<form action="/search" method="GET" className="p-3">
+  <div className="relative">
+    <input 
+      type="search" 
+      name="q"
+      id="doofinder-search-input"
+      placeholder="Search products" 
+      className="w-full p-3 bg-zinc-800 text-white border border-zinc-700 rounded-lg text-sm placeholder:text-zinc-400" 
+    />
+  </div>
+</form>
 
         <div className="flex gap-2 px-3 pb-2 overflow-x-auto">
           {TOP_TABS.map(tab => (
