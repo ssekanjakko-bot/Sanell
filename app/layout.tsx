@@ -15,5 +15,6 @@ export default function RootLayout({
     <html lang="en">
       <body className="big-white text-gray-900 antialiased">{children}</body>
     </html>
+    <script src="https://eu1-config.doofinder.com/2.x/cd7a520b-3708-4bd7-ace3-67ed7a517b63.js" async></script>
   );
 }
