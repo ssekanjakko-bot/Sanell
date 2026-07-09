@@ -98,7 +98,7 @@ useEffect(() => {
           </div>
         </div>
 
-        <<form action="/search" method="GET" className="p-3">
+        <form action="/search" method="GET" className="p-3">
   <div className="relative">
     <input 
       type="search" 
