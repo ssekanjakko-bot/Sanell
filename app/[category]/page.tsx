@@ -1,4 +1,23 @@
 'use client';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+export default function SearchPage() {
+  const searchParams = useSearchParams();
+  const query = searchParams.get('q');
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    // fetch products from Firebase where title contains query
+    // setProducts(results)
+  }, [query])
+
+  if(products.length === 0) {
+    return <p>No results for "{query}"</p> // instead of Post First Item
+  }
+
+  return products.map(p => <ProductCard key={p.id} {...p} />)
+} client';
 import { useParams, useRouter } from "next/navigation";
 
 export default function CategoryPage() {
