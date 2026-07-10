@@ -3,12 +3,12 @@ import { useState, useEffect } from "react";
 
 // STEP 1: PASTE ALL YOUR API KEYS HERE ONCE. Leave "" if you don't have it yet
 const API_KEYS = {
-  football: "PASTE_FOOTBALL_API_KEY_HERE", // api-football.com
-  basketball: "PASTE_BASKETBALL_API_KEY_HERE", // api-sports.io basketball
-  tennis: "PASTE_TENNIS_API_KEY_HERE", // api-sports.io tennis
-  cricket: "PASTE_CRICKET_API_KEY_HERE", // api-cricket.com
-  rugby: "PASTE_RUGBY_API_KEY_HERE", // api-sports.io rugby
-  ufc: "PASTE_UFC_API_KEY_HERE", // api-sports.io mma
+  football: "dd7ba7eea526856266682cd0d6f32335", // api-football.com
+  basketball: "dd7ba7eea526856266682cd0d6f32335", // api-sports.io basketball
+  tennis: "dd7ba7eea526856266682cd0d6f32335", // api-sports.io tennis
+  cricket: "dd7ba7eea526856266682cd0d6f32335, // api-cricket.com
+  rugby: "dd7ba7eea526856266682cd0d6f32335", // api-sports.io rugby
+  ufc: "dd7ba7eea526856266682cd0d6f32335", // api-sports.io mma
   results: "", // No API needed, uses data from above
   news: "", // We will add news API later
   shop: "", // Your products
