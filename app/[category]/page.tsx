@@ -14,7 +14,13 @@ export default function SearchPage() {
 
   if(products.length === 0) {
     return <p>No results for "{query}"</p> // instead of Post First Item
+return products.map(p => (
+  <div key={p.id} className="border p-4 rounded">
+    <h3>{p.title}</h3>
+    <p>{p.price}</p>
+  </div>
+))
   }
 
-  return products.map(p => <ProductCard key={p.id} {...p} />)
+  
 }
