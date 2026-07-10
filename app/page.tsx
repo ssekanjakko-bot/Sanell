@@ -13,7 +13,7 @@ const COFFEE_LIGHT = '#A67B5B'
 
 const TOP_TABS = [
   { name: '🎥Movies', href: '/movies' }, // Links to your existing app/movies/page.tsx
-  { name: '⚽️Live Sports ', href: '/live sports' },
+  { name: '⚽️Live Sports ', href: '/stores' },
   { name: '🧾Invoices', href: '/invoices' },
   { name: '🔖Receipts', href: '/receipts' },
 ]
