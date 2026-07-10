@@ -6,8 +6,8 @@ const API_KEYS = {
   football: "dd7ba7eea526856266682cd0d6f32335", // api-football.com
   basketball: "dd7ba7eea526856266682cd0d6f32335", // api-sports.io basketball
   tennis: "dd7ba7eea526856266682cd0d6f32335", // api-sports.io tennis
-  cricket: "dd7ba7eea526856266682cd0d6f32335, // api-cricket.com
-  rugby: "", // api-sports.io rugby
+  cricket: "dd7ba7eea526856266682cd0d6f32335", // api-cricket.com
+  rugby: "dd7ba7eea526856266682cd0d6f32335", // api-sports.io rugby
   ufc: "dd7ba7eea526856266682cd0d6f32335", // api-sports.io mma
   results: "", // No API needed, uses data from above
   news: "", // We will add news API later
