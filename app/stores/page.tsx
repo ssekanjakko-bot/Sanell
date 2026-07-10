@@ -1,115 +1,144 @@
- 'use client';
+'use client';
+import { useState, useEffect } from "react";
 
-import { useState } from "react";
+// STEP 1: PASTE ALL YOUR API KEYS HERE ONCE. Leave "" if you don't have it yet
+const API_KEYS = {
+  football: "PASTE_FOOTBALL_API_KEY_HERE", // api-football.com
+  basketball: "PASTE_BASKETBALL_API_KEY_HERE", // api-sports.io basketball
+  tennis: "PASTE_TENNIS_API_KEY_HERE", // api-sports.io tennis
+  cricket: "PASTE_CRICKET_API_KEY_HERE", // api-cricket.com
+  rugby: "PASTE_RUGBY_API_KEY_HERE", // api-sports.io rugby
+  ufc: "PASTE_UFC_API_KEY_HERE", // api-sports.io mma
+  results: "", // No API needed, uses data from above
+  news: "", // We will add news API later
+  shop: "", // Your products
+};
 
 export default function LiveSports() {
   const [activeSport, setActiveSport] = useState("football");
+  const [games, setGames] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const sports = [
-    { id: "football", label: "⚽ Football Live" },
-    { id: "basketball", label: "🏀 Basketball Live" },
-    { id: "tennis", label: "🎾 Tennis Live" },
-    { id: "cricket", label: "🏏 Cricket Live" },
-    { id: "rugby", label: "🏉 Rugby" },
-    { id: "ufc", label: "🥊 UFC / Boxing" },
-    { id: "results", label: "📊 Results & Standings" },
-    { id: "news", label: "📰 Sports News" },
-    { id: "shop", label: "🛒 Shop Jerseys" },
+    { id: "football", label: "⚽ Football Live", host: "v3.football.api-sports.io" },
+    { id: "basketball", label: "🏀 Basketball Live", host: "v3.basketball.api-sports.io" },
+    { id: "tennis", label: "🎾 Tennis Live", host: "v3.tennis.api-sports.io" },
+    { id: "cricket", label: "🏏 Cricket Live", host: "v3.cricket.api-sports.io" },
+    { id: "rugby", label: "🏉 Rugby", host: "v3.rugby.api-sports.io" },
+    { id: "ufc", label: "🥊 UFC / Boxing", host: "v3.mma.api-sports.io" },
+    { id: "results", label: "📊 Results & Standings", host: "" },
+    { id: "news", label: "📰 Sports News", host: "" },
+    { id: "shop", label: "🛒 Shop Jerseys", host: "" },
   ];
 
-  const BETPAWA_LINK = "YOUR_BETPAWA_LINK";
-  const ONEXBET_LINK = "YOUR_1XBET_LINK";
+  // STEP 2: PASTE YOUR AFFILIATE LINKS HERE ONCE
+  const BETPAWA_LINK = "https://your-betpawa-link.com";
+  const ONEXBET_LINK = "https://your-1xbet-link.com";
 
-  const renderContent = () => {
-    switch (activeSport) {
-      case "football":
-        return (
-          <div>
-            <h3 className="text-xl font-bold mb-4">Football - Today</h3>
-            <MatchCard 
-              teams="Arsenal vs Chelsea" 
-              time="9:00 PM | Premier League"
-              betpawa={BETPAWA_LINK}
-              onebet={ONEXBET_LINK}
-            />
-            <MatchCard 
-              teams="Barcelona vs Real Madrid" 
-              time="11:00 PM | La Liga"
-              betpawa={BETPAWA_LINK}
-              onebet={ONEXBET_LINK}
-            />
+  const MatchCard = ({ home, away, league, minute, score, homeLogo, awayLogo }: any) => {
+    return (
+      <div className="bg-white rounded-xl p-4 mb-3 shadow-md border">
+        <div className="flex justify-between text-xs text-gray-500 mb-2">
+          <span>{league}</span>
+          <span className="text-green-600 font-bold">{minute}' LIVE</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 w-1/3">
+            <img src={homeLogo} className="w-6 h-6" />
+            <span className="text-sm font-semibold text-black">{home}</span>
           </div>
-        );
-      case "basketball":
-        return (
-          <div>
-            <h3 className="text-xl font-bold mb-4">NBA - Today</h3>
-            <MatchCard 
-              teams="Lakers vs Warriors" 
-              time="2:30 AM | NBA"
-              betpawa={BETPAWA_LINK}
-            />
+          <span className="text-2xl font-bold text-black">{score}</span>
+          <div className="flex items-center gap-2 w-1/3 justify-end">
+            <span className="text-sm font-semibold text-black">{away}</span>
+            <img src={awayLogo} className="w-6 h-6" />
           </div>
-        );
-      case "tennis": return <p>🎾 ATP/WTA Live matches will load here</p>;
-      case "cricket": return <p>🏏 IPL & World Cup matches here</p>;
-      case "rugby": return <p>🏉 Uganda Cranes + International Rugby</p>;
-      case "ufc": return <p>🥊 Next UFC / Boxing fights + odds</p>;
-      case "results": return <p>📊 Live scores and league tables</p>;
-      case "news": return <p>📰 Latest sports news</p>;
-      case "shop": return <p>🛒 Your old sports products/jerseys go here</p>;
-      default: return null;
-    }
+        </div>
+        <div className="flex gap-2 mt-3">
+          <a href={BETPAWA_LINK} target="_blank" className="flex-1 bg-green-600 text-white text-center py-2 rounded-lg font-semibold text-sm">BetPawa</a>
+          <a href={ONEXBET_LINK} target="_blank" className="flex-1 bg-red-600 text-white text-center py-2 rounded-lg font-semibold text-sm">1XBet</a>
+        </div>
+      </div>
+    );
   };
 
+  useEffect(() => {
+    const fetchData = async () => {
+      const sportConfig = sports.find(s => s.id === activeSport);
+      const key = API_KEYS[activeSport as keyof typeof API_KEYS];
+
+      if (!key ||!sportConfig?.host) { setGames([]); setLoading(false); return; }
+
+      setLoading(true);
+      const today = new Date().toISOString().split("T")[0];
+      let url = "";
+
+      try {
+        // All API-Sports use same structure
+        url = `https://${sportConfig.host}/fixtures?date=${today}&live=all`;
+        if(activeSport === "basketball") url = `https://${sportConfig.host}/games?date=${today}&live=all`;
+        if(activeSport === "tennis") url = `https://${sportConfig.host}/matches?date=${today}&live=all`;
+        if(activeSport === "cricket") url = `https://${sportConfig.host}/matches?date=${today}&live=all`;
+        if(activeSport === "rugby") url = `https://${sportConfig.host}/matches?date=${today}&live=all`;
+        if(activeSport === "ufc") url = `https://${sportConfig.host}/fights?date=${today}&live=all`;
+
+        const res = await fetch(url, {
+          headers: { "x-api-key": key, "x-apisports-host": sportConfig.host }
+        });
+        const data = await res.json();
+        setGames(data.response || []); // Auto removes finished games
+      } catch (e) { console.log(e); }
+      setLoading(false);
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 60000); // Auto refresh
+    return () => clearInterval(interval);
+  }, [activeSport]);
+
+  const renderContent = () => {
+    if (loading) return <p className="text-center text-gray-500">Loading {activeSport}...</p>;
+    if (games.length === 0 && ["football","basketball","tennis","cricket","rugby","ufc"].includes(activeSport))
+      return <p className="text-center text-gray-500">No live games right now</p>;
+
+    if (["results"].includes(activeSport)) return <p className="text-center py-10 text-black">📊 Standings + Results will show here</p>;
+    if (["news"].includes(activeSport)) return <p className="text-center py-10 text-black">📰 Latest sports news will show here</p>;
+    if (["shop"].includes(activeSport)) return <p className="text-center py-10 text-black">🛒 Your jerseys/products go here</p>;
+
+    return games.map((g) => (
+      <MatchCard
+        key={g.id || g.fixture?.id || g.match?.id}
+        home={g.teams?.home?.name || g.teams?.home?.team?.name}
+        away={g.teams?.away?.name || g.teams?.away?.team?.name}
+        league={g.league?.name || g.league?.country}
+        minute={g.fixture?.status?.elapsed || g.status?.long}
+        score={`${g.goals?.home || g.scores?.home?.total || 0} - ${g.goals?.away || g.scores?.away?.total || 0}`}
+        homeLogo={g.teams?.home?.logo}
+        awayLogo={g.teams?.away?.logo}
+      />
+    ));
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Tabs */}
+    <div className="min-h-screen bg-gray-100">
+      {/* CATEGORIES */}
       <div className="flex gap-2 overflow-x-auto p-4 bg-[#0d1b2a] sticky top-0">
         {sports.map((sport) => (
           <button
             key={sport.id}
             onClick={() => setActiveSport(sport.id)}
-            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition
-              ${activeSport === sport.id 
-                ? "bg-red-600 text-white" 
-                : "bg-[#1b263b] text-white hover:bg-[#415a77]"}`}
+            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap ${
+              activeSport === sport.id? "bg-red-600 text-white" : "bg-[#1b263b] text-white"
+            }`}
           >
             {sport.label}
           </button>
         ))}
       </div>
 
-      {/* Content */}
+      {/* CONTENT */}
       <div className="p-4">
+        <h3 className="text-xl font-bold mb-4 text-black">{sports.find(s=>s.id===activeSport)?.label}</h3>
         {renderContent()}
-      </div>
-    </div>
-  );
-}
-
-// Reusable Match Card Component
-function MatchCard({ teams, time, betpawa, onebet }: any) {
-  return (
-    <div className="bg-white rounded-xl p-4 mb-3 shadow-md">
-      <div className="text-lg font-bold">{teams}</div>
-      <div className="text-sm text-gray-600">{time}</div>
-      <div className="flex gap-2 mt-3">
-        {betpawa && (
-          <a href={betpawa} target="_blank" 
-            className="flex-1 bg-green-600 text-white text-center py-2 rounded-lg font-semibold">
-            Bet on BetPawa
-          </a>
-        )}
-        {onebet && (
-          <a href={onebet} target="_blank" 
-            className="flex-1 bg-red-600 text-white text-center py-2 rounded-lg font-semibold">
-            Bet on 1xBet
-          </a>
-        )}
-        <a href="#" className="flex-1 bg-blue-600 text-white text-center py-2 rounded-lg font-semibold">
-          Watch
-        </a>
       </div>
     </div>
   );
