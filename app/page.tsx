@@ -42,6 +42,7 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const API_KEY = "dd7ba7eea526856266682cd0d6f32335"
   const pathname = usePathname()
   const [banners, setBanners] =useState<string[]>([]); // Empty for now. Admin will fill this later 
   const scrollRef = 
