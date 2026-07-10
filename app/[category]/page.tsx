@@ -17,7 +17,7 @@ export default function SearchPage() {
   }
 
   return products.map(p => <ProductCard key={p.id} {...p} />)
-} client';
+
 import { useParams, useRouter } from "next/navigation";
 
 export default function CategoryPage() {
