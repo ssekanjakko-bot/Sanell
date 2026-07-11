@@ -1,157 +1,204 @@
-'use client';
-import { useState, useEffect } from "react";
+"use client";
+import { useEffect, useState } from "react";
 
-// STEP 1: PASTE ALL YOUR API KEYS HERE ONCE. Leave "" if you don't have it yet
-const API_KEYS = {
-  football: "dd7ba7eea526856266682cd0d6f32335", // api-football.com
-  basketball: "dd7ba7eea526856266682cd0d6f32335", // api-sports.io basketball
-  tennis: "dd7ba7eea526856266682cd0d6f32335", // api-sports.io tennis
-  cricket: "dd7ba7eea526856266682cd0d6f32335", // api-cricket.com
-  rugby: "dd7ba7eea526856266682cd0d6f32335", // api-sports.io rugby
-  ufc: "dd7ba7eea526856266682cd0d6f32335", // api-sports.io mma
-  results: "", // No API needed, uses data from above
-  news: "", // We will add news API later
-  shop: "", // Your products
-};
+const COFFEE = "#6F4E37";
+const COFFEE_LIGHT = "#A67B5B";
+const API_KEY = "YOUR_API_KEY_HERE"; // <- PUT YOUR KEY HERE
 
-export default function LiveSports() {
-  const [activeSport, setActiveSport] = useState("football");
-  const [games, setGames] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+const sports = [
+  { name: "Football", host: "v3.football.api-sports.io", endpoint: "fixtures" },
+  { name: "Basketball", host: "v2.basketball.api-sports.io", endpoint: "games" },
+  { name: "Tennis", host: "v1.tennis.api-sports.io", endpoint: "matches" },
+  { name: "Cricket", host: "v2.cricket.api-sports.io", endpoint: "matches" },
+];
 
-  const sports = [
-    { id: "football", label: "⚽ Football Live", host: "v3.football.api-sports.io" },
-    { id: "basketball", label: "🏀 Basketball Live", host: "v3.basketball.api-sports.io" },
-    { id: "tennis", label: "🎾 Tennis Live", host: "v3.tennis.api-sports.io" },
-    { id: "cricket", label: "🏏 Cricket Live", host: "v3.cricket.api-sports.io" },
-    { id: "rugby", label: "🏉 Rugby", host: "v3.rugby.api-sports.io" },
-    { id: "ufc", label: "🥊 UFC / Boxing", host: "v3.mma.api-sports.io" },
-    { id: "results", label: "📊 Results & Standings", host: "" },
-    { id: "news", label: "📰 Sports News", host: "" },
-    { id: "shop", label: "🛒 Shop Jerseys", host: "" },
-  ];
+type Game = any;
 
-  // STEP 2: PASTE YOUR AFFILIATE LINKS HERE ONCE
-  const BETPAWA_LINK = "https://your-betpawa-link.com";
-  const ONEXBET_LINK = "https://your-1xbet-link.com";
+export default function SportsPage() {
+  const [activeSport, setActiveSport] = useState(sports[0]);
+  const [activeDate, setActiveDate] = useState("Today");
+  const [live, setLive] = useState<Game[]>([]);
+  const [today, setToday] = useState<Game[]>([]);
+  const [results, setResults] = useState<Game[]>([]);
+  const [news, setNews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const MatchCard = ({ home, away, league, minute, score, homeLogo, awayLogo }: any) => {
-    return (
-      <div className="bg-white rounded-xl p-4 mb-3 shadow-md border">
-        <div className="flex justify-between text-xs text-gray-500 mb-2">
-          <span>{league}</span>
-          <span className="text-green-600 font-bold">{minute}' LIVE</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2 w-1/3">
-            <img src={homeLogo} className="w-6 h-6" />
-            <span className="text-sm font-semibold text-black">{home}</span>
-          </div>
-          <span className="text-2xl font-bold text-black">{score}</span>
-          <div className="flex items-center gap-2 w-1/3 justify-end">
-            <span className="text-sm font-semibold text-black">{away}</span>
-            <img src={awayLogo} className="w-6 h-6" />
-          </div>
-        </div>
-        <div className="flex gap-2 mt-3">
-          <a href={BETPAWA_LINK} target="_blank" className="flex-1 bg-green-600 text-white text-center py-2 rounded-lg font-semibold text-sm">BetPawa</a>
-          <a href={ONEXBET_LINK} target="_blank" className="flex-1 bg-red-600 text-white text-center py-2 rounded-lg font-semibold text-sm">1XBet</a>
-        </div>
-      </div>
-    );
-  };
+  const getDate = (offset: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return d.toISOString().split('T')[0];
+  }
 
   useEffect(() => {
     const fetchData = async () => {
-      const sportConfig = sports.find(s => s.id === activeSport);
-      const key = API_KEYS[activeSport as keyof typeof API_KEYS];
-
-      if (!key ||!sportConfig?.host) { setGames([]); setLoading(false); return; }
-
       setLoading(true);
-    
-      let url = "";
+      setLive([]); setToday([]); setResults([]);
+
+      let dateParam = "";
+      if(activeDate === "Today") dateParam = getDate(0);
+      if(activeDate === "Yesterday") dateParam = getDate(-1);
+      if(activeDate === "Tomorrow") dateParam = getDate(1);
+
+      const headers = {
+        "x-api-key": API_KEY,
+        "x-apisports-host": activeSport.host
+      };
 
       try {
-// All API-Sports use same structure
-if (activeSport === "football") {
-  url = `https://${sportConfig.host}/fixtures?live=all`;
-} else if (activeSport === "basketball") {
-  url = `https://${sportConfig.host}/games?live=all`;
-} else if (activeSport === "tennis") {
-  url = `https://${sportConfig.host}/matches?live=all`;
-} else if (activeSport === "cricket") {
-  url = `https://${sportConfig.host}/matches?live=all`;
-} else if (activeSport === "rugby") {
-  url = `https://${sportConfig.host}/matches?live=all`;
-} else if (activeSport === "ufc") {
-  url = `https://${sportConfig.host}/fights?live=all`;
-}
+        // 1. LIVE GAMES
+        const liveRes = await fetch(`https://${activeSport.host}/${activeSport.endpoint}?live=all`, { headers });
+        const liveJson = await liveRes.json();
+        setLive(liveJson.response || []);
 
-if (!url) {
-  setGames([]);
-  setLoading(false);
-  return;
-}
+        // 2. TODAY/TOMORROW/YESTERDAY FIXTURES
+        const todayRes = await fetch(`https://${activeSport.host}/${activeSport.endpoint}?date=${dateParam}`, { headers });
+        const todayJson = await todayRes.json();
+        const allGames = todayJson.response || [];
 
-        const res = await fetch(url, {
-          headers: { "x-api-key": key, "x-apisports-host": sportConfig.host }
-        });
-        const data = await res.json();
-        setGames(data.response || []); // Auto removes finished games
-      } catch (e) { console.log(e); }
+        // Split into upcoming and finished
+        setToday(allGames.filter((g: any) => g.fixture?.status?.short === "NS" || g.status?.short === "NS"));
+        setResults(allGames.filter((g: any) => g.fixture?.status?.short === "FT" || g.status?.short === "FT"));
+
+        // 3. NEWS API GOES HERE
+        // TODO: Add your news API call and setNews()
+
+      } catch(e) {
+        console.error("API Error:", e)
+      }
       setLoading(false);
     };
-
     fetchData();
-    const interval = setInterval(fetchData, 900000); // Auto refresh
-    return () => clearInterval(interval);
-  }, [activeSport]);
+  }, [activeSport, activeDate]);
 
-  const renderContent = () => {
-    if (loading) return <p className="text-center text-gray-500">Loading {activeSport}...</p>;
-    if (games.length === 0 && ["football","basketball","tennis","cricket","rugby","ufc"].includes(activeSport))
-      return <p className="text-center text-gray-500">No live games right now</p>;
-
-    if (["results"].includes(activeSport)) return <p className="text-center py-10 text-black">📊 Standings + Results will show here</p>;
-    if (["news"].includes(activeSport)) return <p className="text-center py-10 text-black">📰 Latest sports news will show here</p>;
-    if (["shop"].includes(activeSport)) return <p className="text-center py-10 text-black">🛒 Your jerseys/products go here</p>;
-
-    return games.map((g) => (
-      <MatchCard
-        key={g.id || g.fixture?.id || g.match?.id}
-        home={g.teams?.home?.name || g.teams?.home?.team?.name}
-        away={g.teams?.away?.name || g.teams?.away?.team?.name}
-        league={g.league?.name || g.league?.country}
-        minute={g.fixture?.status?.elapsed || g.status?.long}
-        score={`${g.goals?.home || g.scores?.home?.total || 0} - ${g.goals?.away || g.scores?.away?.total || 0}`}
-        homeLogo={g.teams?.home?.logo}
-        awayLogo={g.teams?.away?.logo}
-      />
-    ));
-  }
+  const getTeamName = (g: any) => g.teams?.home?.name || g.home?.name || g.home;
+  const getAwayName = (g: any) => g.teams?.away?.name || g.away?.name || g.away;
+  const getScore = (g: any) => `${g.goals?.home?? g.scores?.home?? "-"} - ${g.goals?.away?? g.scores?.away?? "-"}`;
+  const getTime = (g: any) => g.fixture?.status?.elapsed? `LIVE ${g.fixture.status.elapsed}'` : g.status?.timer || g.league?.round;
+  const getLeague = (g: any) => g.league?.name || g.league;
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* CATEGORIES */}
-      <div className="flex gap-2 overflow-x-auto p-4 bg-[#0d1b2a] sticky top-0">
-        {sports.map((sport) => (
-          <button
-            key={sport.id}
-            onClick={() => setActiveSport(sport.id)}
-            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap ${
-              activeSport === sport.id? "bg-red-600 text-white" : "bg-[#1b263b] text-white"
-            }`}
-          >
-            {sport.label}
-          </button>
-        ))}
-      </div>
+    <div className="min-h-screen" style={{ backgroundColor: "#FDFBF7" }}>
+      <div className="w-full max-w-[1400px] mx-auto p-4">
 
-      {/* CONTENT */}
-      <div className="p-4">
-        <h3 className="text-xl font-bold mb-4 text-black">{sports.find(s=>s.id===activeSport)?.label}</h3>
-        {renderContent()}
+        {/* HEADER */}
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold" style={{ color: COFFEE }}>Sanel Ug Sports</h1>
+          <button onClick={() => window.location.reload()} className="text-sm font-semibold" style={{ color: COFFEE }}>🔄 Refresh</button>
+        </div>
+
+        {/* SPORT TABS */}
+        <div className="flex gap-2 mb-4 border-b-2 overflow-x-auto" style={{ borderColor: COFFEE_LIGHT }}>
+          {sports.map((s) => (
+            <button
+              key={s.name}
+              onClick={() => setActiveSport(s)}
+              className="px-6 py-3 font-semibold whitespace-nowrap transition"
+              style={{
+                backgroundColor: activeSport.name === s.name? COFFEE : "transparent",
+                color: activeSport.name === s.name? "white" : COFFEE,
+                borderBottom: activeSport.name === s.name? `3px solid ${COFFEE}` : "3px solid transparent"
+              }}
+            >
+              {s.name}
+            </button>
+          ))}
+        </div>
+
+        {/* DATE FILTER */}
+        <div className="flex justify-center gap-4 mb-6">
+          {["Yesterday", "Today", "Tomorrow"].map((d) => (
+            <button
+              key={d}
+              onClick={() => setActiveDate(d)}
+              className="px-4 py-2 font-semibold"
+              style={{
+                color: activeDate === d? COFFEE : COFFEE_LIGHT,
+                borderBottom: activeDate === d? `2px solid ${COFFEE}` : "2px solid transparent"
+              }}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+
+        {loading && <p className="text-center" style={{color: COFFEE}}>Loading {activeSport.name}...</p>}
+
+        {/* LIVE NOW */}
+        <h2 className="text-xl font-bold mb-3 flex items-center gap-2" style={{ color: COFFEE }}>
+          <span className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: "red" }}></span> LIVE NOW
+        </h2>
+        {live.length === 0 &&!loading && <p className="mb-6" style={{color: COFFEE_LIGHT}}>No live {activeSport.name} games</p>}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {live.map((g, i) => (
+            <div key={i} className="bg-white p-5 rounded-xl shadow-md" style={{ borderLeft: `4px solid red` }}>
+              <p className="text-xs mb-2" style={{ color: COFFEE_LIGHT }}>{getLeague(g)}</p>
+              <div className="flex justify-between items-center text-lg font-bold" style={{ color: COFFEE }}>
+                <span>{getTeamName(g)}</span>
+                <span className="text-2xl">{getScore(g)}</span>
+                <span>{getAwayName(g)}</span>
+              </div>
+              <p className="text-center font-semibold mt-2" style={{ color: "red" }}>{getTime(g)}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 2 COLUMN GRID BELOW */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* LEFT: FIXTURES */}
+          <div className="lg:col-span-2">
+            <h2 className="text-xl font-bold mb-3" style={{ color: COFFEE }}>{activeDate.toUpperCase()} FIXTURES</h2>
+            {today.length === 0 &&!loading && <p style={{color: COFFEE_LIGHT}}>No {activeSport.name} fixtures for {activeDate}</p>}
+            <div className="bg-white rounded-xl shadow p-4 space-y-3">
+              {today.map((g, i) => (
+                <div key={i} className="flex justify-between items-center border-b pb-2" style={{ borderColor: "#eee" }}>
+                  <div>
+                    <p className="text-xs" style={{ color: COFFEE_LIGHT }}>{getLeague(g)}</p>
+                    <p className="font-semibold" style={{ color: COFFEE }}>{getTeamName(g)} vs {getAwayName(g)}</p>
+                  </div>
+                  <span className="font-bold text-lg" style={{ color: COFFEE }}>
+                    {new Date(g.fixture?.date || g.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* RIGHT: SIDEBAR */}
+          <div className="space-y-6">
+            {/* RESULTS */}
+            <div>
+              <h2 className="text-xl font-bold mb-3" style={{ color: COFFEE }}>RESULTS</h2>
+              {results.length === 0 &&!loading && <p style={{color: COFFEE_LIGHT}}>No results yet</p>}
+              <div className="bg-white rounded-xl shadow p-4 space-y-3">
+                {results.map((g, i) => (
+                  <div key={i} className="border-b pb-2" style={{ borderColor: "#eee" }}>
+                    <p className="text-xs" style={{ color: COFFEE_LIGHT }}>{getLeague(g)}</p>
+                    <p className="font-semibold" style={{ color: COFFEE }}>{getTeamName(g)} {getScore(g)} {getAwayName(g)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* NEWS */}
+            <div>
+              <h2 className="text-xl font-bold mb-3" style={{ color: COFFEE }}>LATEST NEWS</h2>
+              {news.length === 0 && <p style={{color: COFFEE_LIGHT}}>Add News API to show headlines</p>}
+              <div className="bg-white rounded-xl shadow p-4 space-y-3">
+                {news.map((n, i) => (
+                  <div key={i} className="border-b pb-2" style={{ borderColor: "#eee" }}>
+                    <p className="font-semibold text-sm" style={{ color: COFFEE }}>{n.title}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <footer className="text-center mt-12 pt-4 border-t" style={{ borderColor: COFFEE_LIGHT, color: COFFEE_LIGHT }}>
+          © Sanel Ug 2026
+        </footer>
       </div>
     </div>
   );
