@@ -69,7 +69,7 @@ export default function LiveSports() {
       if (!key ||!sportConfig?.host) { setGames([]); setLoading(false); return; }
 
       setLoading(true);
-      const today = new Date().toISOString().split("T")[0];
+    
       let url = "";
 
       try {
