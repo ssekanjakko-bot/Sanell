@@ -73,10 +73,6 @@ export default function LiveSports() {
       let url = "";
 
       try {
-        setLoading(true);
-
-let url = "";
-
 // All API-Sports use same structure
 if (activeSport === "football") {
   url = `https://${sportConfig.host}/fixtures?live=all`;
