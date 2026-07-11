@@ -91,7 +91,7 @@ export default function LiveSports() {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 60000); // Auto refresh
+    const interval = setInterval(fetchData, 900000); // Auto refresh
     return () => clearInterval(interval);
   }, [activeSport]);
 
