@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 
-const API_KEY = "PASTE_YOUR_API_KEY_HERE"; // <-- PUT YOUR API-SPORTS KEY HERE
+const API_KEY = "dd7ba7eea526856266682cd0d6f32335"; // <-- PUT YOUR API-SPORTS KEY HERE
 
 const HOSTS: Record<string, string> = {
   football: "v3.football.api-sports.io",
