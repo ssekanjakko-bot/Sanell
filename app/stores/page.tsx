@@ -73,13 +73,30 @@ export default function LiveSports() {
       let url = "";
 
       try {
-        // All API-Sports use same structure
-        url = `https://${sportConfig.host}/fixtures?live=all`;
-        if(activeSport === "basketball") url = `https://${sportConfig.host}/games?live=all`;
-        if(activeSport === "tennis") url = `https://${sportConfig.host}/matches?live=all`;
-        if(activeSport === "cricket") url = `https://${sportConfig.host}/matches?live=all`;
-        if(activeSport === "rugby") url = `https://${sportConfig.host}/matches?live=all`;
-        if(activeSport === "ufc") url = `https://${sportConfig.host}/fights?live=all`;
+        setLoading(true);
+
+let url = "";
+
+// All API-Sports use same structure
+if (activeSport === "football") {
+  url = `https://${sportConfig.host}/fixtures?live=all`;
+} else if (activeSport === "basketball") {
+  url = `https://${sportConfig.host}/games?live=all`;
+} else if (activeSport === "tennis") {
+  url = `https://${sportConfig.host}/matches?live=all`;
+} else if (activeSport === "cricket") {
+  url = `https://${sportConfig.host}/matches?live=all`;
+} else if (activeSport === "rugby") {
+  url = `https://${sportConfig.host}/matches?live=all`;
+} else if (activeSport === "ufc") {
+  url = `https://${sportConfig.host}/fights?live=all`;
+}
+
+if (!url) {
+  setGames([]);
+  setLoading(false);
+  return;
+}
 
         const res = await fetch(url, {
           headers: { "x-api-key": key, "x-apisports-host": sportConfig.host }
