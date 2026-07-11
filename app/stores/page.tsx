@@ -74,12 +74,12 @@ export default function LiveSports() {
 
       try {
         // All API-Sports use same structure
-        url = `https://${sportConfig.host}/fixtures?date=${today}&live=all`;
-        if(activeSport === "basketball") url = `https://${sportConfig.host}/games?date=${today}&live=all`;
-        if(activeSport === "tennis") url = `https://${sportConfig.host}/matches?date=${today}&live=all`;
-        if(activeSport === "cricket") url = `https://${sportConfig.host}/matches?date=${today}&live=all`;
-        if(activeSport === "rugby") url = `https://${sportConfig.host}/matches?date=${today}&live=all`;
-        if(activeSport === "ufc") url = `https://${sportConfig.host}/fights?date=${today}&live=all`;
+        url = `https://${sportConfig.host}/fixtures?live=all`;
+        if(activeSport === "basketball") url = `https://${sportConfig.host}/games?live=all`;
+        if(activeSport === "tennis") url = `https://${sportConfig.host}/matches?live=all`;
+        if(activeSport === "cricket") url = `https://${sportConfig.host}/matches?live=all`;
+        if(activeSport === "rugby") url = `https://${sportConfig.host}/matches?live=all`;
+        if(activeSport === "ufc") url = `https://${sportConfig.host}/fights?live=all`;
 
         const res = await fetch(url, {
           headers: { "x-api-key": key, "x-apisports-host": sportConfig.host }
