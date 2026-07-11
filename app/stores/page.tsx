@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 const COFFEE = "#6F4E37";
 const COFFEE_LIGHT = "#A67B5B";
-const API_KEY = "YOUR_API_KEY_HERE"; // <- PUT YOUR KEY HERE
+const API_KEY = "dd7ba7eea526856266682cd0d6f32335" // <- PUT YOUR KEY HERE
 
 const sports = [
   { name: "Football", host: "v3.football.api-sports.io", endpoint: "fixtures" },
