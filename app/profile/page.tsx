@@ -1,10 +1,13 @@
+"use client"; // IMPORTANT: Next.js needs this for hooks
+
 import { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { useNavigate } from "react-router-dom"; // if you use react-router
+import { useRouter } from "next/navigation"; // <-- CHANGED THIS
+import { app } from "@/lib/firebase"; // <-- make sure you have firebase init here
 
-const db = getFirestore();
-const auth = getAuth();
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 type UserData = {
   name: string;
@@ -17,7 +20,7 @@ export default function Profile() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [adCount, setAdCount] = useState(0);
   const [showLogin, setShowLogin] = useState(false);
-  const navigate = useNavigate();
+  const router = useRouter(); // <-- CHANGED THIS
 
   // 1. Check login + load profile
   useEffect(() => {
@@ -43,7 +46,7 @@ export default function Profile() {
   // 2. Post Ad button logic
   const handlePostAd = () => {
     if (user) {
-      navigate("/post-product"); // change to your sell page route
+      router.push("/post-product"); // <-- CHANGED THIS
     } else {
       setShowLogin(true);
     }
