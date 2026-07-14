@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { useRouter } from "next/navigation"; // <-- CHANGED THIS
-import { app } from "../lib/firebase"; // <-- make sure you have firebase init here
+import { app } from "./lib/firebase"; // <-- make sure you have firebase init here
 
 const db = getFirestore(app);
 const auth = getAuth(app);
