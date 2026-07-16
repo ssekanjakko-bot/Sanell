@@ -6,8 +6,7 @@ import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "fi
 import { useRouter } from "next/navigation"; // <-- CHANGED THIS
 import { db ,auth } from "@/lib/firebase"; // <-- make sure you have firebase init here
 
-const db = getFirestore(lib);
-const auth = getAuth(lib);
+
 
 type UserData = {
   name: string;
