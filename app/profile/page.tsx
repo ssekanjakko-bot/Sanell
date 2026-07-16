@@ -45,7 +45,7 @@ export default function Profile() {
   // 2. Post Ad button logic
   const handlePostAd = () => {
     if (user) {
-      router.push("/post-product"); // <-- CHANGED THIS
+      router.push("/sell"); // <-- CHANGED THIS
     } else {
       setShowLogin(true);
     }
