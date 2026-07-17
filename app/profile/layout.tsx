@@ -10,11 +10,12 @@ import { doc, setDoc } from 'firebase/firestore'
 export default function ProfileLayout({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [mode, setMode] = useState<'signup' | 'login'>('login')
+  const [mode, setMode] = useState<'signup' | 'login'>('signup')
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [phone, setPhone] = useState('')
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -31,7 +32,7 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
   }, [name])
 
   const submit = async () => {
-    if (!email ||!password) return alert('Fill all fields')
+    if (!email ||!password ||!phone) return alert('Fill all fields')
     if (mode === 'signup' &&!name) return alert('Enter name')
     try {
       if (mode === 'signup') {
@@ -45,24 +46,73 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
     }
   }
 
-  if (loading) return <div className="p-10 text-center">Loading profile...</div>
+  if (loading) return <div className="p-10 text-center text-white">Loading profile...</div>
 
   if (user) return <>{children}</>
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-      <div className="bg-white p-4 rounded-lg w-[90%] max-w-sm shadow-lg">
-        <h2 className="text-xl font-bold mb-3 text-center">Login to Profile</h2>
-        <div className="flex mb-3 border-b">
-          <button onClick={() => setMode('signup')} className={`flex-1 p-2 ${mode==='signup'?'font-bold border-b-2 border-blue-600':''}`}>Sign Up</button>
-          <button onClick={() => setMode('login')} className={`flex-1 p-2 ${mode==='login'?'font-bold border-b-2 border-blue-600':''}`}>Login</button>
+    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
+      <div className="bg-[#7C2D12] p-5 rounded-lg w-[90%] max-w-sm shadow-2xl">
+        <h2 className="text-xl font-bold mb-4 text-center text-white">Welcome to Sanel</h2>
+        
+        <div className="flex mb-4 text-white border-b border-[#C2410C]">
+          <button 
+            onClick={() => setMode('signup')} 
+            className={`flex-1 p-2 text-center ${mode==='signup'?'font-bold border-b-2 border-white':''}`}
+          >
+            SignUp
+          </button>
+          <button 
+            onClick={() => setMode('login')} 
+            className={`flex-1 p-2 text-center ${mode==='login'?'font-bold border-b-2 border-white':''}`}
+          >
+            Login
+          </button>
         </div>
-        <>
-          {mode === 'signup' && <input placeholder="Name" value={name} onChange={e=>setName(e.target.value)} className="border w-full p-3 mb-3 rounded-md"/>}
-          <input placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} className="border w-full p-3 mb-3 rounded-md"/>
-          <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} className="border w-full p-3 mb-3 rounded-md"/>
-          <button onClick={submit} className="bg-blue-600 text-white font-semibold w-full p-3 rounded">Continue</button>
-        </>
+
+        <div className="space-y-3">
+          {mode === 'signup' && 
+            <input 
+              placeholder="Name" 
+              value={name} 
+              onChange={e=>setName(e.target.value)} 
+              className="bg-[#FFFBEB] text-[#7C2D12] placeholder-[#C2410C] w-full p-3 rounded-md outline-none"
+            />
+          }
+          
+          <input 
+            placeholder="Email" 
+            type="email" 
+            value={email} 
+            onChange={e=>setEmail(e.target.value)} 
+            className="bg-[#7C2D12] border-[#C2410C] text-[#FFFBEB] placeholder-[#C2410C] w-full p-3 rounded-md outline-none"
+          />
+
+          <div className="flex bg-[#FFFBEB] rounded-md overflow-hidden">
+            <span className="px-3 py-3 text-[#7C2D12] font-bold">+256</span>
+            <input 
+              placeholder="77XXXXXXX" 
+              value={phone} 
+              onChange={e=>setPhone(e.target.value)} 
+              className="bg-transparent text-[#7C2D12] placeholder-gray-500 w-full p-3 outline-none"
+            />
+          </div>
+          
+          <input 
+            placeholder="Password" 
+            type="password" 
+            value={password} 
+            onChange={e=>setPassword(e.target.value)} 
+            className="bg-[#FFFBEB] text-[#7C2D12] placeholder-[#C2410C] w-full p-3 rounded-md outline-none"
+          />
+          
+          <button 
+            onClick={submit} 
+            className="bg-[#C2410C] hover:bg-[#9A3412] text-white font-bold w-full p-3 rounded-md transition"
+          >
+            Continue
+          </button>
+        </div>
       </div>
     </div>
   )
