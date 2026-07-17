@@ -1,133 +1,134 @@
-"use client"; // IMPORTANT: Next.js needs this for hooks
+'use client'
+import { useEffect, useState } from 'react'
+import { auth, db } from '@/lib/firebase'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
-import { useEffect, useState } from "react";
-import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { useRouter } from "next/navigation"; // <-- CHANGED THIS
-import { db ,auth } from "@/lib/firebase"; // <-- make sure you have firebase init here
-
-
-
-type UserData = {
-  name: string;
-  photo: string;
-  location: string;
+type Product = {
+  id: string,
+  title: string,
+  price: number,
+  image: string,
+  status: 'active' | 'sold'
 }
 
-export default function Profile() {
-  const [user, setUser] = useState<User | null>(null);
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [adCount, setAdCount] = useState(0);
-  const [showLogin, setShowLogin] = useState(false);
-  const router = useRouter(); // <-- CHANGED THIS
+export default function ProfilePage() {
+  const [user, setUser] = useState<any>(null)
+  const [userData, setUserData] = useState<any>({})
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
-  // 1. Check login + load profile
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        // Load user profile
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists()) {
-          setUserData(userDoc.data() as UserData);
-        }
-        // Load ads count
-        const q = query(collection(db, "products"), where("userId", "==", currentUser.uid));
-        const snap = await getDocs(q);
-        setAdCount(snap.size);
-      } else {
-        setShowLogin(true);
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (!u) {
+        router.push('/profile') // layout will show login modal
+        return
       }
-    });
-    return () => unsub();
-  }, []);
+      setUser(u)
 
-  // 2. Post Ad button logic
-  const handlePostAd = () => {
-    if (user) {
-      router.push("/sell"); // <-- CHANGED THIS
-    } else {
-      setShowLogin(true);
-    }
-  };
+      // 1. Get user data from Firestore
+      const userRef = doc(db, "users", u.uid)
+      const userSnap = await getDoc(userRef)
+      if (userSnap.exists()) setUserData(userSnap.data())
 
-  // 3. Go Live - Coming Soon
-  const handleGoLive = () => {
-    alert("Coming Soon! Use 'Post New Ad' for now");
-  };
+      // 2. Get real listings from Firestore
+      const q = query(collection(db, "products"), where("sellerId", "==", u.uid))
+      const querySnap = await getDocs(q)
+      const userProducts: Product[] = []
+      querySnap.forEach((doc) => {
+        userProducts.push({ id: doc.id,...doc.data() } as Product)
+      })
+      setProducts(userProducts)
+      setLoading(false)
+    })
+    return () => unsub()
+  }, [router])
 
-  if (showLogin && !user) {
-    return <LoginPopup onClose={() => setShowLogin(false)} />;
+  const handleLogout = async () => {
+    await signOut(auth)
+    router.refresh()
   }
 
+  if (loading) return <div className="p-10 text-center text-white">Loading...</div>
+
   return (
-    <div className="p-4 max-w-md mx-auto">
-      {/* Profile Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <img 
-          src={userData?.photo || "/default-avatar.png"} 
-          className="w-20 h-20 rounded-full object-cover border"
-          alt="profile"
-        />
-        <div>
-          <h2 className="text-xl font-bold">{userData?.name || "Seller"}</h2>
-          <p className="text-gray-500">{userData?.location || "Kampala, UG"}</p>
-          <button className="text-sm text-blue-500 mt-1">Edit Profile</button>
+    <div className="bg-[#7C2D12] min-h-screen text-[#FFFBEB] pb-20">
+
+      {/* 1. PROFILE HEADER */}
+      <div className="p-5">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-20 h-20 rounded-full bg-[#C2410C] flex items-center justify-center text-3xl font-bold">
+            {userData.name?.[0]?.toUpperCase() || 'U'}
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Hi {userData.name || 'Seller'}</h1>
+            <p className="text-sm opacity-80">{userData.email}</p>
+            <p className="text-sm opacity-80">{userData.phone}</p>
+          </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="flex justify-around text-center mb-6">
-        <div><b className="text-lg">{adCount}</b><br/>Active</div>
-        <div><b className="text-lg">0</b><br/>Views</div>
-        <div><b className="text-lg">0</b><br/>Leads</div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-3 mb-6">
-        <button 
-          onClick={handlePostAd}
-          className="flex-1 bg-orange-500 text-white py-3 rounded-lg font-semibold"
-        >
-          📄 Post New Ad
-        </button>
-        <button 
-          onClick={handleGoLive}
-          className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold"
-        >
-          🔴 Go Live
-        </button>
-      </div>
-
-      {/* My Ads */}
-      <h3 className="font-bold mb-2">My Ads</h3>
-      {adCount === 0 ? (
-        <div className="text-center border rounded-lg p-6">
-          <p className="mb-3">You have no active listings</p>
-          <button 
-            onClick={handlePostAd}
-            className="bg-orange-500 text-white px-4 py-2 rounded-lg"
-          >
-            Post Your First Ad
-          </button>
+      {/* 2. STATS */}
+      <div className="grid grid-cols-3 gap-3 px-5 mb-5">
+        <div className="bg-[#C2410C] p-3 rounded-lg text-center">
+          <p className="text-2xl font-bold">{products.length}</p>
+          <p className="text-xs">Listings</p>
         </div>
-      ) : (
-        <div>{/* Map your ads here */}</div>
-      )}
-    </div>
-  );
-}
-
-// Simple Login Popup Component
-function LoginPopup({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-xl w-80">
-        <h3 className="font-bold text-lg mb-4">Login to Continue</h3>
-        <button className="w-full bg-blue-500 text-white py-2 rounded mb-2">Continue with Google</button>
-        <button className="w-full bg-green-500 text-white py-2 rounded mb-2">Login with Phone</button>
-        <button onClick={onClose} className="w-full text-gray-500">Cancel</button>
+        <div className="bg-[#C2410C] p-3 rounded-lg text-center">
+          <p className="text-2xl font-bold">{products.filter(p => p.status === 'sold').length}</p>
+          <p className="text-xs">Sold</p>
+        </div>
+        <div className="bg-[#C2410C] p-3 rounded-lg text-center">
+          <p className="text-2xl font-bold">98%</p>
+          <p className="text-xs">Response</p>
+        </div>
       </div>
+
+      {/* 3. MY LISTINGS */}
+      <div className="px-5">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-xl font-bold">My Listings</h2>
+          <Link href="/sell" className="bg-[#C2410C] px-4 py-2 rounded text-sm font-bold">
+            + Add New
+          </Link>
+        </div>
+
+        {products.length === 0? (
+          <div className="bg-[#C2410C]/50 p-6 rounded-lg text-center">
+            <p>No listings yet</p>
+            <Link href="/sell" className="underline">Post your first item</Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {products.map((product) => (
+              <div key={product.id} className="bg-[#C2410C]/30 p-3 rounded-lg flex gap-3">
+                <img src={product.image} className="w-20 h-20 rounded object-cover" />
+                <div className="flex-1">
+                  <p className="font-bold">{product.title}</p>
+                  <p className="text-lg">UGX {product.price?.toLocaleString()}</p>
+                  <p className={`text-xs ${product.status === 'sold'? 'text-red-300' : 'text-green-300'}`}>
+                    {product.status}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 4. SETTINGS + LOGOUT */}
+      <div className="px-5 mt-6">
+        <button
+          onClick={handleLogout}
+          className="bg-red-700 hover:bg-red-800 w-full p-3 rounded-lg font-bold"
+        >
+          Logout
+        </button>
+      </div>
+
     </div>
-  );
+  )
 }
