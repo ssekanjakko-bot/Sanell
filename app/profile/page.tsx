@@ -2,17 +2,18 @@
 import { useEffect, useState } from 'react'
 import { auth, db } from '@/lib/firebase'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore' // added updateDoc
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image' // add this for better image loading
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null)
   const [userData, setUserData] = useState<any>({})
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [editingDesc, setEditingDesc] = useState(false) // new
-  const [description, setDescription] = useState('') // new
+  const [editingDesc, setEditingDesc] = useState(false)
+  const [description, setDescription] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -24,7 +25,17 @@ export default function ProfilePage() {
       if (userSnap.exists()) {
         const data = userSnap.data()
         setUserData(data)
-        setDescription(data.description || '') // load description
+        setDescription(data.description || '')
+      } else {
+        // If user doc doesn't exist, create it with verified badge
+        await setDoc(doc(db, "users", u.uid), {
+          name: u.displayName || 'Seller',
+          email: u.email,
+          phone: u.phoneNumber || '',
+          isVerified: true, // <-- GREEN TICK FOR NEW ACCOUNTS
+          description: '',
+          createdAt: new Date()
+        })
       }
 
       const q = query(collection(db, "products"), where("sellerId", "==", u.uid))
@@ -51,26 +62,33 @@ export default function ProfilePage() {
   return (
     <div className="bg-[#7C2D12] min-h-screen text-[#FFFBEB] pb-20">
 
-      {/* BACK BUTTON */}
       <div className="p-4">
         <Link href="/" className="text-[#FFFBEB] underline">← Back</Link>
       </div>
 
-      {/* 1. SELLER HEADER */}
+      {/* 1. SELLER HEADER WITH VERIFIED BADGE */}
       <div className="px-5 pb-4 border-b border-[#C2410C]/30">
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full bg-[#C2410C] flex items-center justify-center text-3xl font-bold">
+          <div className="w-20 h-20 rounded-full bg-[#C2410C] flex items-center justify-center text-3xl font-bold relative">
             {userData.name?.[0]?.toUpperCase() || 'S'}
+            {userData.isVerified && ( // GREEN TICK
+              <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full w-6 h-6 flex items-center justify-center border-2 border-[#7C2D12]">
+                ✓
+              </div>
+            )}
           </div>
           <div>
-            <h1 className="text-2xl font-bold">{userData.name || 'Seller'}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">{userData.name || 'Seller'}</h1>
+              {userData.isVerified && <span className="text-green-400 text-sm">Verified</span>}
+            </div>
             <p className="text-sm opacity-80">{userData.phone || 'No phone'}</p>
             <p className="text-sm opacity-80">{user?.email}</p>
           </div>
         </div>
       </div>
 
-      {/* 1.5 SELLER DESCRIPTION - NEW */}
+      {/* ABOUT ME */}
       <div className="px-5 py-4">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-lg font-bold">About Me</h2>
@@ -78,22 +96,11 @@ export default function ProfilePage() {
             {editingDesc? 'Cancel' : 'Edit'}
           </button>
         </div>
-
         {editingDesc? (
           <div>
-            <textarea
-              value={description}
-              onChange={e=>setDescription(e.target.value)}
-              placeholder="Tell buyers about yourself. Ex: I sell original iPhones and laptops in Kampala. Fast delivery."
-              className="w-full bg-[#FFFBEB] text-[#7C2D12] p-3 rounded-md h-24 outline-none"
-              maxLength={200}
-            />
-            <button
-              onClick={saveDescription}
-              className="bg-[#C2410C] px-4 py-2 rounded mt-2 font-bold"
-            >
-              Save
-            </button>
+            <textarea value={description} onChange={e=>setDescription(e.target.value)}
+              className="w-full bg-[#FFFBEB] text-[#7C2D12] p-3 rounded-md h-24 outline-none" maxLength={200}/>
+            <button onClick={saveDescription} className="bg-[#C2410C] px-4 py-2 rounded mt-2 font-bold">Save</button>
           </div>
         ) : (
           <p className="bg-[#C2410C]/30 p-3 rounded-lg text-sm">
@@ -102,7 +109,7 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* 2. STATS */}
+      {/* STATS */}
       <div className="px-5 py-2">
         <h2 className="text-lg font-bold mb-3">Stats</h2>
         <div className="grid grid-cols-3 gap-3">
@@ -121,7 +128,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* 3. MY LISTINGS */}
+      {/* 3. MY LISTINGS - FIXED IMAGES */}
       <div className="px-5">
         <div className="flex justify-between items-center mb-3">
           <h2 className="text-lg font-bold">My Listings</h2>
@@ -132,25 +139,33 @@ export default function ProfilePage() {
           <div className="bg-[#C2410C]/30 p-6 rounded-lg text-center">No listings yet</div>
         ) : (
           <div className="space-y-3">
-            {products.map(p => (
-              <div key={p.id} className="bg-[#C2410C]/30 p-3 rounded-lg flex gap-3">
-                <img src={p.image} className="w-20 h-20 rounded object-cover" />
-                <div className="flex-1">
-                  <p className="font-bold">{p.title}</p>
-                  <p>UGX {p.price?.toLocaleString()}</p>
-                  <p className={`text-xs ${p.status === 'sold'? 'text-red-300' : 'text-green-300'}`}>{p.status || 'active'}</p>
+            {products.map(p => {
+              // FIX: Try different possible image field names
+              const imageUrl = p.image || p.imageUrl || p.images?.[0] || '/placeholder.png'
+              return (
+                <div key={p.id} className="bg-[#C2410C]/30 p-3 rounded-lg flex gap-3">
+                  <div className="relative w-20 h-20 rounded overflow-hidden flex-shrink-0">
+                    <img 
+                      src={imageUrl} 
+                      alt={p.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {e.currentTarget.src = '/placeholder.png'}} // fallback
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold">{p.title}</p>
+                    <p>UGX {p.price?.toLocaleString()}</p>
+                    <p className={`text-xs ${p.status === 'sold'? 'text-red-300' : 'text-green-300'}`}>{p.status || 'active'}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
 
-      {/* 4. LOGOUT */}
       <div className="px-5 mt-8">
-        <button onClick={handleLogout} className="bg-red-800 w-full p-3 rounded-lg font-bold">
-          Logout
-        </button>
+        <button onClick={handleLogout} className="bg-red-800 w-full p-3 rounded-lg font-bold">Logout</button>
       </div>
 
     </div>
