@@ -33,7 +33,7 @@ const CATEGORIES = [
 const BOTTOM_NAV = [
   { name: 'Home', icon: '🏠', href: '/' },
   { name: 'Chat', icon: '💬', href: '/' },
-  { name: 'Stores', icon: '🏪', href: '/' },
+  { name: 'Stores', icon: '🏪', href: '/chat' },
   { name: 'Profile', icon: '👤', href: '/profile' },
 ]
 
