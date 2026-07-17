@@ -32,8 +32,8 @@ const CATEGORIES = [
 // Admin is removed from here. Hidden. Only accessible via /admin URL
 const BOTTOM_NAV = [
   { name: 'Home', icon: '🏠', href: '/' },
-  { name: 'Chat', icon: '💬', href: '/' },
-  { name: 'Stores', icon: '🏪', href: '/chat' },
+  { name: 'Chat', icon: '💬', href: '/chat' },
+  { name: 'Stores', icon: '🏪', href: '/' },
   { name: 'Profile', icon: '👤', href: '/profile' },
 ]
 
