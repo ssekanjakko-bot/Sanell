@@ -2,116 +2,143 @@
 import { useEffect, useState } from 'react'
 import { auth, db } from '@/lib/firebase'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore'
-import Link from 'next/link'
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore' // added updateDoc
 import { useRouter } from 'next/navigation'
-
-type Product = {
-  id: string,
-  title: string,
-  price: number,
-  image: string,
-  status: 'active' | 'sold'
-}
+import Link from 'next/link'
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null)
   const [userData, setUserData] = useState<any>({})
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [editingDesc, setEditingDesc] = useState(false) // new
+  const [description, setDescription] = useState('') // new
   const router = useRouter()
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
-      if (!u) {
-        router.push('/profile') // layout will show login modal
-        return
-      }
+      if (!u) return router.push('/')
       setUser(u)
 
-      // 1. Get user data from Firestore
-      const userRef = doc(db, "users", u.uid)
-      const userSnap = await getDoc(userRef)
-      if (userSnap.exists()) setUserData(userSnap.data())
+      const userSnap = await getDoc(doc(db, "users", u.uid))
+      if (userSnap.exists()) {
+        const data = userSnap.data()
+        setUserData(data)
+        setDescription(data.description || '') // load description
+      }
 
-      // 2. Get real listings from Firestore
       const q = query(collection(db, "products"), where("sellerId", "==", u.uid))
-      const querySnap = await getDocs(q)
-      const userProducts: Product[] = []
-      querySnap.forEach((doc) => {
-        userProducts.push({ id: doc.id,...doc.data() } as Product)
-      })
-      setProducts(userProducts)
+      const snap = await getDocs(q)
+      setProducts(snap.docs.map(d => ({id: d.id,...d.data()})))
       setLoading(false)
     })
     return () => unsub()
   }, [router])
 
-  const handleLogout = async () => {
-    await signOut(auth)
-    router.refresh()
+  const saveDescription = async () => {
+    await updateDoc(doc(db, "users", user.uid), { description })
+    setUserData({...userData, description})
+    setEditingDesc(false)
   }
 
-  if (loading) return <div className="p-10 text-center text-white">Loading...</div>
+  const handleLogout = async () => {
+    await signOut(auth)
+    router.push('/')
+  }
+
+  if (loading) return <div className="p-10 text-center text-[#FFFBEB]">Loading...</div>
 
   return (
     <div className="bg-[#7C2D12] min-h-screen text-[#FFFBEB] pb-20">
 
-      {/* 1. PROFILE HEADER */}
-      <div className="p-5">
-        <div className="flex items-center gap-4 mb-4">
+      {/* BACK BUTTON */}
+      <div className="p-4">
+        <Link href="/" className="text-[#FFFBEB] underline">← Back</Link>
+      </div>
+
+      {/* 1. SELLER HEADER */}
+      <div className="px-5 pb-4 border-b border-[#C2410C]/30">
+        <div className="flex items-center gap-4">
           <div className="w-20 h-20 rounded-full bg-[#C2410C] flex items-center justify-center text-3xl font-bold">
-            {userData.name?.[0]?.toUpperCase() || 'U'}
+            {userData.name?.[0]?.toUpperCase() || 'S'}
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Hi {userData.name || 'Seller'}</h1>
-            <p className="text-sm opacity-80">{userData.email}</p>
-            <p className="text-sm opacity-80">{userData.phone}</p>
+            <h1 className="text-2xl font-bold">{userData.name || 'Seller'}</h1>
+            <p className="text-sm opacity-80">{userData.phone || 'No phone'}</p>
+            <p className="text-sm opacity-80">{user?.email}</p>
           </div>
         </div>
       </div>
 
+      {/* 1.5 SELLER DESCRIPTION - NEW */}
+      <div className="px-5 py-4">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-lg font-bold">About Me</h2>
+          <button onClick={()=>setEditingDesc(!editingDesc)} className="text-sm underline">
+            {editingDesc? 'Cancel' : 'Edit'}
+          </button>
+        </div>
+
+        {editingDesc? (
+          <div>
+            <textarea
+              value={description}
+              onChange={e=>setDescription(e.target.value)}
+              placeholder="Tell buyers about yourself. Ex: I sell original iPhones and laptops in Kampala. Fast delivery."
+              className="w-full bg-[#FFFBEB] text-[#7C2D12] p-3 rounded-md h-24 outline-none"
+              maxLength={200}
+            />
+            <button
+              onClick={saveDescription}
+              className="bg-[#C2410C] px-4 py-2 rounded mt-2 font-bold"
+            >
+              Save
+            </button>
+          </div>
+        ) : (
+          <p className="bg-[#C2410C]/30 p-3 rounded-lg text-sm">
+            {description || "No description yet. Click Edit to add one."}
+          </p>
+        )}
+      </div>
+
       {/* 2. STATS */}
-      <div className="grid grid-cols-3 gap-3 px-5 mb-5">
-        <div className="bg-[#C2410C] p-3 rounded-lg text-center">
-          <p className="text-2xl font-bold">{products.length}</p>
-          <p className="text-xs">Listings</p>
-        </div>
-        <div className="bg-[#C2410C] p-3 rounded-lg text-center">
-          <p className="text-2xl font-bold">{products.filter(p => p.status === 'sold').length}</p>
-          <p className="text-xs">Sold</p>
-        </div>
-        <div className="bg-[#C2410C] p-3 rounded-lg text-center">
-          <p className="text-2xl font-bold">98%</p>
-          <p className="text-xs">Response</p>
+      <div className="px-5 py-2">
+        <h2 className="text-lg font-bold mb-3">Stats</h2>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-[#C2410C] p-3 rounded-lg text-center">
+            <p className="text-2xl font-bold">{products.length}</p>
+            <p className="text-xs">Listings</p>
+          </div>
+          <div className="bg-[#C2410C] p-3 rounded-lg text-center">
+            <p className="text-2xl font-bold">{products.filter(p => p.status === 'sold').length}</p>
+            <p className="text-xs">Sold</p>
+          </div>
+          <div className="bg-[#C2410C] p-3 rounded-lg text-center">
+            <p className="text-2xl font-bold">{products.filter(p => p.status === 'active').length}</p>
+            <p className="text-xs">Active</p>
+          </div>
         </div>
       </div>
 
       {/* 3. MY LISTINGS */}
       <div className="px-5">
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-xl font-bold">My Listings</h2>
-          <Link href="/sell" className="bg-[#C2410C] px-4 py-2 rounded text-sm font-bold">
-            + Add New
-          </Link>
+          <h2 className="text-lg font-bold">My Listings</h2>
+          <Link href="/sell" className="bg-[#C2410C] px-4 py-2 rounded text-sm font-bold">+ Post</Link>
         </div>
 
         {products.length === 0? (
-          <div className="bg-[#C2410C]/50 p-6 rounded-lg text-center">
-            <p>No listings yet</p>
-            <Link href="/sell" className="underline">Post your first item</Link>
-          </div>
+          <div className="bg-[#C2410C]/30 p-6 rounded-lg text-center">No listings yet</div>
         ) : (
           <div className="space-y-3">
-            {products.map((product) => (
-              <div key={product.id} className="bg-[#C2410C]/30 p-3 rounded-lg flex gap-3">
-                <img src={product.image} className="w-20 h-20 rounded object-cover" />
+            {products.map(p => (
+              <div key={p.id} className="bg-[#C2410C]/30 p-3 rounded-lg flex gap-3">
+                <img src={p.image} className="w-20 h-20 rounded object-cover" />
                 <div className="flex-1">
-                  <p className="font-bold">{product.title}</p>
-                  <p className="text-lg">UGX {product.price?.toLocaleString()}</p>
-                  <p className={`text-xs ${product.status === 'sold'? 'text-red-300' : 'text-green-300'}`}>
-                    {product.status}
-                  </p>
+                  <p className="font-bold">{p.title}</p>
+                  <p>UGX {p.price?.toLocaleString()}</p>
+                  <p className={`text-xs ${p.status === 'sold'? 'text-red-300' : 'text-green-300'}`}>{p.status || 'active'}</p>
                 </div>
               </div>
             ))}
@@ -119,12 +146,9 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* 4. SETTINGS + LOGOUT */}
-      <div className="px-5 mt-6">
-        <button
-          onClick={handleLogout}
-          className="bg-red-700 hover:bg-red-800 w-full p-3 rounded-lg font-bold"
-        >
+      {/* 4. LOGOUT */}
+      <div className="px-5 mt-8">
+        <button onClick={handleLogout} className="bg-red-800 w-full p-3 rounded-lg font-bold">
           Logout
         </button>
       </div>
