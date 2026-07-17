@@ -27,16 +27,13 @@ export default function AdminNotifications() {
   const [loading, setLoading] = useState<boolean>(false);
   const [history, setHistory] = useState<Notification[]>([]);
 
-  // Load current safety tip + last 5 broadcasts
   useEffect(() => {
     const loadData = async () => {
-      // Load Safety Tip
       const tipSnap = await getDoc(doc(db, "settings", "safety_tip"));
       if (tipSnap.exists()) {
         setSafetyTip(tipSnap.data().text || "");
       }
 
-      // Load History
       const q = query(collection(db, "notifications"), orderBy("created_at", "desc"), limit(5));
       const historySnap = await getDocs(q);
       const historyData: Notification[] = [];
@@ -77,7 +74,6 @@ export default function AdminNotifications() {
       setTitle("");
       setMessage("");
       alert("✅ Sent to everyone!");
-      // Refresh history
       window.location.reload();
     } catch (e: any) {
       alert("Error: " + e.message);
@@ -90,4 +86,74 @@ export default function AdminNotifications() {
       <div className="max-w-2xl mx-auto">
         
         <div className="mb-6">
-          <h1 className="
+          <h1 className="text-2xl font-bold">Sanel Notifications</h1>
+          <a href="/admin" className="text-sm text-blue-600 underline">← Back to Movies Admin</a>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl shadow-sm border mb-6">
+          <h2 className="font-semibold text-lg mb-2">1. Safety Tip</h2>
+          <p className="text-sm text-gray-500 mb-3">This shows at top of every user's inbox</p>
+          <textarea 
+            value={safetyTip} 
+            onChange={e => setSafetyTip(e.target.value)}
+            rows={3}
+            className="w-full border border-gray-300 p-3 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <button 
+            onClick={saveSafetyTip} 
+            disabled={loading}
+            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg disabled:opacity-50"
+          >
+            {loading ? "Saving..." : "Save Safety Tip"}
+          </button>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl shadow-sm border mb-6">
+          <h2 className="font-semibold text-lg mb-2">2. Send Broadcast to Everyone</h2>
+          <p className="text-sm text-gray-500 mb-3">This goes into everyone's notification feed</p>
+          
+          <input 
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="Sanel Update"
+            className="w-full border border-gray-300 p-3 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          
+          <textarea 
+            value={message}
+            onChange={e => setMessage(e.target.value)}
+            rows={3}
+            placeholder="We just added Dark Mode"
+            className="w-full border border-gray-300 p-3 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          
+          <button 
+            onClick={sendBroadcast} 
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg disabled:opacity-50"
+          >
+            {loading ? "Sending..." : "Send to Everyone"}
+          </button>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl shadow-sm border">
+          <h2 className="font-semibold text-lg mb-3">Last 5 Broadcasts</h2>
+          {history.length === 0 ? (
+            <p className="text-gray-500 text-sm">No broadcasts sent yet</p>
+          ) : (
+            <div className="space-y-3">
+              {history.map((n) => (
+                <div key={n.id} className="border-l-4 border-blue-500 pl-3">
+                  <p className="font-semibold">{n.title}</p>
+                  <p className="text-sm text-gray-600">{n.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+}
