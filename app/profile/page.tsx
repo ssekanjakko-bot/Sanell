@@ -123,7 +123,7 @@ export default function ProfilePage() {
             {products.map(p => {
               const imageUrl = p.image || p.imageUrl || p.images?.[0] || '/placeholder.png'
               return (
-                <div key={p.id} className="bg-[#C2410C]/30 p-3 rounded-lg flex gap-3">
+                <div key={p.id} className="bg-[#C2410C]/20  backdrop-blur-md border border-white/10 p-3 rounded-xl flex gap-3 shadow-lg">
                   <img src={imageUrl} alt={p.title} className="w-20 h-20 rounded object-cover" onError={(e:any)=>e.target.src='/placeholder.png'}/>
                   <div className="flex-1">
                     <p className="font-bold">{p.title}</p>
