@@ -1,3 +1,5 @@
+'use client ' 
+
 import React, { useState, useEffect } from "react";
 
 type BadgeKey = "blue" | "yellow" | "red" | "grey" | "white";
