@@ -10,6 +10,9 @@ export default function GameCenter() {
     { name: "SOS Tic-Tac-Toe", path: "/games/tictac", emoji: "⭕❌" },
     { name: "Memory Cards", path: "/games/memory", emoji: "🧠" },
     { name: "Snake Game", path: "/games/snake", emoji: "🐍" },
+    { name: "2048 Sanel", path: "/games/2048", emoji: "🧱" },
+    { name: "Target Shoot", path: "/games/target", emoji: "🎯" },
+    { name: "Rock Paper Scissors", path: "/games/rps", emoji: "🪨📄✂️" },
   ];
 
   return (
