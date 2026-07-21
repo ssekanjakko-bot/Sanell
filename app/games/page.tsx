@@ -75,7 +75,7 @@ function TicTac({setGame, points, setPoints}:any){ /* paste the tictac code from
   };
   const checkGame = (b:any) => {
     const win = calculateWinner(b);
-    if (win === "X") { setPoints((p:number)=>p+20)); setStatus("You Win! +20"); setTimeout(()=>{setBoard(Array(9).fill(null)); setStatus("Your Turn: X")}, 1500); }
+    if (win === "X") { setPoints((p:number)=>p+20); setStatus("You Win! +20"); setTimeout(()=>{setBoard(Array(9).fill(null)); setStatus("Your Turn: X")}, 1500); }
     else if (win === "O") { setPoints(p=>p+5); setStatus("Bot Wins! +5"); setTimeout(()=>{setBoard(Array(9).fill(null)); setStatus("Your Turn: X")}, 1500); }
     else if (!b.includes(null)) { setStatus("Draw!"); setTimeout(()=>{setBoard(Array(9).fill(null)); setStatus("Your Turn: X")}, 1500); }
     else setStatus("Your Turn: X");
