@@ -62,16 +62,17 @@ function ChessReal({setGame, points, setPoints, level, updateLevel, getPoints}:a
   return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Chess Lvl {level} ♟️ Bot:{1000-botSpeed}ms</h1><div className="w-80 mx-auto"><Chessboard position={pos} onPieceDrop={onDrop}/></div></div>
 }
 
-// 2. LUDO KING STYLE - 4 PLAYER
+// 2. LUDO KING STYLE - TS FIXED
 function Ludo({setGame, points, setPoints, level, updateLevel, getPoints}:any){
   const [mode, setMode] = useState<"menu"|"setup"|"game">("menu");
   const [players, setPlayers] = useState(4);
-  const [playerColor, setPlayerColor] = useState(2); // 0=Green, 1=Red, 2=Yellow, 3=Blue
+  const [playerColor, setPlayerColor] = useState(2);
   const [turn, setTurn] = useState(0);
   const [dice, setDice] = useState(1);
   const [canRoll, setCanRoll] = useState(true);
 
-  const [tokens, setTokens] = useState({0:[0,0,0,0], 1:[0,0,0,0], 2:[0,0,0,0], 3:[0,0,0,0]});
+  type Tokens = Record<0|1|2|3, number[]>;
+  const [tokens, setTokens] = useState<Tokens>({0:[0,0,0,0], 1:[0,0,0,0], 2:[0,0,0,0], 3:[0,0,0,0]});
   const colors = ["bg-green-500","bg-red-500","bg-yellow-400","bg-blue-500"];
   const colorNames = ["Green","Red","Yellow","Blue"];
 
@@ -82,19 +83,22 @@ function Ludo({setGame, points, setPoints, level, updateLevel, getPoints}:any){
     setDice(d);
     
     setTimeout(()=>{
-      const newTokens = {...tokens};
-      let pos = newTokens[turn][0];
+      const newTokens:Tokens = {...tokens};
+      const currentTurn = turn as 0|1|2|3;
+      let pos = newTokens[currentTurn][0];
+      
       if(pos === 0 && d === 6) pos = 1; 
       else if(pos > 0) pos += d;
       if(pos > 57) pos = 57;
-      newTokens[turn][0] = pos;
+      
+      newTokens[currentTurn][0] = pos;
       setTokens(newTokens);
 
-      if(newTokens[turn].every(x=>x===57)){
+      if(newTokens[currentTurn].every(x=>x===57)){
         const pts = getPoints(level, 50);
         setPoints((p:number)=>p+pts);
         updateLevel();
-        alert(`${colorNames[turn]} WINS Lvl ${level}! +${pts}`);
+        alert(`${colorNames[currentTurn]} WINS Lvl ${level}! +${pts}`);
       }
       
       setTurn((turn+1)%players);
@@ -146,18 +150,14 @@ function Ludo({setGame, points, setPoints, level, updateLevel, getPoints}:any){
   return (
     <div className="p-2 bg-gradient-to-b from-blue-900 to-blue-950 min-h-screen text-white">
       <BackBtn setGame={()=>setMode("menu")}/>
-      <div className="text-center mb-2 font-bold">Lvl {level} | Turn: <span className="text-yellow-400">{colorNames[turn]}</span></div>
+      <div className="text-center mb-2 font-bold">Lvl {level} | Turn: <span className="text-yellow-400">{colorNames}</span></div>
       
-      <div className="w-96 h-96 mx-auto bg-white rounded-2xl p-2 grid grid-cols-15 grid-rows-15 gap-0">
-        <div className="col-span-6 row-span-6 bg-green-500 rounded-xl flex items-center justify-center text-black font-bold">G</div>
-        <div className="col-span-3 row-span-6"></div>
-        <div className="col-span-6 row-span-6 bg-red-500 rounded-xl flex items-center justify-center text-black font-bold">R</div>
-        <div className="col-span-6 row-span-3"></div>
-        <div className="col-span-3 row-span-3 bg-gray-300 rounded"></div>
-        <div className="col-span-6 row-span-3"></div>
-        <div className="col-span-6 row-span-6 bg-yellow-400 rounded-xl flex items-center justify-center text-black font-bold">Y</div>
-        <div className="col-span-3 row-span-6"></div>
-        <div className="col-span-6 row-span-6 bg-blue-500 rounded-xl flex items-center justify-center text-black font-bold">B</div>
+      <div className="w-96 h-96 mx-auto bg-white rounded-2xl p-2" style={{display:'grid', gridTemplateColumns:'repeat(15,1fr)', gridTemplateRows:'repeat(15,1fr)'}}>
+        <div style={{gridColumn:'1/7', gridRow:'1/7'}} className="bg-green-500 rounded-xl flex items-center justify-center text-black font-bold">G</div>
+        <div style={{gridColumn:'10/16', gridRow:'1/7'}} className="bg-red-500 rounded-xl flex items-center justify-center text-black font-bold">R</div>
+        <div style={{gridColumn:'1/7', gridRow:'10/16'}} className="bg-yellow-400 rounded-xl flex items-center justify-center text-black font-bold">Y</div>
+        <div style={{gridColumn:'10/16', gridRow:'10/16'}} className="bg-blue-500 rounded-xl flex items-center justify-center text-black font-bold">B</div>
+        <div style={{gridColumn:'7/10', gridRow:'7/10'}} className="bg-gray-300 rounded"></div>
       </div>
 
       <div className="text-center mt-4">
