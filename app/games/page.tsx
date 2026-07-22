@@ -125,13 +125,34 @@ function Game2048({setGame, points, setPoints, level, updateLevel, getPoints}:an
   return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>2048 Lvl {level} Goal:{goal} 🧱</h1><button onClick={()=>{addTile(); const pts=getPoints(level,30); setPoints((p:number)=>p+pts); updateLevel()}} className="px-4 py-2 bg-red-600 rounded">Add Tile + Level Up</button></div>
 }
 
-// 9. REAL SNAKES & LADDERS
+// 9. REAL SNAKES & LADDERS - TS FIXED
 function Snakes({setGame, points, setPoints, level, updateLevel, getPoints}:any){
   const [pos,setPos]=useState(1); const target=30 + level*10;
-  const snakes={16:6,47:26,49:11,56:53,62:19,64:60,87:24,93:73,95:75,98:78};
-  const ladders={1:38,4:14,9:31,21:42,28:84,36:44,51:67,71:91,80:100};
-  const roll=()=>{const d=Math.floor(Math.random()*6)+1; let np=pos+d; if(np>target)np=pos; if(snakes[np])np=snakes[np]; if(ladders[np])np=ladders[np]; setPos(np); if(np>=target){const pts=getPoints(level,25); setPoints((p:number)=>p+pts); updateLevel(); alert(`Lvl ${level} Win!`); setPos(1) }}
-  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Snakes Lvl {level} 🐍🪜</h1><p>Race to {target}. Pos:{pos}</p><button onClick={roll} className="px-6 py-3 bg-red-600 rounded">Roll Dice</button></div>
+  
+  const snakes:Record<number, number> = {16:6,47:26,49:11,56:53,62:19,64:60,87:24,93:73,95:75,98:78};
+  const ladders:Record<number, number> = {1:38,4:14,9:31,21:42,28:84,36:44,51:67,71:91,80:100};
+  
+  const roll=()=>{
+    const d=Math.floor(Math.random()*6)+1; 
+    let np=pos+d; 
+    if(np>target) np=pos; 
+    if(snakes[np]) np=snakes[np]; 
+    if(ladders[np]) np=ladders[np]; 
+    setPos(np); 
+    if(np>=target){
+      const pts=getPoints(level,25); 
+      setPoints((p:number)=>p+pts); 
+      updateLevel(); 
+      alert(`Lvl ${level} Win!`); 
+      setPos(1)
+    } 
+  }
+  return <div className="p-4 bg-black min-h-screen text-white text-center">
+    <BackBtn setGame={setGame}/>
+    <h1>Snakes Lvl {level} 🐍🪜</h1>
+    <p>Race to {target}. Pos:{pos}</p>
+    <button onClick={roll} className="mt-4 px-6 py-3 bg-red-600 rounded font-bold">Roll Dice</button>
+  </div>
 }
 
 // 10. REAL DRAFT
