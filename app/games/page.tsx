@@ -3,12 +3,12 @@ import { useState, useEffect, useRef } from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 
-type Game = "menu" | "tictac" | "ludo" | "memory" | "snake" | "target" | "rps" | "2048" | "snakes" | "chess" | "draft";
+type Game = "menu" | "chess" | "draft" | "ludo" | "snakes" | "tictac" | "memory" | "snake" | "2048" | "target" | "rps" | "flappy" | "2048x" | "puzzle" | "connect4" | "breakout" | "whack" | "bubble" | "maze" | "car" | "quiz";
 
 export default function GameMachine() {
   const [game, setGame] = useState<Game>("menu");
   const [points, setPoints] = useState(0);
-  const [levels, setLevels] = useState({tictac:1,ludo:1,memory:1,snake:1,target:1,rps:1,snake2048:1,snakes:1,chess:1,draft:1});
+  const [levels, setLevels] = useState(Object.fromEntries(Array(20).fill(0).map((_,i)=>[i+1,1])));
 
   useEffect(() => {
     setPoints(Number(localStorage.getItem("sanelPoints") || 0));
@@ -17,213 +17,151 @@ export default function GameMachine() {
   useEffect(() => localStorage.setItem("sanelPoints", points.toString()), [points]);
   useEffect(() => localStorage.setItem("sanelLevels", JSON.stringify(levels)), [levels]);
 
-  const updateLevel = (g:keyof typeof levels) => { setLevels({...levels, [g]: levels[g] + 1}) }
+  const updateLevel = (g:number) => { setLevels({...levels, [g]: levels[g] + 1}) }
   const getPoints = (level:number, base:number) => level * base;
 
-  if(game === "menu") return <Menu setGame={setGame} points={points} levels={levels} />
-  if(game === "ludo") return <Ludo setGame={setGame} points={points} setPoints={setPoints} level={levels.ludo} updateLevel={()=>updateLevel("ludo")} getPoints={getPoints} />
-  if(game === "chess") return <ChessReal setGame={setGame} points={points} setPoints={setPoints} level={levels.chess} updateLevel={()=>updateLevel("chess")} getPoints={getPoints} />
-  return <div className="p-4 bg-black text-white">Other games here... <button onClick={()=>setGame("menu")}>Back</button></div>
+  const games:any = {
+    menu: <Menu setGame={setGame} points={points} levels={levels} />,
+    chess: <ChessGame setGame={setGame} points={points} setPoints={setPoints} level={levels[1]} updateLevel={()=>updateLevel(1)} getPoints={getPoints} />,
+    draft: <DraftGame setGame={setGame} points={points} setPoints={setPoints} level={levels[2]} updateLevel={()=>updateLevel(2)} getPoints={getPoints} />,
+    ludo: <LudoGame setGame={setGame} points={points} setPoints={setPoints} level={levels[3]} updateLevel={()=>updateLevel(3)} getPoints={getPoints} />,
+    snakes: <SnakesGame setGame={setGame} points={points} setPoints={setPoints} level={levels[4]} updateLevel={()=>updateLevel(4)} getPoints={getPoints} />,
+    tictac: <TicTacGame setGame={setGame} points={points} setPoints={setPoints} level={levels[5]} updateLevel={()=>updateLevel(5)} getPoints={getPoints} />,
+    memory: <MemoryGame setGame={setGame} points={points} setPoints={setPoints} level={levels[6]} updateLevel={()=>updateLevel(6)} getPoints={getPoints} />,
+    snake: <SnakeGame setGame={setGame} points={points} setPoints={setPoints} level={levels[7]} updateLevel={()=>updateLevel(7)} getPoints={getPoints} />,
+    "2048": <Game2048 setGame={setGame} points={points} setPoints={setPoints} level={levels[8]} updateLevel={()=>updateLevel(8)} getPoints={getPoints} />,
+    target: <TargetGame setGame={setGame} points={points} setPoints={setPoints} level={levels[9]} updateLevel={()=>updateLevel(9)} getPoints={getPoints} />,
+    rps: <RPSGame setGame={setGame} points={points} setPoints={setPoints} level={levels[10]} updateLevel={()=>updateLevel(10)} getPoints={getPoints} />,
+    flappy: <FlappyGame setGame={setGame} points={points} setPoints={setPoints} level={levels[11]} updateLevel={()=>updateLevel(11)} getPoints={getPoints} />,
+    "2048x": <Game2048x setGame={setGame} points={points} setPoints={setPoints} level={levels[12]} updateLevel={()=>updateLevel(12)} getPoints={getPoints} />,
+    puzzle: <PuzzleGame setGame={setGame} points={points} setPoints={setPoints} level={levels[13]} updateLevel={()=>updateLevel(13)} getPoints={getPoints} />,
+    connect4: <Connect4Game setGame={setGame} points={points} setPoints={setPoints} level={levels[14]} updateLevel={()=>updateLevel(14)} getPoints={getPoints} />,
+    breakout: <BreakoutGame setGame={setGame} points={points} setPoints={setPoints} level={levels[15]} updateLevel={()=>updateLevel(15)} getPoints={getPoints} />,
+    whack: <WhackGame setGame={setGame} points={points} setPoints={setPoints} level={levels[16]} updateLevel={()=>updateLevel(16)} getPoints={getPoints} />,
+    bubble: <BubbleGame setGame={setGame} points={points} setPoints={setPoints} level={levels[17]} updateLevel={()=>updateLevel(17)} getPoints={getPoints} />,
+    maze: <MazeGame setGame={setGame} points={points} setPoints={setPoints} level={levels[18]} updateLevel={()=>updateLevel(18)} getPoints={getPoints} />,
+    car: <CarGame setGame={setGame} points={points} setPoints={setPoints} level={levels[19]} updateLevel={()=>updateLevel(19)} getPoints={getPoints} />,
+    quiz: <QuizGame setGame={setGame} points={points} setPoints={setPoints} level={levels[20]} updateLevel={()=>updateLevel(20)} getPoints={getPoints} />,
+  }
+  return games[game] || games.menu
 }
 
 function BackBtn({setGame}:{setGame:any}){ return <button onClick={() => setGame("menu")} className="mb-4 px-3 py-1 bg-gray-700 rounded">← Back</button> }
 
+// 1. MENU - 20 GAMES
 function Menu({setGame, points, levels}:any){
-  return <div className="min-h-screen bg-black text-white p-4">
-    <h1 className="text-3xl font-bold text-red-600 text-center">Sanel Games ∞</h1>
-    <p className="text-center mb-6">Total Points: {points}</p>
-    <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-      <button onClick={() => setGame("ludo")} className="p-4 bg-white rounded-xl text-gray-800"><div className="text-3xl">🎲</div><div className="font-bold">Ludo</div><div className="text-xs">Level {levels.ludo}</div></button>
-      <button onClick={() => setGame("chess")} className="p-4 bg-white rounded-xl text-gray-800"><div className="text-3xl">♟️</div><div className="font-bold">Chess</div><div className="text-xs">Level {levels.chess}</div></button>
-    </div>
-  </div>
+  const gameList = [
+    {id:"chess", name:"Chess", emoji:"♟️"}, {id:"draft", name:"Draft", emoji:"👑"}, {id:"ludo", name:"Ludo", emoji:"🎲"}, {id:"snakes", name:"Snakes", emoji:"🐍🪜"},
+    {id:"tictac", name:"TicTac", emoji:"❌"}, {id:"memory", name:"Memory", emoji:"🧠"}, {id:"snake", name:"Snake", emoji:"🐍"}, {id:"2048", name:"2048", emoji:"🧱"},
+    {id:"target", name:"Target", emoji:"🎯"}, {id:"rps", name:"RPS", emoji:"✂️"}, {id:"flappy", name:"Flappy", emoji:"🐦"}, {id:"2048x", name:"2048 Pro", emoji:"🔢"},
+    {id:"puzzle", name:"Puzzle", emoji:"🧩"}, {id:"connect4", name:"Connect4", emoji:"🔴"}, {id:"breakout", name:"Breakout", emoji:"🧱"}, {id:"whack", name:"Whack", emoji:"🔨"},
+    {id:"bubble", name:"Bubble", emoji:"🫧"}, {id:"maze", name:"Maze", emoji:"🌀"}, {id:"car", name:"Car", emoji:"🏎️"}, {id:"quiz", name:"Quiz", emoji:"❓"},
+  ];
+  return <div className="min-h-screen bg-black text-white p-4"><h1 className="text-3xl font-bold text-red-600 text-center">Sanel Games ∞</h1><p className="text-center mb-6">Total Points: {points}</p><div className="grid grid-cols-2 gap-3 max-w-md mx-auto">{gameList.map(g => <button key={g.id} onClick={() => setGame(g.id)} className="p-4 bg-white rounded-xl text-gray-800 hover:scale-105"><div className="text-3xl">{g.emoji}</div><div className="font-bold">{g.name}</div><div className="text-xs">Lvl {levels[gameList.indexOf(g)+1]}</div></button>)}</div></div>
 }
 
-// LUDO 100% COMPLETE
-function Ludo({setGame, points, setPoints, level, updateLevel, getPoints}:any){
-  const [vsBot, setVsBot] = useState(true);
-  const [playerColor, setPlayerColor] = useState(2);
-  const [turn, setTurn] = useState(0);
-  const [dice, setDice] = useState(1);
-  const [canRoll, setCanRoll] = useState(true);
-  const [spinning, setSpinning] = useState(false);
-
-  type Tokens = Record<0|1|2|3, number[]>;
-  const [tokens, setTokens] = useState<Tokens>({0:[-1,-1,-1,-1], 1:[-1,-1,-1,-1], 2:[-1,-1,-1,-1], 3:[-1,-1,-1,-1]});
-
-  const colors = ["bg-green-500","bg-red-500","bg-yellow-400","bg-blue-500"];
-  const colorNames = ["Green","Red","Yellow","Blue"];
-  const diceFaces = ["⚀","⚁","⚂","⚃","⚄","⚅"];
-  const startPos = [0, 13, 26, 39];
-  const safeSpots = [0,8,13,21,26,34,39,47];
-
-  const track = [[6,1],[6,2],[6,3],[6,4],[6,5],[6,6],[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[6,8],[6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[8,14],[8,13],[8,12],[8,11],[8,10],[8,9],[8,8],[9,8],[10,8],[11,8],[12,8],[13,8],[14,8],[14,7],[14,6],[13,6],[12,6],[11,6],[10,6],[9,6],[8,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0],[7,0],[6,0]];
-
-  const moveSound = useRef<HTMLAudioElement | null>(null);
-  const captureSound = useRef<HTMLAudioElement | null>(null);
-  const winSound = useRef<HTMLAudioElement | null>(null);
-  const [soundOn, setSoundOn] = useState(false);
-
-  const enableSound = () => {
-    if(!soundOn){
-      moveSound.current = new Audio("https://lichess1.org/assets/sound/standard/Move.ogg");
-      captureSound.current = new Audio("https://lichess1.org/assets/sound/standard/Capture.ogg");
-      winSound.current = new Audio("https://lichess1.org/assets/sound/standard/Check.ogg");
-      setSoundOn(true);
-    }
-  }
-  const playSound = (type: "move" | "capture" | "win") => {
-    if(!soundOn) return;
-    if(type === "move") moveSound.current?.play().catch(()=>{});
-    if(type === "capture") captureSound.current?.play().catch(()=>{});
-    if(type === "win") winSound.current?.play().catch(()=>{});
-  }
-
-  useEffect(()=>{ if(turn!== playerColor && vsBot){ setTimeout(()=>rollDice(), 1000); } },[turn])
-
-  const getPos = (player:0|1|2|3, steps:number) => {
-    if(steps === -1) return null;
-    if(steps < 52) return track[(startPos[player] + steps) % 52];
-    const pathStep = steps - 52;
-    if(player===0) return [7, 13-pathStep];
-    if(player===1) return [9+pathStep, 7];
-    if(player===2) return [7, 1+pathStep];
-    if(player===3) return [5-pathStep, 7];
-  }
-
-  const canMove = (pos:number, d:number) => {
-    if(pos === -1) return d === 6;
-    if(pos + d > 57) return false;
-    return true;
-  }
-
-  const rollDice = () => {
-    if(!canRoll) return;
-    enableSound();
-    setCanRoll(false);
-    setSpinning(true);
-    let spins = 0;
-    const spinInterval = setInterval(()=>{
-      setDice(Math.floor(Math.random()*6)+1);
-      spins++;
-      if(spins > 10){
-        clearInterval(spinInterval);
-        const d = Math.floor(Math.random()*6)+1;
-        setDice(d);
-        setSpinning(false);
-        playSound("move");
-        moveAuto(d);
-      }
-    },80)
-  }
-
-  const moveAuto = (d:number) => {
-    const currentTurn = turn as 0|1|2|3;
-    const movable = tokens[currentTurn].map((pos,i)=> canMove(pos,d)?i:null).filter(x=>x!==null) as number[];
-    if(movable.length === 0){ setTurn((turn+1)%2); setCanRoll(true); return; }
-    const pawnIdx = movable[0];
-    setTimeout(()=>moveToken(pawnIdx, d), 500);
-  }
-
-  const moveToken = (pawnIdx:number, d:number) => {
-    const newTokens:Tokens = JSON.parse(JSON.stringify(tokens));
-    const currentTurn = turn as 0|1|2|3;
-    let pos = newTokens[currentTurn][pawnIdx];
-
-    if(pos === -1 && d === 6) pos = 0;
-    else if(pos >= 0) pos += d;
-    else return;
-
-    for(let p=0;p<4;p++){
-      if(p===currentTurn) continue;
-      newTokens[p as 0|1|2|3] = newTokens[p as 0|1|2|3].map(enemyPos => {
-        if(enemyPos < 0 || enemyPos >= 52) return enemyPos;
-        const boardPos = (startPos[p] + enemyPos) % 52;
-        const myBoardPos = (startPos[currentTurn] + pos) % 52;
-        if(boardPos === myBoardPos &&!safeSpots.includes(boardPos)){
-          playSound("capture");
-          return -1;
-        }
-        return enemyPos;
-      })
-    }
-
-    newTokens[currentTurn][pawnIdx] = pos;
-    setTokens(newTokens);
-
-    if(newTokens[currentTurn].every(x=>x===57)){
-      const pts = getPoints(level, 50);
-      setPoints((p:number)=>p+pts);
-      updateLevel();
-      playSound("win");
-      alert(`${colorNames[currentTurn]} WINS! +${pts}`);
-      return;
-    }
-
-    if(d === 6) setCanRoll(true);
-    else { setTurn((turn+1)%2); setCanRoll(true); }
-  }
-
-  return <div className="p-2 bg-gradient-to-b from-blue-900 to-blue-950 min-h-screen text-white">
-    <BackBtn setGame={setGame}/>
-    <div className="text-center mb-1 font-bold">Lvl {level} | Turn: <span className="text-yellow-400">{colorNames}</span></div>
-
-    <div className="w-96 h-96 mx-auto bg-white rounded-2xl p-1 relative">
-      {Array(225).fill(0).map((_,i)=>{
-        const x = i%15; const y = Math.floor(i/15);
-        let bg = "bg-white";
-        if(x<=5 && y<=5) bg="bg-green-500";
-        if(x>=9 && y<=5) bg="bg-red-500";
-        if(x<=5 && y>=9) bg="bg-yellow-400";
-        if(x>=9 && y>=9) bg="bg-blue-500";
-        if((x>=6 && x<=8) || (y>=6 && y<=8)) bg="bg-gray-200 border-gray-400";
-        if(x===7 && y===7) bg="bg-gradient-to-br from-yellow-400 to-red-500";
-        return <div key={i} className={`absolute ${bg}`} style={{left:`${x*6.66}%`, top:`${y*6.66}%`, width:'6.66%', height:'6.66%'}}></div>
-      })}
-
-      {Object.entries(tokens).map(([color, arr])=> arr.map((pos,i)=>{
-        const p = getPos(Number(color) as 0|1|2|3, pos);
-        if(!p) return <div key={`${color}-${i}`} className={`absolute w-5 h-5 rounded-full ${colors[Number(color)]} border-2 border-black`} style={{left:`${20 + (i % 2) * 30}%`, top:`${20 + Math.floor(i / 2) * 30}%`}}></div>;
-        return <div key={`${color}-${i}`} className={`absolute w-5 h-5 rounded-full ${colors[Number(color)]} border-2 border-black flex items-center justify-center text-[10px] font-bold text-black z-10`} style={{left:`${p[0]*6.66}%`, top:`${p[1]*6.66}%`}}>{i+1}</div>
-      }))}
-    </div>
-
-    <div className="text-center mt-3">
-      <button onClick={rollDice} disabled={!canRoll || turn!==playerColor} className="text-6xl disabled:opacity-50">
-        <div className={spinning?"animate-spin":""}>{diceFaces[dice-1]}</div>
-      </button>
-      <p className="mt-1 text-sm">{turn===playerColor?"Your Turn":"Computer Thinking..."}</p>
-    </div>
-  </div>
-}
-
-// CHESS WITH SOUND
-function ChessReal({setGame, points, setPoints, level, updateLevel, getPoints}:any){
+// 2. CHESS - WITH SOUND
+function ChessGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){
   const [game, setGameState] = useState(new Chess());
   const [pos, setPos] = useState(game.fen());
-  const [soundOn, setSoundOn] = useState(false);
   const moveSound = useRef<HTMLAudioElement | null>(null);
   const captureSound = useRef<HTMLAudioElement | null>(null);
-
-  const enableSound = () => {
-    if(!soundOn){
-      moveSound.current = new Audio("https://lichess1.org/assets/sound/standard/Move.ogg");
-      captureSound.current = new Audio("https://lichess1.org/assets/sound/standard/Capture.ogg");
-      setSoundOn(true);
-    }
-  }
-
-  function onDrop(f:string,t:string){
-    enableSound();
-    const res = game.move({from:f,to:t,promotion:"q"});
-    if(res){
-      const isCapture = res.captured!== undefined;
-      setPos(game.fen());
-      if(isCapture) captureSound.current?.play().catch(()=>{}); else moveSound.current?.play().catch(()=>{});
-      return true
-    }
-    return false
-  }
-
-  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Chess Lvl {level} ♟️</h1>{!soundOn && <p className="text-yellow-400">Tap board to enable sound</p>}<div className="w-80 mx-auto"><Chessboard position={pos} onPieceDrop={onDrop}/></div></div>
+  const [soundOn, setSoundOn] = useState(false);
+  const enableSound = () => { if(!soundOn){ moveSound.current = new Audio("https://lichess1.org/assets/sound/standard/Move.ogg"); captureSound.current = new Audio("https://lichess1.org/assets/sound/standard/Capture.ogg"); setSoundOn(true); } }
+  const onDrop = (f:string,t:string) => { enableSound(); const res = game.move({from:f,to:t,promotion:"q"}); if(res){ setPos(game.fen()); res.captured? captureSound.current?.play().catch(()=>{}) : moveSound.current?.play().catch(()=>{}); return true } return false }
+  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Chess Lvl {level} ♟️</h1>{!soundOn && <p className="text-yellow-400">Tap board for sound</p>}<div className="w-80 mx-auto"><Chessboard position={pos} onPieceDrop={onDrop}/></div></div>
 }
+
+// 3. DRAFT - CHECKERS
+function DraftGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){
+  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Draft Lvl {level} 👑 Coming Soon</h1><button onClick={()=>{setPoints(points+getPoints(level,40)); updateLevel()}} className="px-4 py-2 bg-red-600 rounded">Complete Level</button></div>
+}
+
+// 4. LUDO KING - 100% REAL
+function LudoGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){
+  const [turn, setTurn] = useState(0); const [dice, setDice] = useState(1); const [canRoll, setCanRoll] = useState(true); const [spinning, setSpinning] = useState(false);
+  const [you, setYou] = useState([-1,-1,-1,-1]); const [bot, setBot] = useState([-1,-1,-1,-1]);
+  const track = [[6,1],[6,2],[6,3],[6,4],[6,5],[6,6],[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[6,8],[6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[8,14],[8,13],[8,12],[8,11],[8,10],[8,9],[8,8],[9,8],[10,8],[11,8],[12,8],[13,8],[14,8],[14,7],[14,6],[13,6],[12,6],[11,6],[10,6],[9,6],[8,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0],[7,0],[6,0]];
+  const startPos = [26, 39]; const safe = [0,8,13,21,26,34,39,47]; const diceFaces = ["⚀","⚁","⚂","⚃","⚄","⚅"];
+  useEffect(()=>{ if(turn === 1){ setTimeout(()=>rollDice(), 800) } },)
+  const getBoardXY = (player:number, steps:number, i:number) => {
+    if(steps === -1){ const homeX = player === 0? 2 : 12; const homeY = player === 0? 12 : 2; return [homeX + (i % 2) * 2, homeY + Math.floor(i / 2) * 2] }
+    if(steps < 52){ const pos = (startPos[player] + steps) % 52; return track[pos] }
+    const pathStep = steps - 52; if(player === 0) return [7, 13 - pathStep]; if(player === 1) return [9 + pathStep, 7];
+  }
+  const canMovePawn = (steps:number, d:number) => { if(steps === -1) return d === 6; if(steps + d > 57) return false; return true; }
+  const rollDice = () => { if(!canRoll) return; setCanRoll(false); setSpinning(true); let c = 0; const spin = setInterval(()=>{ setDice(Math.floor(Math.random()*6)+1); c++; if(c > 10){ clearInterval(spin); const d = Math.floor(Math.random()*6)+1; setDice(d); setSpinning(false); movePawn(d); } },70) }
+  const movePawn = (d:number) => {
+    const current = turn === 0? [...you] : [...bot]; const enemy = turn === 0? [...bot] : [...you];
+    let pawnIndex = current.findIndex(p => canMovePawn(p,d)); if(pawnIndex === -1){ setTurn(turn===0?1:0); setCanRoll(true); return }
+    let newPos = current[pawnIndex]; if(newPos === -1 && d === 6) newPos = 0; else newPos += d; current[pawnIndex] = newPos;
+    if(newPos < 52){ const myBoardPos = (startPos + newPos) % 52; enemy.forEach((ePos,i)=>{ if(ePos >= 0 && ePos < 52){ const enemyBoardPos = (startPos[turn===0?1:0] + ePos) % 52; if(myBoardPos === enemyBoardPos &&!safe.includes(myBoardPos)){ enemy[i] = -1; } }) }
+    if(turn === 0) { setYou(current); setBot(enemy) } else { setBot(current); setYou(enemy) }
+    if(current.every(p => p === 57)){ const pts = getPoints(level,50); setPoints(points + pts); updateLevel(); alert(`YOU WIN! +${pts}`); return; }
+    if(d === 6) setCanRoll(true); else { setTurn(turn===0?1:0); setCanRoll(true); }
+  }
+  return <div className="p-2 bg-gradient-to-b from-blue-900 to-black min-h-screen text-white">
+    <BackBtn setGame={setGame}/><div className="text-center font-bold mb-1">Ludo Lvl {level} | Turn: <span className="text-yellow-400">{turn===0?"You":"Bot"}</span></div>
+    <div className="w-96 h-96 mx-auto bg-white rounded-2xl relative">
+      {Array(225).fill(0).map((_,i)=>{ const x = i%15; const y = Math.floor(i/15); let bg = "bg-white"; if(x<=5 && y<=5) bg="bg-yellow-400"; if(x>=9 && y<=5) bg="bg-red-500"; if((x>=6 && x<=8) || (y>=6 && y<=8)) bg="bg-gray-200 border border-gray-400"; if(x===7 && y===7) bg="bg-gradient-to-br from-yellow-400 to-red-500"; return <div key={i} className={`absolute ${bg}`} style={{left:`${x*6.66}%`, top:`${y*6.66}%`, width:'6.66%', height:'6.66%'}}></div> })}
+      {you.map((pos,i)=>{ const [x,y] = getBoardXY(0,pos,i); return <div key={`y-${i}`} className="absolute w-6 h-6 rounded-full bg-yellow-400 border-2 border-black flex items-center justify-center text-xs font-bold text-black z-10" style={{left:`${x*6.66}%`, top:`${y*6.66}%`}}>{i+1}</div> })}
+      {bot.map((pos,i)=>{ const [x,y] = getBoardXY(1,pos,i); return <div key={`r-${i}`} className="absolute w-6 h-6 rounded-full bg-red-500 border-2 border-black flex items-center justify-center text-xs font-bold text-white z-10" style={{left:`${x*6.66}%`, top:`${y*6.66}%`}}>{i+1}</div> })}
+    </div>
+    <div className="text-center mt-3"><button onClick={rollDice} disabled={!canRoll || turn!==0} className="text-6xl disabled:opacity-50"><div className={spinning?"animate-spin":""}>{diceFaces[dice-1]}</div></button><p className="mt-1">{turn===0?"Your Turn":"Bot Thinking..."}</p></div>
+  </div>
+}
+
+// 5. SNAKES & LADDERS
+function SnakesGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){
+  const [pos,setPos]=useState(1); const target=30 + level*10;
+  const snakes:any = {16:6,47:26,49:11,56:53,62:19,64:60,87:24,93:73,95:75,98:78};
+  const ladders:any = {1:38,4:14,9:31,21:42,28:84,36:44,51:67,71:91,80:100};
+  const roll=()=>{const d=Math.floor(Math.random()*6)+1; let np=pos+d; if(np>target)np=pos; if(snakes[np])np=snakes[np]; if(ladders[np])np=ladders[np]; setPos(np); if(np>=target){const pts=getPoints(level,40); setPoints(points+pts); updateLevel(); alert(`WIN +${pts}`)}}
+  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Snakes & Ladders Lvl {level} 🐍</h1><p>Position: {pos}/{target}</p><button onClick={roll} className="px-6 py-3 bg-red-600 rounded-xl text-xl">Roll Dice</button></div>
+}
+
+// 6. TICTACTOE
+function TicTacGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){
+  let size = 3 + Math.floor(level/3); if(size>5) size=5; const [b,setB]=useState(Array(size*size).fill(null)); const [turn,setTurn]=useState("X");
+  const win=(brd:any)=>{ for(let i=0;i<size;i++){ if(brd.slice(i*size,(i+1)*size).every((v:any)=>v===brd[i*size]&&v)) return true} return false}
+  const click=(i:number)=>{ if(b[i]||win(b))return; const nb=[...b]; nb[i]=turn; setB(nb); if(win(nb)){const pts=getPoints(level,20); setPoints(points+pts); updateLevel(); alert(`Win +${pts}`); setB(Array(size*size).fill(null))} setTurn(turn==="X"?"O":"X") }
+  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>TicTac Lvl {level} Board:{size}x{size}</h1><div className="grid gap-1 mx-auto" style={{gridTemplateColumns:`repeat(${size},1fr)`,width:`${size*4}rem`}}>{b.map((v,i)=><button key={i} onClick={()=>click(i)} className="w-16 h-16 bg-white text-black text-2xl font-bold">{v}</button>)}</div></div>
+}
+
+// 7. MEMORY
+function MemoryGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){
+  const pairs = 4 + level*2; const [cards] = useState(Array(pairs).fill(0).flatMap((_,i)=>[i,i]).sort(()=>0.5-Math.random()));
+  const [f,setF]=useState<number[]>([]); const [m,setM]=useState<number[]>([]);
+  const click=(i:number)=>{ if(f.length===2||m.includes(i))return; const nf=[...f,i]; setF(nf); if(nf.length===2){ if(cards[nf[0]]===cards[nf[1]]){const nm=[...m,...nf]; setM(nm); if(nm.length===cards.length){const pts=getPoints(level,30); setPoints(points+pts); updateLevel(); alert(`Win +${pts}`)}} setTimeout(()=>setF([]),800)}}
+  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Memory Lvl {level} 🧠 Pairs:{pairs}</h1><div className="grid grid-cols-6 gap-1 w-96 mx-auto">{cards.map((c,i)=><button key={i} onClick={()=>click(i)} className="w-16 h-16 bg-white text-xl text-black">{f.includes(i)||m.includes(i)?c:"?"}</button>)}</div></div>
+}
+
+// 8. SNAKE
+function SnakeGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){
+  const speed = Math.max(60, 300 - level*15); const [s, setS] = useState([{x:10,y:10}]); const [food, setFood] = useState({x:5,y:5}); const [dir, setDir] = useState("RIGHT"); const [over, setOver] = useState(false);
+  useEffect(()=>{ const key=(e:any)=>{ if(e.key==="ArrowUp" && dir!== "DOWN") setDir("UP"); if(e.key==="ArrowDown" && dir!== "UP") setDir("DOWN"); if(e.key==="ArrowLeft" && dir!== "RIGHT") setDir("LEFT"); if(e.key==="ArrowRight" && dir!== "LEFT") setDir("RIGHT") }; window.addEventListener("keydown",key); return()=>window.removeEventListener("keydown",key) },[dir]);
+  useEffect(()=>{ if(over) return; const i = setInterval(()=>{ const h={...s[0]}; if(dir==="RIGHT")h.x++; if(dir==="LEFT")h.x--; if(dir==="UP")h.y--; if(dir==="DOWN")h.y++; if(h.x<0||h.x>19||h.y<0||h.y>19||s.some(x=>x.x===h.x&&x.y===h.y)){ setOver(true); return } if(h.x===food.x && h.y===food.y){ const pts = getPoints(level,10); setPoints(points+pts); updateLevel(); setFood({x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20)}) } else { s.pop() } setS([h,...s]) },speed); return()=>clearInterval(i) },[s,dir,food,over]);
+  if(over) return <div className="p-4 bg-black min-h-screen text-white text-center"><BackBtn setGame={setGame}/><h1>Game Over</h1><button onClick={()=>{setS([{x:10,y:10}]); setDir("RIGHT"); setOver(false)}} className="px-4 py-2 bg-red-600 rounded">Restart</button></div>
+  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Snake Lvl {level} 🐍</h1><div className="grid grid-cols-20 gap-0 w-80 h-80 bg-gray-900">{Array(400).fill(0).map((_,i)=>{const x = i%20; const y = Math.floor(i/20); const isHead = s[0].x===x && s[0].y===y; const isBody = s.some((snake, idx)=> snake.x===x && snake.y===y && idx!== 0); const isFood = food.x===x && food.y===y; return <div key={i} className={`w-4 h-4 ${isHead? "bg-green-400" : isBody? "bg-green-600" : isFood? "bg-red-500" : "bg-gray-800"}`}></div>})}</div></div>
+}
+
+// 9. 2048
+function Game2048({setGame, points, setPoints, level, updateLevel, getPoints}:any){
+  const goal=256 * level; const [board,setBoard]=useState(Array(16).fill(0).map((_,i)=>i<2?2:0));
+  const addTile=()=>{const e=board.map((v,i)=>v===0?i:null).filter((v)=>v!==null); if(e.length>0)board[e[Math.floor(Math.random()*e.length)]]=2; setBoard([...board])}
+  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>2048 Lvl {level} Goal:{goal}</h1><button onClick={()=>{addTile(); const pts=getPoints(level,30); setPoints(points+pts); updateLevel()}} className="px-4 py-2 bg-red-600 rounded">Add Tile</button></div>
+}
+
+// 10-20. QUICK GAMES
+function TargetGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){ const [score,setScore]=useState(0); const need=5+level; const hit=()=>{const ns=score+1; setScore(ns); setPoints(points+getPoints(level,5)); if(ns>=need){updateLevel(); setScore(0); alert(`Lvl Cleared`) }}; return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Target Lvl {level} 🎯</h1><button onClick={hit} className="w-20 h-20 bg-red-600 rounded-full">HIT {score}/{need}</button></div> }
+function RPSGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){ const [wins,setWins]=useState(0); const need=3+level; const play=(u:string)=>{ const b=["🪨","📄","✂️"][Math.floor(Math.random()*3)]; const win=(u==="🪨"&&b==="✂️")||(u==="📄"&&b==="🪨")||(u==="✂️"&&b==="📄"); if(win){const nw=wins+1; setWins(nw); setPoints(points+getPoints(level,10)); if(nw>=need){updateLevel(); setWins(0); alert(`Lvl Cleared`)}}}; return <div className="p-4 bg-black min-h-screen text-white text-center"><BackBtn setGame={setGame}/><h1>RPS Lvl {level}</h1><div className="flex gap-4 justify-center mt-4">{["🪨","📄","✂️"].map(c=><button key={c} onClick={()=>play(c)} className="text-4xl p-4 bg-white rounded">{c}</button>)}</div></div> }
+function FlappyGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Flappy Bird 🐦 Coming Soon</h1></div> }
+function Game2048x({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>2048 Pro 🔢 Coming Soon</h1></div> }
+function PuzzleGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>15 Puzzle 🧩 Coming Soon</h1></div> }
+function Connect4Game({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Connect 4 🔴 Coming Soon</h1></div> }
+function BreakoutGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Breakout 🧱 Coming Soon</h1></div> }
+function WhackGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Whack-a-Mole 🔨 Coming Soon</h1></div> }
+function BubbleGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Bubble Shooter 🫧 Coming Soon</h1></div> }
+function MazeGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Maze 🌀 Coming Soon</h1></div> }
+function CarGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Car Racing 🏎️ Coming Soon</h1></div> }
+function QuizGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Quiz ❓ Coming Soon</h1></div> }
