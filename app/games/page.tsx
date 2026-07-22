@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 
@@ -52,14 +52,108 @@ function Menu({setGame, points, levels}:any){
   return <div className="min-h-screen bg-black text-white p-4"><h1 className="text-3xl font-bold text-red-600 text-center">Sanel Games ∞</h1><p className="text-center mb-6">Total Points: {points}</p><div className="grid grid-cols-2 gap-3 max-w-md mx-auto">{games.map(g => <button key={g.id} onClick={() => setGame(g.id)} className="p-4 bg-white rounded-xl text-gray-800 hover:scale-105"><div className="text-3xl">{g.emoji}</div><div className="font-bold">{g.name}</div><div className="text-xs">Level {g.level}</div></button>)}</div></div>
 }
 
-// 1. REAL CHESS
+// 1. REAL CHESS - WITH SOUNDS + FUN
 function ChessReal({setGame, points, setPoints, level, updateLevel, getPoints}:any){
-  const [game, setGameState] = useState(new Chess()); const [pos, setPos] = useState(game.fen());
-  const botSpeed = Math.max(100, 1000 - level * 50);
-  function botMove(){ const moves = game.moves(); if(moves.length>0){ game.move(moves[Math.floor(Math.random()*moves.length)]); setPos(game.fen()); check()}}
-  function onDrop(f:string,t:string){ const res = game.move({from:f,to:t,promotion:"q"}); if(res){setPos(game.fen()); setTimeout(botMove,botSpeed); check(); return true} return false}
-  function check(){ if(game.isCheckmate()){ if(game.turn()==='b'){const pts=getPoints(level,30); setPoints((p:number)=>p+pts); updateLevel(); alert(`Level ${level} Cleared! +${pts}`)} else {setPoints((p:number)=>p+5); alert("Bot Won +5")} setGameState(new Chess()); setPos(new Chess().fen())}}
-  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Chess Lvl {level} ♟️ Bot:{1000-botSpeed}ms</h1><div className="w-80 mx-auto"><Chessboard position={pos} onPieceDrop={onDrop}/></div></div>
+  const [game, setGameState] = useState(new Chess());
+  const [pos, setPos] = useState(game.fen());
+  const [message, setMessage] = useState("");
+
+  // SOUNDS
+  const moveSound = useRef<HTMLAudioElement | null>(null);
+  const captureSound = useRef<HTMLAudioElement | null>(null);
+  const winSound = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(()=>{
+    moveSound.current = new Audio("https://lichess1.org/assets/sound/standard/Move.ogg");
+    captureSound.current = new Audio("https://lichess1.org/assets/sound/standard/Capture.ogg");
+    winSound.current = new Audio("https://lichess1.org/assets/sound/standard/Check.ogg");
+  },[])
+
+  const playSound = (type: "move" | "capture" | "win") => {
+    if(type === "move") moveSound.current?.play().catch(()=>{});
+    if(type === "capture") captureSound.current?.play().catch(()=>{});
+    if(type === "win") winSound.current?.play().catch(()=>{});
+  }
+
+  const botSpeed = Math.max(200, 1200 - level * 100);
+  const botDifficulty = Math.min(5, 1 + Math.floor(level/2));
+
+  function botMove(){
+    const moves = game.moves({verbose:true});
+    if(moves.length>0){
+      let move;
+      if(botDifficulty >= 3){
+        const captures = moves.filter(m => m.captured);
+        move = captures.length > 0? captures[Math.floor(Math.random()*captures.length)] : moves[Math.floor(Math.random()*moves.length)];
+      } else {
+        move = moves[Math.floor(Math.random()*moves.length)];
+      }
+
+      const isCapture = move.captured!== undefined;
+      game.move(move);
+      setPos(game.fen());
+      playSound(isCapture? "capture" : "move");
+      check()
+    }
+  }
+
+  function onDrop(f:string,t:string){
+    const res = game.move({from:f,to:t,promotion:"q"});
+    if(res){
+      const isCapture = res.captured!== undefined;
+      setPos(game.fen());
+      playSound(isCapture? "capture" : "move");
+      setTimeout(botMove,botSpeed);
+      check();
+      return true
+    }
+    return false
+  }
+
+  function check(){
+    if(game.isCheckmate()){
+      if(game.turn()==='b'){ // You won
+        const pts=getPoints(level,30);
+        setPoints((p:number)=>p+pts);
+        updateLevel();
+        setMessage(`Level ${level} Cleared! +${pts} pts`);
+        playSound("win");
+        setTimeout(()=>{
+          setGameState(new Chess());
+          setPos(new Chess().fen());
+          setMessage("");
+        },2000)
+      } else { // Bot won
+        setPoints((p:number)=>p+5);
+        setMessage("Bot Won +5 pts");
+        setTimeout(()=>{
+          setGameState(new Chess());
+          setPos(new Chess().fen());
+          setMessage("");
+        },2000)
+      }
+    }
+    if(game.isDraw()){
+      setMessage("Draw! +10 pts");
+      setPoints((p:number)=>p+10);
+      setTimeout(()=>{
+        setGameState(new Chess());
+        setPos(new Chess().fen());
+        setMessage("");
+      },2000)
+    }
+  }
+
+  return (
+    <div className="p-4 bg-black min-h-screen text-white">
+      <BackBtn setGame={setGame}/>
+      <h1 className="text-xl font-bold">Chess Lvl {level} ♟️</h1>
+      <p>Bot Speed: {botSpeed}ms | Difficulty: {botDifficulty}/5 ⭐</p>
+      {message && <p className="text-yellow-400 font-bold animate-pulse">{message}</p>}
+      <div className="w-80 mx-auto mt-2 shadow-2xl"><Chessboard position={pos} onPieceDrop={onDrop}/></div>
+      <p className="text-xs text-gray-400 mt-2">🔊 Sounds On | Level up = Bot faster + smarter</p>
+    </div>
+  )
 }
 
 // 2. LUDO KING STYLE - WITH PAWNS + SPINNING DICE
@@ -191,38 +285,7 @@ function Snake({setGame, points, setPoints, level, updateLevel, getPoints}:any){
 
   if(over) return <div className="p-4 bg-black min-h-screen text-white text-center"><BackBtn setGame={setGame}/><h1 className="text-2xl font-bold">Game Over Lvl {level}</h1><p className="mb-4">Score: {s.length}</p><button onClick={()=>{setS([{x:10,y:10}]); setDir("RIGHT"); setOver(false)}} className="px-4 py-2 bg-red-600 rounded font-bold">Restart</button></div>
 
-  return (
-    <div className="p-4 bg-black min-h-screen text-white flex-col items-center">
-      <BackBtn setGame={setGame}/>
-      <h1 className="text-xl font-bold">Snake Lvl {level} 🐍 Speed:{speed}ms</h1>
-      <p className="mb-2">Points: {points} | Length: {s.length}</p>
-
-      <div className="grid grid-cols-20 gap-0 w-80 h-80 bg-gray-900 border-2 border-gray-600 rounded-lg mb-4">
-        {Array(400).fill(0).map((_,i)=>{
-          const x = i%20;
-          const y = Math.floor(i/20);
-          const isHead = s[0].x===x && s[0].y===y;
-          const isBody = s.some((snake, idx)=> snake.x===x && snake.y===y && idx!== 0);
-          const isFood = food.x===x && food.y===y;
-          return <div key={i} className={`w-4 h-4 ${
-            isHead? "bg-green-400 rounded-full shadow-lg shadow-green-500" :
-            isBody? "bg-green-600 rounded-sm" :
-            isFood? "bg-red-500 rounded-full animate-pulse" :
-            "bg-gray-800"
-          }`}></div>
-        })}
-      </div>
-
-      <div className="flex flex-col items-center gap-2">
-        <button onClick={()=>changeDir("UP")} className="w-16 h-16 bg-gray-700 hover:bg-gray-600 rounded-full text-2xl">⬆️</button>
-        <div className="flex gap-4">
-          <button onClick={()=>changeDir("LEFT")} className="w-16 h-16 bg-gray-700 hover:bg-gray-600 rounded-full text-2xl">⬅️</button>
-          <button onClick={()=>changeDir("DOWN")} className="w-16 h-16 bg-gray-700 hover:bg-gray-600 rounded-full text-2xl">⬇️</button>
-          <button onClick={()=>changeDir("RIGHT")} className="w-16 h-16 bg-gray-700 hover:bg-gray-600 rounded-full text-2xl">➡️</button>
-        </div>
-      </div>
-    </div>
-  )
+  return <div className="p-4 bg-black min-h-screen text-white flex-col items-center"><BackBtn setGame={setGame}/><h1 className="text-xl font-bold">Snake Lvl {level} 🐍 Speed:{speed}ms</h1><p className="mb-2">Points: {points} | Length: {s.length}</p><div className="grid grid-cols-20 gap-0 w-80 h-80 bg-gray-900 border-2 border-gray-600 rounded-lg mb-4">{Array(400).fill(0).map((_,i)=>{const x = i%20; const y = Math.floor(i/20); const isHead = s[0].x===x && s[0].y===y; const isBody = s.some((snake, idx)=> snake.x===x && snake.y===y && idx!== 0); const isFood = food.x===x && food.y===y; return <div key={i} className={`w-4 h-4 ${isHead? "bg-green-400 rounded-full shadow-lg shadow-green-500" : isBody? "bg-green-600 rounded-sm" : isFood? "bg-red-500 rounded-full animate-pulse" : "bg-gray-800"}`}></div>})}</div><div className="flex flex-col items-center gap-2"><button onClick={()=>changeDir("UP")} className="w-16 h-16 bg-gray-700 hover:bg-gray-600 rounded-full text-2xl">⬆️</button><div className="flex gap-4"><button onClick={()=>changeDir("LEFT")} className="w-16 h-16 bg-gray-700 hover:bg-gray-600 rounded-full text-2xl">⬅️</button><button onClick={()=>changeDir("DOWN")} className="w-16 h-16 bg-gray-700 hover:bg-gray-600 rounded-full text-2xl">⬇️</button><button onClick={()=>changeDir("RIGHT")} className="w-16 h-16 bg-gray-700 hover:bg-gray-600 rounded-full text-2xl">➡️</button></div></div></div>
 }
 
 // 5. REAL TICTACTOE
