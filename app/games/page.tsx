@@ -3,12 +3,12 @@ import { useState, useEffect, useRef } from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 
-type Game = "menu" | "chess" | "draft" | "ludo" | "snakes" | "tictac" | "memory" | "snake" | "2048" | "target" | "rps" | "flappy" | "2048x" | "puzzle" | "connect4" | "breakout" | "whack" | "bubble" | "maze" | "car" | "quiz";
+type Game = "menu" | "chess" | "draft" | "ludo" | "snakes" | "tictac" | "memory" | "snake" | "2048" | "target" | "rps";
 
 export default function GameMachine() {
   const [game, setGame] = useState<Game>("menu");
   const [points, setPoints] = useState(0);
-  const [levels, setLevels] = useState(Object.fromEntries(Array(20).fill(0).map((_,i)=>[i+1,1])));
+  const [levels, setLevels] = useState({chess:1,draft:1,ludo:1,snakes:1,tictac:1,memory:1,snake:1,s2048:1,target:1,rps:1});
 
   useEffect(() => {
     setPoints(Number(localStorage.getItem("sanelPoints") || 0));
@@ -17,47 +17,39 @@ export default function GameMachine() {
   useEffect(() => localStorage.setItem("sanelPoints", points.toString()), [points]);
   useEffect(() => localStorage.setItem("sanelLevels", JSON.stringify(levels)), [levels]);
 
-  const updateLevel = (g:number) => { setLevels({...levels, [g]: levels[g] + 1}) }
+  const updateLevel = (g:keyof typeof levels) => { setLevels({...levels, [g]: levels[g] + 1}) }
   const getPoints = (level:number, base:number) => level * base;
 
-  const games:any = {
-    menu: <Menu setGame={setGame} points={points} levels={levels} />,
-    chess: <ChessGame setGame={setGame} points={points} setPoints={setPoints} level={levels[1]} updateLevel={()=>updateLevel(1)} getPoints={getPoints} />,
-    draft: <DraftGame setGame={setGame} points={points} setPoints={setPoints} level={levels[2]} updateLevel={()=>updateLevel(2)} getPoints={getPoints} />,
-    ludo: <LudoGame setGame={setGame} points={points} setPoints={setPoints} level={levels[3]} updateLevel={()=>updateLevel(3)} getPoints={getPoints} />,
-    snakes: <SnakesGame setGame={setGame} points={points} setPoints={setPoints} level={levels[4]} updateLevel={()=>updateLevel(4)} getPoints={getPoints} />,
-    tictac: <TicTacGame setGame={setGame} points={points} setPoints={setPoints} level={levels[5]} updateLevel={()=>updateLevel(5)} getPoints={getPoints} />,
-    memory: <MemoryGame setGame={setGame} points={points} setPoints={setPoints} level={levels[6]} updateLevel={()=>updateLevel(6)} getPoints={getPoints} />,
-    snake: <SnakeGame setGame={setGame} points={points} setPoints={setPoints} level={levels[7]} updateLevel={()=>updateLevel(7)} getPoints={getPoints} />,
-    "2048": <Game2048 setGame={setGame} points={points} setPoints={setPoints} level={levels[8]} updateLevel={()=>updateLevel(8)} getPoints={getPoints} />,
-    target: <TargetGame setGame={setGame} points={points} setPoints={setPoints} level={levels[9]} updateLevel={()=>updateLevel(9)} getPoints={getPoints} />,
-    rps: <RPSGame setGame={setGame} points={points} setPoints={setPoints} level={levels[10]} updateLevel={()=>updateLevel(10)} getPoints={getPoints} />,
-    flappy: <FlappyGame setGame={setGame} points={points} setPoints={setPoints} level={levels[11]} updateLevel={()=>updateLevel(11)} getPoints={getPoints} />,
-    "2048x": <Game2048x setGame={setGame} points={points} setPoints={setPoints} level={levels[12]} updateLevel={()=>updateLevel(12)} getPoints={getPoints} />,
-    puzzle: <PuzzleGame setGame={setGame} points={points} setPoints={setPoints} level={levels[13]} updateLevel={()=>updateLevel(13)} getPoints={getPoints} />,
-    connect4: <Connect4Game setGame={setGame} points={points} setPoints={setPoints} level={levels[14]} updateLevel={()=>updateLevel(14)} getPoints={getPoints} />,
-    breakout: <BreakoutGame setGame={setGame} points={points} setPoints={setPoints} level={levels[15]} updateLevel={()=>updateLevel(15)} getPoints={getPoints} />,
-    whack: <WhackGame setGame={setGame} points={points} setPoints={setPoints} level={levels[16]} updateLevel={()=>updateLevel(16)} getPoints={getPoints} />,
-    bubble: <BubbleGame setGame={setGame} points={points} setPoints={setPoints} level={levels[17]} updateLevel={()=>updateLevel(17)} getPoints={getPoints} />,
-    maze: <MazeGame setGame={setGame} points={points} setPoints={setPoints} level={levels[18]} updateLevel={()=>updateLevel(18)} getPoints={getPoints} />,
-    car: <CarGame setGame={setGame} points={points} setPoints={setPoints} level={levels[19]} updateLevel={()=>updateLevel(19)} getPoints={getPoints} />,
-    quiz: <QuizGame setGame={setGame} points={points} setPoints={setPoints} level={levels[20]} updateLevel={()=>updateLevel(20)} getPoints={getPoints} />,
-  }
-  return games[game] || games.menu
+  if(game === "menu") return <Menu setGame={setGame} points={points} levels={levels} />
+  if(game === "chess") return <ChessGame setGame={setGame} points={points} setPoints={setPoints} level={levels.chess} updateLevel={()=>updateLevel("chess")} getPoints={getPoints} />
+  if(game === "draft") return <DraftGame setGame={setGame} points={points} setPoints={setPoints} level={levels.draft} updateLevel={()=>updateLevel("draft")} getPoints={getPoints} />
+  if(game === "ludo") return <LudoGame setGame={setGame} points={points} setPoints={setPoints} level={levels.ludo} updateLevel={()=>updateLevel("ludo")} getPoints={getPoints} />
+  if(game === "snakes") return <SnakesGame setGame={setGame} points={points} setPoints={setPoints} level={levels.snakes} updateLevel={()=>updateLevel("snakes")} getPoints={getPoints} />
+  if(game === "tictac") return <TicTacGame setGame={setGame} points={points} setPoints={setPoints} level={levels.tictac} updateLevel={()=>updateLevel("tictac")} getPoints={getPoints} />
+  if(game === "memory") return <MemoryGame setGame={setGame} points={points} setPoints={setPoints} level={levels.memory} updateLevel={()=>updateLevel("memory")} getPoints={getPoints} />
+  if(game === "snake") return <SnakeGame setGame={setGame} points={points} setPoints={setPoints} level={levels.snake} updateLevel={()=>updateLevel("snake")} getPoints={getPoints} />
+  if(game === "2048") return <Game2048 setGame={setGame} points={points} setPoints={setPoints} level={levels.s2048} updateLevel={()=>updateLevel("s2048")} getPoints={getPoints} />
+  if(game === "target") return <TargetGame setGame={setGame} points={points} setPoints={setPoints} level={levels.target} updateLevel={()=>updateLevel("target")} getPoints={getPoints} />
+  if(game === "rps") return <RPSGame setGame={setGame} points={points} setPoints={setPoints} level={levels.rps} updateLevel={()=>updateLevel("rps")} getPoints={getPoints} />
 }
 
 function BackBtn({setGame}:{setGame:any}){ return <button onClick={() => setGame("menu")} className="mb-4 px-3 py-1 bg-gray-700 rounded">← Back</button> }
 
-// 1. MENU - 20 GAMES
+// 1. MENU
 function Menu({setGame, points, levels}:any){
-  const gameList = [
-    {id:"chess", name:"Chess", emoji:"♟️"}, {id:"draft", name:"Draft", emoji:"👑"}, {id:"ludo", name:"Ludo", emoji:"🎲"}, {id:"snakes", name:"Snakes", emoji:"🐍🪜"},
-    {id:"tictac", name:"TicTac", emoji:"❌"}, {id:"memory", name:"Memory", emoji:"🧠"}, {id:"snake", name:"Snake", emoji:"🐍"}, {id:"2048", name:"2048", emoji:"🧱"},
-    {id:"target", name:"Target", emoji:"🎯"}, {id:"rps", name:"RPS", emoji:"✂️"}, {id:"flappy", name:"Flappy", emoji:"🐦"}, {id:"2048x", name:"2048 Pro", emoji:"🔢"},
-    {id:"puzzle", name:"Puzzle", emoji:"🧩"}, {id:"connect4", name:"Connect4", emoji:"🔴"}, {id:"breakout", name:"Breakout", emoji:"🧱"}, {id:"whack", name:"Whack", emoji:"🔨"},
-    {id:"bubble", name:"Bubble", emoji:"🫧"}, {id:"maze", name:"Maze", emoji:"🌀"}, {id:"car", name:"Car", emoji:"🏎️"}, {id:"quiz", name:"Quiz", emoji:"❓"},
+  const games = [
+    {id:"chess", name:"Chess", emoji:"♟️", lvl:levels.chess},
+    {id:"draft", name:"Draft", emoji:"👑", lvl:levels.draft},
+    {id:"ludo", name:"Ludo", emoji:"🎲", lvl:levels.ludo},
+    {id:"snakes", name:"Snakes", emoji:"🐍🪜", lvl:levels.snakes},
+    {id:"tictac", name:"TicTac", emoji:"❌", lvl:levels.tictac},
+    {id:"memory", name:"Memory", emoji:"🧠", lvl:levels.memory},
+    {id:"snake", name:"Snake", emoji:"🐍", lvl:levels.snake},
+    {id:"2048", name:"2048", emoji:"🧱", lvl:levels.s2048},
+    {id:"target", name:"Target", emoji:"🎯", lvl:levels.target},
+    {id:"rps", name:"RPS", emoji:"✂️", lvl:levels.rps},
   ];
-  return <div className="min-h-screen bg-black text-white p-4"><h1 className="text-3xl font-bold text-red-600 text-center">Sanel Games ∞</h1><p className="text-center mb-6">Total Points: {points}</p><div className="grid grid-cols-2 gap-3 max-w-md mx-auto">{gameList.map(g => <button key={g.id} onClick={() => setGame(g.id)} className="p-4 bg-white rounded-xl text-gray-800 hover:scale-105"><div className="text-3xl">{g.emoji}</div><div className="font-bold">{g.name}</div><div className="text-xs">Lvl {levels[gameList.indexOf(g)+1]}</div></button>)}</div></div>
+  return <div className="min-h-screen bg-black text-white p-4"><h1 className="text-3xl font-bold text-red-600 text-center">Sanel Games ∞</h1><p className="text-center mb-6">Total Points: {points}</p><div className="grid grid-cols-2 gap-3 max-w-md mx-auto">{games.map(g => <button key={g.id} onClick={() => setGame(g.id)} className="p-4 bg-white rounded-xl text-gray-800 hover:scale-105"><div className="text-3xl">{g.emoji}</div><div className="font-bold">{g.name}</div><div className="text-xs">Lvl {g.lvl}</div></button>)}</div></div>
 }
 
 // 2. CHESS - WITH SOUND
@@ -72,9 +64,10 @@ function ChessGame({setGame, points, setPoints, level, updateLevel, getPoints}:a
   return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Chess Lvl {level} ♟️</h1>{!soundOn && <p className="text-yellow-400">Tap board for sound</p>}<div className="w-80 mx-auto"><Chessboard position={pos} onPieceDrop={onDrop}/></div></div>
 }
 
-// 3. DRAFT - CHECKERS
+// 3. DRAFT
 function DraftGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){
-  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Draft Lvl {level} 👑 Coming Soon</h1><button onClick={()=>{setPoints(points+getPoints(level,40)); updateLevel()}} className="px-4 py-2 bg-red-600 rounded">Complete Level</button></div>
+  const [board,setBoard]=useState(Array(64).fill(null));
+  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Draft Lvl {level} 👑</h1><div className="grid grid-cols-8 gap-0 w-80 h-80 mx-auto">{Array(64).fill(0).map((_,i)=><div key={i} className={`w-10 h-10 ${(Math.floor(i/8)+i)%2===0?"bg-white":"bg-black"}`}></div>)}</div></div>
 }
 
 // 4. LUDO KING - 100% REAL
@@ -103,7 +96,7 @@ function LudoGame({setGame, points, setPoints, level, updateLevel, getPoints}:an
   return <div className="p-2 bg-gradient-to-b from-blue-900 to-black min-h-screen text-white">
     <BackBtn setGame={setGame}/><div className="text-center font-bold mb-1">Ludo Lvl {level} | Turn: <span className="text-yellow-400">{turn===0?"You":"Bot"}</span></div>
     <div className="w-96 h-96 mx-auto bg-white rounded-2xl relative">
-      {Array(225).fill(0).map((_,i)=>{ const x = i%15; const y = Math.floor(i/15); let bg = "bg-white"; if(x<=5 && y<=5) bg="bg-yellow-400"; if(x>=9 && y<=5) bg="bg-red-500"; if((x>=6 && x<=8) || (y>=6 && y<=8)) bg="bg-gray-200 border border-gray-400"; if(x===7 && y===7) bg="bg-gradient-to-br from-yellow-400 to-red-500"; return <div key={i} className={`absolute ${bg}`} style={{left:`${x*6.66}%`, top:`${y*6.66}%`, width:'6.66%', height:'6.66%'}}></div> })}
+      {Array(225).fill(0).map((_,i)=>{ const x = i%15; const y = Math.floor(i/15); let bg = "bg-white"; if(x<=5 && y<=5) bg="bg-yellow-400"; if(x>=9 && y<=5) bg="bg-red-500"; if((x>=6 && x<=8) || (y>=6 && y<=8)) bg="bg-gray-200 border-gray-400"; if(x===7 && y===7) bg="bg-gradient-to-br from-yellow-400 to-red-500"; return <div key={i} className={`absolute ${bg}`} style={{left:`${x*6.66}%`, top:`${y*6.66}%`, width:'6.66%', height:'6.66%'}}></div> })}
       {you.map((pos,i)=>{ const [x,y] = getBoardXY(0,pos,i); return <div key={`y-${i}`} className="absolute w-6 h-6 rounded-full bg-yellow-400 border-2 border-black flex items-center justify-center text-xs font-bold text-black z-10" style={{left:`${x*6.66}%`, top:`${y*6.66}%`}}>{i+1}</div> })}
       {bot.map((pos,i)=>{ const [x,y] = getBoardXY(1,pos,i); return <div key={`r-${i}`} className="absolute w-6 h-6 rounded-full bg-red-500 border-2 border-black flex items-center justify-center text-xs font-bold text-white z-10" style={{left:`${x*6.66}%`, top:`${y*6.66}%`}}>{i+1}</div> })}
     </div>
@@ -152,16 +145,9 @@ function Game2048({setGame, points, setPoints, level, updateLevel, getPoints}:an
   return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>2048 Lvl {level} Goal:{goal}</h1><button onClick={()=>{addTile(); const pts=getPoints(level,30); setPoints(points+pts); updateLevel()}} className="px-4 py-2 bg-red-600 rounded">Add Tile</button></div>
 }
 
-// 10-20. QUICK GAMES
-function TargetGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){ const [score,setScore]=useState(0); const need=5+level; const hit=()=>{const ns=score+1; setScore(ns); setPoints(points+getPoints(level,5)); if(ns>=need){updateLevel(); setScore(0); alert(`Lvl Cleared`) }}; return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Target Lvl {level} 🎯</h1><button onClick={hit} className="w-20 h-20 bg-red-600 rounded-full">HIT {score}/{need}</button></div> }
-function RPSGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){ const [wins,setWins]=useState(0); const need=3+level; const play=(u:string)=>{ const b=["🪨","📄","✂️"][Math.floor(Math.random()*3)]; const win=(u==="🪨"&&b==="✂️")||(u==="📄"&&b==="🪨")||(u==="✂️"&&b==="📄"); if(win){const nw=wins+1; setWins(nw); setPoints(points+getPoints(level,10)); if(nw>=need){updateLevel(); setWins(0); alert(`Lvl Cleared`)}}}; return <div className="p-4 bg-black min-h-screen text-white text-center"><BackBtn setGame={setGame}/><h1>RPS Lvl {level}</h1><div className="flex gap-4 justify-center mt-4">{["🪨","📄","✂️"].map(c=><button key={c} onClick={()=>play(c)} className="text-4xl p-4 bg-white rounded">{c}</button>)}</div></div> }
-function FlappyGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Flappy Bird 🐦 Coming Soon</h1></div> }
-function Game2048x({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>2048 Pro 🔢 Coming Soon</h1></div> }
-function PuzzleGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>15 Puzzle 🧩 Coming Soon</h1></div> }
-function Connect4Game({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Connect 4 🔴 Coming Soon</h1></div> }
-function BreakoutGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Breakout 🧱 Coming Soon</h1></div> }
-function WhackGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Whack-a-Mole 🔨 Coming Soon</h1></div> }
-function BubbleGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Bubble Shooter 🫧 Coming Soon</h1></div> }
-function MazeGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Maze 🌀 Coming Soon</h1></div> }
-function CarGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Car Racing 🏎️ Coming Soon</h1></div> }
-function QuizGame({setGame}:any){ return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Quiz ❓ Coming Soon</h1></div> }
+// 10. TARGET
+function TargetGame({setGame, points, setPoints, level, updateLevel, getPoints}:any){
+  const [score,setScore]=useState(0); const need=5+level;
+  const hit=()=>{const ns=score+1; setScore(ns); setPoints(points+getPoints(level,5)); if(ns>=need){updateLevel(); setScore(0); alert(`Lvl Cleared`) }};
+  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Target Lvl {level} 🎯</h1><button onClick={hit} className="w-20 h-20 bg-red-600 rounded-full">HIT {score}/{need}</button></div>
+}
