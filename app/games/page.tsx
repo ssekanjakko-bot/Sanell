@@ -62,11 +62,112 @@ function ChessReal({setGame, points, setPoints, level, updateLevel, getPoints}:a
   return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Chess Lvl {level} ♟️ Bot:{1000-botSpeed}ms</h1><div className="w-80 mx-auto"><Chessboard position={pos} onPieceDrop={onDrop}/></div></div>
 }
 
-// 2. REAL LUDO
+// 2. LUDO KING STYLE - 4 PLAYER
 function Ludo({setGame, points, setPoints, level, updateLevel, getPoints}:any){
-  const [you,setYou]=useState(0); const [bot,setBot]=useState(0); const target=20 + level*10; const [turn,setTurn]=useState("you");
-  const roll=()=>{ if(turn!=="you")return; const d=Math.floor(Math.random()*6)+1; const ny=you+d; setYou(ny>=target?target:ny); setTurn("bot"); if(ny>=target){const pts=getPoints(level,25); setPoints((p:number)=>p+pts); updateLevel(); alert(`You Win Lvl ${level}! +${pts}`); setYou(0); setBot(0); setTurn("you")} else {setTimeout(()=>{const bd=Math.floor(Math.random()*6)+1; const nb=bot+bd; setBot(nb>=target?target:nb); setTurn("you"); if(nb>=target){alert("Bot Won! +5"); setPoints((p:number)=>p+5); setYou(0); setBot(0); setTurn("you")}},1000)}}
-  return <div className="p-4 bg-black min-h-screen text-white text-center"><BackBtn setGame={setGame}/><h1>Ludo Lvl {level} 🎲</h1><p>Race to {target}</p><p>You: {you} | Bot: {bot}</p><p>{turn==="you"?"Your Turn":"Bot Thinking..."}</p><button onClick={roll} disabled={turn!=="you"} className="mt-4 px-8 py-4 bg-red-600 rounded font-bold disabled:bg-gray-600">ROLL</button></div>
+  const [mode, setMode] = useState<"menu"|"setup"|"game">("menu");
+  const [players, setPlayers] = useState(4);
+  const [playerColor, setPlayerColor] = useState(2); // 0=Green, 1=Red, 2=Yellow, 3=Blue
+  const [turn, setTurn] = useState(0);
+  const [dice, setDice] = useState(1);
+  const [canRoll, setCanRoll] = useState(true);
+
+  const [tokens, setTokens] = useState({0:[0,0,0,0], 1:[0,0,0,0], 2:[0,0,0,0], 3:[0,0,0,0]});
+  const colors = ["bg-green-500","bg-red-500","bg-yellow-400","bg-blue-500"];
+  const colorNames = ["Green","Red","Yellow","Blue"];
+
+  const rollDice = () => {
+    if(!canRoll) return;
+    setCanRoll(false);
+    const d = Math.floor(Math.random()*6)+1;
+    setDice(d);
+    
+    setTimeout(()=>{
+      const newTokens = {...tokens};
+      let pos = newTokens[turn][0];
+      if(pos === 0 && d === 6) pos = 1; 
+      else if(pos > 0) pos += d;
+      if(pos > 57) pos = 57;
+      newTokens[turn][0] = pos;
+      setTokens(newTokens);
+
+      if(newTokens[turn].every(x=>x===57)){
+        const pts = getPoints(level, 50);
+        setPoints((p:number)=>p+pts);
+        updateLevel();
+        alert(`${colorNames[turn]} WINS Lvl ${level}! +${pts}`);
+      }
+      
+      setTurn((turn+1)%players);
+      setCanRoll(true);
+    },800)
+  }
+
+  if(mode === "menu") return (
+    <div className="p-4 bg-gradient-to-b from-blue-900 to-blue-950 min-h-screen text-white">
+      <BackBtn setGame={setGame}/>
+      <h1 className="text-2xl font-bold text-center mb-6">PLAY AGAINST</h1>
+      <div className="space-y-4 max-w-sm mx-auto">
+        <button onClick={()=>setMode("setup")} className="w-full bg-gradient-to-r from-green-500 to-green-700 p-6 rounded-xl hover:scale-105">
+          <div className="text-4xl mb-2">🤖</div>
+          <div className="text-xl font-bold">Computer</div>
+        </button>
+        <button onClick={()=>setMode("setup")} className="w-full bg-gradient-to-r from-purple-500 to-purple-700 p-6 rounded-xl hover:scale-105">
+          <div className="text-4xl mb-2">👨‍👩‍👧</div>
+          <div className="text-xl font-bold">Local</div>
+        </button>
+      </div>
+    </div>
+  )
+
+  if(mode === "setup") return (
+    <div className="p-4 bg-gradient-to-b from-blue-900 to-blue-950 min-h-screen text-white">
+      <BackBtn setGame={()=>setMode("menu")}/>
+      <h1 className="text-xl font-bold text-center text-yellow-400 mb-4">SELECT MODE</h1>
+      <div className="bg-blue-950 p-4 rounded-xl mb-4 border-2 border-yellow-400">
+        <div className="font-bold">🎲 Classic ✓</div>
+        <div className="text-gray-400">Powerup</div>
+        <div className="text-gray-400">Quick</div>
+      </div>
+      
+      <h1 className="text-xl font-bold text-center text-yellow-400 mb-4">SELECT PLAYERS</h1>
+      <div className="flex gap-4 justify-center mb-6">
+        {[2,3,4].map(n=><button key={n} onClick={()=>setPlayers(n)} className={`p-4 w-20 rounded-xl font-bold ${players===n?"bg-yellow-500 text-black":"bg-blue-950"}`}>{n}P</button>)}
+      </div>
+
+      <h1 className="text-xl font-bold text-center text-yellow-400 mb-4">SELECT COLOR</h1>
+      <div className="flex gap-4 justify-center mb-6">
+        {colors.map((c,i)=><button key={i} onClick={()=>setPlayerColor(i)} className={`w-14 h-14 rounded-full ${c} ${playerColor===i?"ring-4 ring-white":""}`}></button>)}
+      </div>
+
+      <button onClick={()=>setMode("game")} className="w-full py-4 bg-red-600 rounded-xl font-bold text-xl">START GAME</button>
+    </div>
+  )
+
+  return (
+    <div className="p-2 bg-gradient-to-b from-blue-900 to-blue-950 min-h-screen text-white">
+      <BackBtn setGame={()=>setMode("menu")}/>
+      <div className="text-center mb-2 font-bold">Lvl {level} | Turn: <span className="text-yellow-400">{colorNames[turn]}</span></div>
+      
+      <div className="w-96 h-96 mx-auto bg-white rounded-2xl p-2 grid grid-cols-15 grid-rows-15 gap-0">
+        <div className="col-span-6 row-span-6 bg-green-500 rounded-xl flex items-center justify-center text-black font-bold">G</div>
+        <div className="col-span-3 row-span-6"></div>
+        <div className="col-span-6 row-span-6 bg-red-500 rounded-xl flex items-center justify-center text-black font-bold">R</div>
+        <div className="col-span-6 row-span-3"></div>
+        <div className="col-span-3 row-span-3 bg-gray-300 rounded"></div>
+        <div className="col-span-6 row-span-3"></div>
+        <div className="col-span-6 row-span-6 bg-yellow-400 rounded-xl flex items-center justify-center text-black font-bold">Y</div>
+        <div className="col-span-3 row-span-6"></div>
+        <div className="col-span-6 row-span-6 bg-blue-500 rounded-xl flex items-center justify-center text-black font-bold">B</div>
+      </div>
+
+      <div className="text-center mt-4">
+        <button onClick={rollDice} disabled={!canRoll} className="text-6xl disabled:opacity-50">
+          🎲 {dice}
+        </button>
+        <p className="mt-2">{canRoll?"Tap to Roll":"Bot Thinking..."}</p>
+      </div>
+    </div>
+  )
 }
 
 // 3. REAL MEMORY
@@ -75,7 +176,7 @@ function Memory({setGame, points, setPoints, level, updateLevel, getPoints}:any)
   const [cards] = useState(Array(pairs).fill(0).flatMap((_,i)=>[i,i]).sort(()=>0.5-Math.random()));
   const [f,setF]=useState<number[]>([]); const [m,setM]=useState<number[]>([]);
   const click=(i:number)=>{ if(f.length===2||m.includes(i))return; const nf=[...f,i]; setF(nf); if(nf.length===2){ if(cards[nf[0]]===cards[nf[1]]){const nm=[...m,...nf]; setM(nm); if(nm.length===cards.length){const pts=getPoints(level,30); setPoints((p:number)=>p+pts); updateLevel(); alert(`Lvl ${level} Win! +${pts}`)}} setTimeout(()=>setF([]),800)}}
-  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Memory Lvl {level} 🧠 Pairs:{pairs}</h1><div className="grid grid-cols-6 gap-1 w-96 mx-auto">{cards.map((c,i)=><button key={i} onClick={()=>click(i)} className="w-16 h-16 bg-white text-xl">{f.includes(i)||m.includes(i)?c:"?"}</button>)}</div></div>
+  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Memory Lvl {level} 🧠 Pairs:{pairs}</h1><div className="grid grid-cols-6 gap-1 w-96 mx-auto">{cards.map((c,i)=><button key={i} onClick={()=>click(i)} className="w-16 h-16 bg-white text-xl text-black">{f.includes(i)||m.includes(i)?c:"?"}</button>)}</div></div>
 }
 
 // 4. REAL SNAKE
@@ -125,38 +226,16 @@ function Game2048({setGame, points, setPoints, level, updateLevel, getPoints}:an
   return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>2048 Lvl {level} Goal:{goal} 🧱</h1><button onClick={()=>{addTile(); const pts=getPoints(level,30); setPoints((p:number)=>p+pts); updateLevel()}} className="px-4 py-2 bg-red-600 rounded">Add Tile + Level Up</button></div>
 }
 
-// 9. REAL SNAKES & LADDERS - TS FIXED
+// 9. REAL SNAKES & LADDERS
 function Snakes({setGame, points, setPoints, level, updateLevel, getPoints}:any){
   const [pos,setPos]=useState(1); const target=30 + level*10;
-  
   const snakes:Record<number, number> = {16:6,47:26,49:11,56:53,62:19,64:60,87:24,93:73,95:75,98:78};
   const ladders:Record<number, number> = {1:38,4:14,9:31,21:42,28:84,36:44,51:67,71:91,80:100};
-  
-  const roll=()=>{
-    const d=Math.floor(Math.random()*6)+1; 
-    let np=pos+d; 
-    if(np>target) np=pos; 
-    if(snakes[np]) np=snakes[np]; 
-    if(ladders[np]) np=ladders[np]; 
-    setPos(np); 
-    if(np>=target){
-      const pts=getPoints(level,25); 
-      setPoints((p:number)=>p+pts); 
-      updateLevel(); 
-      alert(`Lvl ${level} Win!`); 
-      setPos(1)
-    } 
-  }
-  return <div className="p-4 bg-black min-h-screen text-white text-center">
-    <BackBtn setGame={setGame}/>
-    <h1>Snakes Lvl {level} 🐍🪜</h1>
-    <p>Race to {target}. Pos:{pos}</p>
-    <button onClick={roll} className="mt-4 px-6 py-3 bg-red-600 rounded font-bold">Roll Dice</button>
-  </div>
+  const roll=()=>{const d=Math.floor(Math.random()*6)+1; let np=pos+d; if(np>target)np=pos; if(snakes[np])np=snakes[np]; if(ladders[np])np=ladders[np]; setPos(np); if(np>=target){const pts=getPoints(level,25); setPoints((p:number)=>p+pts); updateLevel(); alert(`Lvl ${level} Win!`); setPos(1) }}
+  return <div className="p-4 bg-black min-h-screen text-white text-center"><BackBtn setGame={setGame}/><h1>Snakes Lvl {level} 🐍🪜</h1><p>Race to {target}. Pos:{pos}</p><button onClick={roll} className="mt-4 px-6 py-3 bg-red-600 rounded font-bold">Roll Dice</button></div>
 }
 
 // 10. REAL DRAFT
 function DraftReal({setGame, points, setPoints, level, updateLevel, getPoints}:any){
-  const [board,setBoard]=useState(Array(64).fill(null));
-  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Draft Lvl {level} 👑</h1><p>8x8 Board - Tap to play</p><button onClick={()=>{const pts=getPoints(level,25); setPoints((p:number)=>p+pts); updateLevel()}} className="mt-4 px-4 py-2 bg-red-600 rounded">Win +{getPoints(level,25)} pts</button></div>
+  return <div className="p-4 bg-black min-h-screen text-white"><BackBtn setGame={setGame}/><h1>Draft Lvl {level} 👑</h1><button onClick={()=>{const pts=getPoints(level,25); setPoints((p:number)=>p+pts); updateLevel()}} className="mt-4 px-4 py-2 bg-red-600 rounded">Win +{getPoints(level,25)} pts</button></div>
 }
