@@ -97,6 +97,16 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
+  <>
+    <div id="recaptcha"></div>
+    
+    {/* ADD THESE 3 LINES FOR GOOGLE - THIS FIXES PHISHING WARNING */}
+    <div className="p-4 bg-white text-black">
+      <h1 className="text-2xl font-bold mb-2">Login to Sell on Sanel-UG</h1>
+      <p className="text-gray-600 mb-4">Sign in to post and manage your items. Secured by Firebase.</p>
+    </div>
+
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
     <>
       <div id="recaptcha"></div>
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
