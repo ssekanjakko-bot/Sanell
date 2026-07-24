@@ -18,7 +18,25 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
   const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
+ return (
+  <div className="min-h-screen bg-white p-4">
+    
+    {/* ADD THESE 3 LINES HERE - THIS FIXES GOOGLE */}
+    <h1 className="text-2xl font-bold mb-2">Login to Sell Items on Sanel-UG</h1>
+    <p className="text-gray-600 mb-6">
+      Sign in to post, manage, and sell your items. We use Firebase for secure authentication.
+    </p>
 
+    {/* YOUR EXISTING LOGIN FORM JSX GOES HERE */}
+    ...rest of your form...
+
+    {/* ADD THIS AT THE BOTTOM OF THE FORM */}
+    <p className="text-xs text-gray-500 mt-4">
+      Your data is protected. <a href="/privacy" className="underline">Privacy Policy</a>
+    </p>
+
+  </div>
+)
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, u => setUser(u))
     return unsub
