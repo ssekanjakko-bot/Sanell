@@ -1,4 +1,4 @@
-import Link from 'next/link' // <-- LINE 1
+
 
 export default function TermsPage() {
   return (
