@@ -103,7 +103,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
                              if(!email) return alert('Enter your email first');
                               try {
                                    await sendPasswordResetEmail(auth, email);
-                                   alert('check your email for a rest link✅');
+                                   alert('check your email for a reset link✅');
                                   } catch (e: any) {
                                                     alert('check your email if the account exists');//hide if user exists or not 
                                  }
@@ -126,4 +126,5 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
     </>
 
   )
- }
+
+}
