@@ -77,9 +77,6 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-  <>
-
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
     <>
       <div id="recaptcha"></div>
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
@@ -126,5 +123,4 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
     </>
 
   )
-  }
 }
