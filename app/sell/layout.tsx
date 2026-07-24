@@ -1,126 +1,111 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
-import { auth } from '@/lib/firebase'
-import { 
-  onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail,
-  updateProfile, linkWithPhoneNumber, RecaptchaVerifier, signOut, User 
+import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { auth, db } from '@/lib/firebase'
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+  onAuthStateChanged,
 } from 'firebase/auth'
+import { doc, setDoc } from 'firebase/firestore'
+import Link from 'next/link'
 
 export default function SellLayout({ children }: { children: React.ReactNode }) {
-  const recaptchaRef = useRef<RecaptchaVerifier | null>(null)
-  const [user, setUser] = useState<User | null>(null)
-  const [mode, setMode] = useState<'signup' | 'login'>('signup')
-  const [step, setStep] = useState<'form' | 'otp'>('form')
-  const [confirm, setConfirm] = useState<any>(null)
-
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [isLogin, setIsLogin] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
-  const [otp, setOtp] = useState('')
+  const [password, setPassword] = useState('')
+  const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, u => setUser(u))
-    return unsub 
-  useEffect(() => {
-    if (!recaptchaRef.current) {
-      recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha', { size: 'invisible' })
-    }
-  }, [])
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u)
+      setLoading(false)
+      if(u && pathname === '/sell') router.push('/sell/dashboard')
+    })
+    return () => unsub()
+  }, [router, pathname])
 
-  const phoneFull = `+256${phone.replace(/\D/g, '')}`
-
-  const submit = async () => {
-    if (!email || !password || !phone) return alert('Fill all fields')
-    if (mode === 'signup' && !name) return alert('Enter name')
-
+  const handleSubmit = async (e: any) => {
+    e.preventDefault()
     try {
-      if (mode === 'signup') {
+      if(isLogin){
+        await signInWithEmailAndPassword(auth, email, password)
+      } else {
         const cred = await createUserWithEmailAndPassword(auth, email, password)
         await updateProfile(cred.user, { displayName: name })
-        const c = await linkWithPhoneNumber(cred.user, phoneFull, recaptchaRef.current!)
-        setConfirm(c)
-      } else {
-        const cred = await signInWithEmailAndPassword(auth, email, password)
-        if (!cred.user.phoneNumber) {
-          const c = await linkWithPhoneNumber(cred.user, phoneFull, recaptchaRef.current!)
-          setConfirm(c)
-        } else return
+        await setDoc(doc(db, 'sellers', cred.user.uid), {
+          name, email, phone: `+256${phone}`, createdAt: new Date()
+        })
       }
-      setStep('otp')
     } catch (e: any) {
       alert(e.message)
     }
   }
 
-  const verify = async () => {
-    try {
-      await confirm.confirm(otp)
-      await auth.currentUser?.reload()
-      setUser(auth.currentUser)
-    } catch (e: any) {
-      alert('Wrong OTP')
-    }
-  }
+  if (loading) return <div className="p-8 text-center bg-black min-h-screen text-white">Loading...</div>
+  if (user && pathname === '/sell') return <>{children}</>
 
-  if (user) {
-    return (
-      <>
-        <div id="recaptcha"></div>
-        <div className="p-3 border-b  flex justify-between bg-white text-amber-900 font-semibold">
-          <b>Welcome, {user?.displayName || 'Guest'}</b>
-          <button onClick={() => signOut(auth)}>Logout</button>
-        </div>
-        {children}
-      </>
-    )
-  }
+  // POLICY PAGES INSIDE SAME FILE
+  if(pathname === '/sell/privacy') return <PolicyPage title="Privacy Policy" content="Sanel Uganda respects your privacy. We collect name, email and phone only to manage your seller account on sanel-ug.online. Your data is stored securely in Firebase and never shared with third parties. Contact: support@sanel-ug.online" />
+  if(pathname === '/sell/terms') return <PolicyPage title="Terms of Service" content="By using Sanel Uganda seller portal you agree to list genuine products only. We reserve the right to suspend accounts for fraud. All transactions are between buyer and seller." />
+  if(pathname === '/sell/contact') return <PolicyPage title="Contact Sanel Uganda" content="Email: support@sanel-ug.online \n Phone: +256 7XXXXXXXX \n Location: Kampala, Uganda \n Website: https://sanel-ug.online" />
 
+  // MAIN LOGIN FORM
   return (
-    <>
-      <div id="recaptcha"></div>
-      <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
-        <div className="bg-amber-900 p-4 rounded-lg w-[90%] max-w-sm shadow-lg border- amber-700">
-          <div className="flex mb-3">
-            <button onClick={() => {setMode('signup'); setStep('form')}} className={`flex-1 ${mode==='signup'?'font-bold border-b-2':''}`}>SignUp</button>
-            <button onClick={() => {setMode('login'); setStep('form')}} className={`flex-1 ${mode==='login'?'font-bold border-b-2':''}`}>Login</button>
-          </div>
+    <div className="min-h-screen bg-black flex-col items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-amber-900 rounded-xl p-4 shadow-lg">
 
-          {step === 'form' ? (
-            <>
-              {mode === 'signup' && <input placeholder="Name" className="border border -amber-700 w-full p-3 mb-3 rounded-md bg-amber-50 text-amber-950 placeholder:text-amber-700" value={name} onChange={e=>setName(e.target.value)}/>}
-              <input placeholder="Email" className="border border-amber-700 w-full p-3 mb-3 rounded-md bh-amber-50 text-amber-950 placeholder:text-amber-700" value={email} onChange={e=>setEmail(e.target.value)}/>
-              <div className="flex border border-amber-700 mb-3 rounded-md bg-amber-50"><span className="p-3 text-amber-950">+256</span><input placeholder="77XXXXXXX" className="flex-1 p-3 bg-transparent text-amber-950" value={phone} onChange={e=>setPhone(e.target.value)}/></div>
-              <input placeholder="Password" type="password" className="border border-amber-700 w-full p-3 mb-3 rounded-md bg-amber-50 text-amber-950 placeholder:text-amber-700" value={password} onChange={e=>setPassword(e.target.value)}/>
-              <button onClick={submit} className="bg-amber-700 hover:bg-amber-800 text-white font-semibold w-full p-3 rounded-md">Continue</button>
-           {/* ADD THIS HERE */}
-            { mode === 'login' && ( 
-              <button 
-                   onClick= {async () =>{
-                             if(!email) return alert('Enter your email first');
-                              try {
-                                   await sendPasswordResetEmail(auth, email);
-                                   alert('check your email for a reset link✅');
-                                  } catch (e: any) {
-                                                    alert('check your email if the account exists');//hide if user exists or not 
-                                 }
-                             }}
-                              className="text-sm text-amber-200 underline mt-2"
-                              >
-                            Forgot Password?
-                       </button>
-                 )}
-          </>
-          ) : (
-            <>
-              <p className="text-center mb-2">Code to {phoneFull}</p>
-              <input placeholder="OTP" className="border w-full p-2 mb-2 text-center" value={otp} onChange={e=>setOtp(e.target.value)}/>
-              <button onClick={verify} className="bg-green-600 text-white w-full p-2">Verify</button>
-            </>
+        <div className="bg-green-900/30 border border-green-700 text-green-200 text-xs rounded p-2 mb-3 text-center">
+          🔒 Secure Login. Your data is encrypted and protected by Sanel Uganda
+        </div>
+
+        <div className="flex mb-4">
+          <button onClick={() => setIsLogin(false)} className={`flex-1 pb-2 text-white ${!isLogin? 'border-b-2 border-white font-bold' : ''}`}>SignUp</button>
+          <button onClick={() => setIsLogin(true)} className={`flex-1 pb-2 text-white ${isLogin? 'border-b-2 border-white font-bold' : ''}`}>Login</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {!isLogin && <input placeholder="Name" value={name} onChange={e=>setName(e.target.value)} className="w-full p-3 rounded bg-amber-50 text-amber-800 placeholder-amber-700 outline-none" required />}
+          <input placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-3 rounded bg-amber-800 text-white placeholder-amber-600 border border-amber-700 outline-none" required />
+          {!isLogin && (
+            <div className="flex rounded bg-amber-50">
+              <span className="p-3 text-amber-800 font-semibold">+256</span>
+              <input placeholder="77XXXXXXX" type="tel" value={phone} onChange={e=>setPhone(e.target.value)} className="flex-1 p-3 bg-transparent text-amber-800 placeholder-gray-500 outline-none" required />
+            </div>
           )}
+          <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 rounded bg-amber-50 text-amber-800 placeholder-amber-700 outline-none" required />
+          <button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold p-3 rounded">Continue</button>
+        </form>
+
+        <div className="text-center text-xs text-amber-200 mt-4 space-y-1">
+          <p>© 2026 Sanel Uganda. All rights reserved.</p>
+          <div className="flex justify-center gap-3">
+            <Link href="/sell/privacy" className="underline">Privacy Policy</Link>
+            <Link href="/sell/terms" className="underline">Terms</Link>
+            <Link href="/sell/contact" className="underline">Contact Us</Link>
+          </div>
+          <p className="mt-2">This is the official seller portal for sanel-ug.online</p>
         </div>
       </div>
-    </>
+    </div>
+  )
+}
 
+// REUSABLE POLICY COMPONENT
+function PolicyPage({ title, content }: { title: string, content: string }) {
+  return (
+    <div className="min-h-screen bg-black text-white p-8">
+      <div className="max-w-3xl mx-auto">
+        <Link href="/sell" className="text-orange-500 underline mb-4 block">← Back to Login</Link>
+        <h1 className="text-2xl font-bold mb-4">{title}</h1>
+        <p className="whitespace-pre-line">{content}</p>
+      </div>
+    </div>
   )
 }
