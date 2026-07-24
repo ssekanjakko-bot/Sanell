@@ -28,7 +28,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u)
       setLoading(false)
-      if(u && pathname === '/sell') router.push('/sell/dashboard')
+      if(u && pathname === '/sell') router.push('/sell')
     })
     return () => unsub()
   }, [router, pathname])
