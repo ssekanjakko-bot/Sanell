@@ -34,6 +34,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
           name, email, phone: `+256${phone}`, createdAt: new Date()
         })
       }
+      setName(''); setEmail(''); setPhone(''); setPassword('')
     } catch (e: any) {
       alert(e.message)
     }
@@ -55,7 +56,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
 
   if (loading) return <div className="p-8 text-center bg-black min-h-screen text-white">Loading...</div>
 
-  // IF LOGGED IN: Show header + connect to your sell/page.tsx
+  // IF LOGGED IN: Show header + your sell/page.tsx
   if(user){
     return (
       <div className="min-h-screen bg-gray-50">
@@ -68,7 +69,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
     )
   }
 
-  // IF NOT LOGGED IN: Show EXACT login card and handle everything here
+  // IF NOT LOGGED IN: EXACT LOGIN CARD WITH WORKING LINKS
   return (
     <div className="min-h-screen w-full bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-amber-900 rounded-xl p-5 shadow-2xl">
@@ -98,13 +99,14 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
           
           <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 rounded bg-amber-50 text-amber-900 placeholder-amber-700 outline-none" required />
           
-          <button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold p-3 rounded">Continue</button>
+          <button type="submit" className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold p-3 rounded">Continue</button>
         </form>
 
         {isLogin && (
           <p onClick={handleForgot} className="text-center text-sm text-amber-200 underline mt-3 cursor-pointer">Forgot Password?</p>
         )}
 
+        {/* WORKING FOOTER LINKS */}
         <div className="text-center text-xs text-amber-200 mt-4 space-y-1">
           <p>© 2026 Sanel Uganda. All rights reserved.</p>
           <div className="flex justify-center gap-3 underline">
