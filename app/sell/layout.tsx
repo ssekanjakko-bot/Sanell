@@ -23,7 +23,6 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
     const unsub = onAuthStateChanged(auth, u => setUser(u))
     return unsub
   }, [])
-
   useEffect(() => {
     if (!recaptchaRef.current) {
       recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha', { size: 'invisible' })
