@@ -1,3 +1,5 @@
+import Link from 'next/link' // <-- ADD THIS LINE 1
+
 export default function ContactPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -17,6 +19,8 @@ export default function ContactPage() {
           <p><strong>For Sellers:</strong> Questions about listings, payments, or account issues.</p>
           <p><strong>For Buyers:</strong> Contact the seller directly through the product page on sanel-ug.online</p>
         </div>
+
+        <Link href="/sell" className="text-orange-600 underline mt-6 block">← Back to Seller Login</Link> // <-- ADD THIS LAST LINE
       </div>
     </div>
   )
