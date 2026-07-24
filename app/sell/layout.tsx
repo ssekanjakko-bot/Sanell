@@ -18,7 +18,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
   const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
- return (
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, u => setUser(u))
     return unsub 
