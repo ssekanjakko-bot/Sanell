@@ -110,9 +110,9 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
         <div className="text-center text-xs text-amber-200 mt-4 space-y-1">
           <p>© 2026 Sanel Uganda. All rights reserved.</p>
           <div className="flex justify-center gap-3 underline">
-            <Link href="/privacy">Privacy Policy</Link>
-            <Link href="/terms">Terms</Link>
-            <Link href="/contact">Contact Us</Link>
+            <Link href="/sell/privacy">Privacy Policy</Link>
+            <Link href="/sell/terms">Terms</Link>
+            <Link href="/sell/contact">Contact Us</Link>
           </div>
           <p>This is the official seller portal for sanel-ug.online</p>
         </div>
