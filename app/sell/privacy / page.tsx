@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           For privacy questions: support@sanel-ug.online | Kampala, Uganda</p>
         </div>
 
-        <Link href="/sell" className="text-orange-600 underline mt-6 block">← Back to Seller Login</Link>
+        <Link href="/privacy" className="text-orange-600 underline mt-6 block">← Back to Seller Login</Link>
       </div>
     </div>
   )
