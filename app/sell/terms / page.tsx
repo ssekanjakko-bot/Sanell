@@ -21,7 +21,7 @@ export default function TermsPage() {
           We reserve the right to suspend or terminate accounts that violate these terms.</p>
         </div>
 
-        <Link href="/sell" className="text-orange-600 underline mt-6 block">← Back to Seller Login</Link> 
+        <Link href="/terms" className="text-orange-600 underline mt-6 block">← Back to Seller Login</Link> 
       </div>
     </div>
   )
