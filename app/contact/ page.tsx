@@ -11,7 +11,7 @@ export default function ContactPage() {
           <p><strong>Location:</strong> Kampala, Uganda</p>
           <p><strong>Hours:</strong> Mon - Sat, 8AM - 6PM</p>
         </div>
-        <Link href="/sell" className="text-orange-600 underline mt-6 block">← Back to Seller Login</Link>
+        <Link href="/contact" className="text-orange-600 underline mt-6 block">← Back to Seller Login</Link>
       </div>
     </div>
   )
