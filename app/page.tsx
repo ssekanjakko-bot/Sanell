@@ -75,9 +75,6 @@ useEffect(() => {
     setBanners(urls)
   })
   return () => unsub()
-} [])
-  
-  return () => unsub()
 }, [])
 
   const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.category === selectedCategory)
