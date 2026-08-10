@@ -112,7 +112,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
           <div className="flex justify-center gap-3 underline">
             <Link href="/sell/privacy">Privacy Policy</Link>
             <Link href="/sell/terms">Terms</Link>
-            <Link href="contact">Contact Us</Link>
+            <Link href="/sell/contact">Contact Us</Link>
           </div>
           <p>This is the official seller portal for sanel-ug.online</p>
         </div>
