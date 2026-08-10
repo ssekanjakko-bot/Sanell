@@ -1,4 +1,4 @@
-import link from 'next/link';
+import Link from 'next/link';
 
 export default function TermsPage() {
   return (
