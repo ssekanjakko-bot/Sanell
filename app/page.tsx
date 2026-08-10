@@ -1,191 +1,104 @@
-'use client'
+"use client"
+import { useState, useEffect } from "react"
+import { db } from "@/lib/firebase"
+import { 
+  collection, 
+  addDoc, 
+  deleteDoc, 
+  doc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  serverTimestamp 
+} from "firebase/firestore"
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"
 
-import { useState, useEffect , useRef } from 'react'
-import { auth } from '@/lib/firebase'
-import { signOut } from 'firebase/auth'
-import { db } from '@/lib/firebase'
-import { collection,  doc ,onSnapshot , query ,orderBy } from 'firebase/firestore'
-import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
+export default function AdminBanner() {
+  const [file, setFile] = useState<File | null>(null)
+  const [banners, setBanners] = useState<any[]>([])
+  const [uploading, setUploading] = useState(false)
+  const storage = getStorage()
 
-const COFFEE_BROWN = '#6F4E37'
-const COFFEE_LIGHT = '#A67B5B'
-
-const TOP_TABS = [
-  { name: '🎥Movies', href: '/movies' }, // Links to your existing app/movies/page.tsx
-  { name: '⚽️Live Sports ', href: '/stores' },
-  { name: '🧾Invoices', href: '/invoices' },
-  { name: '🔖Receipts', href: '/receipts' },
-]
-
-const CATEGORIES = [
-  { name: 'Vehicles', icon: '🚗' }, { name: 'Phones', icon: '📱' },
-  { name: 'Hostels & Rentals', icon: '🏠' }, { name: 'Electronics', icon: '💻' },
-  { name: 'Home, Furniture & Appliances', icon: '🛋️' }, { name: 'Health', icon: '💊' },
-  { name: 'Fashion', icon: '👗' }, { name: 'Sports, Arts & Outdoor', icon: '⚽' },
-  { name: 'Babies & Kids', icon: '🧸' }, { name: 'Animals & Pets', icon: '🐶' },
-  { name: 'Agriculture & Food', icon: '🌾' }, { name: 'Commercial Equipment & Tools', icon: '🔧' },
-  { name: 'Repair & Construction', icon: '🔨' }, { name: 'Stationery', icon: '📚' },
-  { name: 'Services', icon: '❤️' }, { name: 'Jobs', icon: '📢' },
-]
-
-// Admin is removed from here. Hidden. Only accessible via /admin URL
-const BOTTOM_NAV = [
-  { name: 'Home', icon: '🏠', href: '/' },
-  { name: 'Chat', icon: '💬', href: '/chat' },
-  { name: 'stress-clinic', icon: '🏪', href: '/games' },
-  { name: 'Profile', icon: '👤', href: '/profile' },
-]
-
-export default function HomePage() {
-  const [products, setProducts] = useState<any[]>([])
-  const [selectedCategory, setSelectedCategory] = useState('All')
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
-  const API_KEY = "dd7ba7eea526856266682cd0d6f32335"
-  const pathname = usePathname()
-  const [banners, setBanners] =useState<string[]>([]); // Empty for now. Admin will fill this later 
-  const scrollRef = 
-  useRef<HTMLDivElement>(null);
-  useEffect (() => {
-    const el = scrollRef.current;
-    if (!el || banners.length === 0) 
-return;// won't run if empty 
-    let i = 0;
-    const timer = setInterval (() => { 
-       i = (i + 1) % banners.length; 
-       el. scrollTo({ left: 1 *  
-       el.clientWidth, behavior: "smooth" }); 
-           }, 4000); 
-return () => clearInterval(timer); 
-},[banners.length]);
+  // Fetch all banners live
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'products'), (snap) => {
-      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-      setLoading(false)
-console.log("Banners array:", banners)
+    const q = query(collection(db, 'banners'), orderBy("createdAt", "desc"))
+    const unsub = onSnapshot(q, (snap) => {
+      setBanners(snap.docs.map(d => ({id: d.id,...d.data()})))
     })
     return () => unsub()
   }, [])
- // Fetch all banners from Firestore
-useEffect(() => {
-  const q = query(collection(db, 'banners'), orderBy("createdAt", "desc"))
-  const unsub = onSnapshot(q, (snap) => {
-    const urls = snap.docs.map(d => d.data().imageUrl)
-    setBanners(urls)
-  })
-  return () => unsub()
-}, [])
 
-  const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.category === selectedCategory)
+  const upload = async () => {
+    if (!file) return alert("Please select an image first")
+    setUploading(true)
+    try {
+      const storageRef = ref(storage, `banners/${Date.now()}-${file.name}`)
+      const res = await uploadBytes(storageRef, file)
+      const url = await getDownloadURL(res.ref)
+      await addDoc(collection(db, 'banners'), { 
+        imageUrl: url, 
+        createdAt: serverTimestamp() 
+      })
+      setFile(null)
+      alert("Banner uploaded!")
+    } catch (err) {
+      alert("Upload failed")
+      console.error(err)
+    }
+    setUploading(false)
+  }
+
+  const deleteBanner = async (id: string) => {
+    if (!confirm("Delete this banner?")) return
+    await deleteDoc(doc(db, 'banners', id))
+  }
 
   return (
-    <div className="min-h-screen pb-24" style={{ backgroundColor: '#FDF8F3'}}>
-      <div className="bg-white shadow-sm sticky top-0 z-20">
-        <div className="p-3 flex justify-between items-center border-b">
-          <div className="flex items-center gap-2">
-            <button onClick={() => router.push('/')}>☰</button>
-            <h1 className="font-bold" style={{ color: COFFEE_BROWN }}>Sanel Ug</h1>
-            <Link href="/about" className="text-xs text-gray-500">About</Link>
-          </div>
-          <div className="flex gap-2 text-xs">
-            <Link href="/get-app" className="border border-zinc-700 bg-zinc-800 text-white px-0.5 py-0.5 rounded-md text-sm">GetApp</Link>
-            <Link href="/tools" className="border border-zinc-700 bg-zinc-800 text-white px-0.5 py-0.5 rounded-md text-sm">Tools</Link>
-            <Link href="/support" className="border border-zinc-700 bg-zinc-800 text-white px-0.5 py-0.5 rounded-md text-sm">Support</Link>
-            <select className="border  border-zinc-700 bg-zinc-800 text-white px-0.5 py-0.5rounded-md text-sm"><option>MUBS</option><option>OTHER</option></select>
-          
-          </div>
-        </div>
-
-        <form action="/search" method="GET" className="p-3">
-  <div className="relative">
-    <input 
-      type="search" 
-      name="q"
-      id="doofinder-search-input"
-      placeholder="Search products" 
-      className="w-full p-3 bg-zinc-800 text-white border border-zinc-700 rounded-lg text-sm placeholder:text-zinc-400" 
-    />
-  </div>
-</form>
-
-        <div className="flex gap-2 px-3 pb-2 overflow-x-auto">
-          {TOP_TABS.map(tab => (
-            <Link
-              key={tab.name}
-              href={tab.href}
-              className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap font-medium border ${pathname === tab.href ?  'text-white' : 'bg-zinc-800 text-zinc-300 border-zinc-700'}`}
-              style={{ backgroundColor: pathname === tab.href ? COFFEE_BROWN : '' }}
-            >
-              {tab.name}
-            </Link>
-          ))}
-        </div>
+    <div className="p-4 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Banner Management</h1>
+      
+      {/* Upload Section */}
+      <div className="border rounded-lg p-4 mb-6 bg-white">
+        <label className="block text-sm font-medium mb-2">Upload New Banner</label>
+        <input 
+          type="file" 
+          accept="image/*"
+          onChange={e => setFile(e.target.files?.[0] || null)} 
+          className="mb-3 block w-full text-sm"
+        />
+        <button 
+          onClick={upload} 
+          disabled={uploading}
+          className="bg-black text-white px-5 py-2 rounded-md hover:bg-gray-800 disabled:opacity-50"
+        >
+          {uploading? "Uploading..." : "Upload Banner"}
+        </button>
+        <p className="text-xs text-gray-500 mt-2">Recommended size: 1200x400px. Max 7 banners.</p>
       </div>
-      {banners.length > 0 && (
-  <div ref={scrollRef} className="w-full overflow-x-auto scroll-smooth flex snap-x">
-    {banners.map((url, i) => (
-      <img 
-        key={i} 
-        src={url} 
-        className="w-full h-56 object-cover flex-shrink-0 snap-start" 
-        alt="banner"
-      />
-    ))}
-  </div>
-)}
-      {/* Main Page = Stores */}
-      <div className="bg-white">
-        <div className="grid grid-cols-4 gap-4">
-          <button onClick={() => setSelectedCategory('All')} className={`flex flex-col items-center text-xs ${selectedCategory === 'All' ? 'font-bold' : ''}`} style={{ color: selectedCategory === 'All' ? COFFEE_BROWN : '#666' }}>
-            <div className="text-2xl mb-1">🏪</div><span>All</span>
-          </button>
-          {CATEGORIES.map(cat => (
-            <button key={cat.name} onClick={() => setSelectedCategory(cat.name)} className={`flex flex-col items-center text-xs ${selectedCategory === cat.name ? 'font-bold' : ''}`} style={{ color: selectedCategory === cat.name ? COFFEE_BROWN : '#666' }}>
-              <div className="text-2xl mb-1">{cat.icon}</div><span className="text-center leading-tight">{cat.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="p-4">
-        <p className="font-bold mb-3" style={{ color: COFFEE_BROWN }}>Listings {selectedCategory !== 'All' && `- ${selectedCategory}`} ({filteredProducts.length})</p>
-        {loading && <p className="text-center py-10">Loading...</p>}
-        {filteredProducts.length === 0 && !loading && <p className="text-center py-20 text-gray-500">No listings yet. Tap the + button to post.</p>}
-        <div className="grid grid-cols-2 gap-4">
-          {filteredProducts.map(p => (
-            <div key={p.id} className="bg-white border rounded-lg overflow-hidden shawdow-sm">
-              {p.images?.[0] && <img src={p.images[0]} className="w-full h-50 object-cover bg-black p-2" alt={p.title} />}
-              <div className="p-3">
-                <span className="text-xs px-2 py-1 rounded-full text-white mb-1 inline-block" style={{ backgroundColor: COFFEE_LIGHT }}>{p.category}</span>
-                <p className="font-bold text-sm mb-1 line-clamp-1" style={{ color: COFFEE_BROWN }}>{p.title}</p>
-                <p className="font-bold mb-2" style={{ color: COFFEE_BROWN }}>{p.price?.toLocaleString()} UGX</p>
-                  <a href={`https://wa.me/${p.whatsapp}?text=${encodeURIComponent(
-                      `Hi,Im interested in this product at Sanel Uganda 🇺🇬
-                      *${p.title}*
-                       price: ${p.price?.toLocaleString()} UGX
-                         Category: ${p.category}
-                         Image: ${p.images?.[0] || 'No image' }
-                         Is it still available?`)}`} 
-                   target="_blank" 
-                   className="block w-full text-white text-center py-1.5 rounded text-sm font-medium" style={{ backgroundColor: '#25D366' }}
-                > 
-               Contact on WhatsApp
-                </a>
+
+      {/* Banners List */}
+      <h2 className="text-lg font-semibold mb-3">Active Banners: {banners.length}</h2>
+      
+      {banners.length === 0? (
+        <p className="text-gray-500">No banners yet. Upload one above.</p>
+      ) : (
+        <div className="grid gap-4">
+          {banners.map(b => (
+            <div key={b.id} className="flex gap-4 items-center border p-3 rounded-lg bg-white shadow-sm">
+              <img src={b.imageUrl} className="w-32 h-20 object-cover rounded"/>
+              <div className="flex-1">
+                <p className="text-xs text-gray-500 truncate">{b.imageUrl}</p>
               </div>
+              <button 
+                onClick={() => deleteBanner(b.id)} 
+                className="bg-red-500 text-white px-3 py-1.5 rounded text-sm hover:bg-red-600"
+              >
+                Delete
+              </button>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Bottom Nav - No Admins icon */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-16">
-        {BOTTOM_NAV.map(item => (
-          <Link key={item.name} href={item.href} className={`flex flex-col items-center text-xs ${pathname === item.href ? 'font-bold' : 'text-gray-600'}`} style={{ color: pathname === item.href ? COFFEE_BROWN : '' }}>
-            <span className="text-xl">{item.icon}</span><span>{item.name}</span>
-          </Link>
-        ))}
-        <Link href="/sell" className="absolute bottom-6 w-14 h-14 rounded-full text-white flex items-center justify-center text-3xl shadow-lg" style={{ backgroundColor: COFFEE_BROWN }}>+</Link>
-      </div>
+      )}
     </div>
   )
 }
