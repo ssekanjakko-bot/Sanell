@@ -75,7 +75,7 @@ useEffect(() => {
     setBanners(urls)
   })
   return () => unsub()
-}, [])
+} [])
   
   return () => unsub()
 }, [])
