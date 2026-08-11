@@ -1,104 +1,145 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { db } from "@/lib/firebase"
-import { 
-  collection, 
-  addDoc, 
-  deleteDoc, 
-  doc, 
-  onSnapshot, 
-  query, 
-  orderBy, 
-  serverTimestamp 
-} from "firebase/firestore"
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 
-export default function AdminBanner() {
-  const [file, setFile] = useState<File | null>(null)
+const CATEGORIES = [
+  {name: 'Electronics', icon: '📱'}, {name: 'Home, Furniture & Appliances', icon: '🛋️'}, 
+  {name: 'Health', icon: '💊'}, {name: 'Fashion', icon: '👗'},
+  {name: 'Sports, Arts & Outdoor', icon: '⚽'}, {name: 'Babies & Kids', icon: '🧸'},
+  {name: 'Animals & Pets', icon: '🐶'}, {name: 'Agriculture & Food', icon: '🌾'},
+  {name: 'Commercial Equipment & Tools', icon: '🔧'}, {name: 'Repair & Construction', icon: '🔨'},
+  {name: 'Stationery', icon: '📚'}, {name: 'Services', icon: '❤️'},
+  {name: 'Jobs', icon: '📢'}
+]
+
+export default function HomePage() {
+  const [products, setProducts] = useState<any[]>([])
   const [banners, setBanners] = useState<any[]>([])
-  const [uploading, setUploading] = useState(false)
-  const storage = getStorage()
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Fetch all banners live
+  // FETCH BANNERS
   useEffect(() => {
     const q = query(collection(db, 'banners'), orderBy("createdAt", "desc"))
+    const unsub = onSnapshot(q, (snap) => setBanners(snap.docs.map(d => ({id: d.id, ...d.data()}))))
+    return () => unsub()
+  }, [])
+
+  // AUTO SLIDE
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || banners.length <= 1) return;
+    let i = 0;
+    const timer = setInterval(() => {
+      i = (i + 1) % banners.length;
+      el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [banners.length]);
+
+  // FETCH PRODUCTS
+  useEffect(() => {
+    const q = query(collection(db, 'products'), orderBy("createdAt", "desc"))
     const unsub = onSnapshot(q, (snap) => {
-      setBanners(snap.docs.map(d => ({id: d.id,...d.data()})))
+      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setLoading(false)
     })
     return () => unsub()
   }, [])
 
-  const upload = async () => {
-    if (!file) return alert("Please select an image first")
-    setUploading(true)
-    try {
-      const storageRef = ref(storage, `banners/${Date.now()}-${file.name}`)
-      const res = await uploadBytes(storageRef, file)
-      const url = await getDownloadURL(res.ref)
-      await addDoc(collection(db, 'banners'), { 
-        imageUrl: url, 
-        createdAt: serverTimestamp() 
-      })
-      setFile(null)
-      alert("Banner uploaded!")
-    } catch (err) {
-      alert("Upload failed")
-      console.error(err)
-    }
-    setUploading(false)
-  }
-
-  const deleteBanner = async (id: string) => {
-    if (!confirm("Delete this banner?")) return
-    await deleteDoc(doc(db, 'banners', id))
-  }
-
   return (
-    <div className="p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Banner Management</h1>
+    <div className="min-h-screen pb-24 bg-[#FDF8F3]">
       
-      {/* Upload Section */}
-      <div className="border rounded-lg p-4 mb-6 bg-white">
-        <label className="block text-sm font-medium mb-2">Upload New Banner</label>
-        <input 
-          type="file" 
-          accept="image/*"
-          onChange={e => setFile(e.target.files?.[0] || null)} 
-          className="mb-3 block w-full text-sm"
-        />
-        <button 
-          onClick={upload} 
-          disabled={uploading}
-          className="bg-black text-white px-5 py-2 rounded-md hover:bg-gray-800 disabled:opacity-50"
-        >
-          {uploading? "Uploading..." : "Upload Banner"}
-        </button>
-        <p className="text-xs text-gray-500 mt-2">Recommended size: 1200x400px. Max 7 banners.</p>
-      </div>
+      {/* HEADER */}
+      <div className="bg-white sticky top-0 z-20 shadow-sm">
+        <div className="p-3 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-lg" style={{color: '#8B4513'}}>Sanel Ug</span>
+            <Link href="/about" className="text-xs text-gray-500">About</Link>
+          </div>
+          <div className="flex gap-1.5 text-xs">
+            <Link href="/get-app" className="bg-black text-white px-2 py-1 rounded-md">GetApp</Link>
+            <Link href="/tools" className="bg-black text-white px-2 py-1 rounded-md">Tools</Link>
+            <Link href="/support" className="bg-black text-white px-2 py-1 rounded-md">Support</Link>
+            <select className="bg-black text-white px-2 py-1 rounded-md"><option>MUBS</option></select>
+          </div>
+        </div>
 
-      {/* Banners List */}
-      <h2 className="text-lg font-semibold mb-3">Active Banners: {banners.length}</h2>
-      
-      {banners.length === 0? (
-        <p className="text-gray-500">No banners yet. Upload one above.</p>
-      ) : (
-        <div className="grid gap-4">
-          {banners.map(b => (
-            <div key={b.id} className="flex gap-4 items-center border p-3 rounded-lg bg-white shadow-sm">
-              <img src={b.imageUrl} className="w-32 h-20 object-cover rounded"/>
-              <div className="flex-1">
-                <p className="text-xs text-gray-500 truncate">{b.imageUrl}</p>
-              </div>
-              <button 
-                onClick={() => deleteBanner(b.id)} 
-                className="bg-red-500 text-white px-3 py-1.5 rounded text-sm hover:bg-red-600"
-              >
-                Delete
-              </button>
+        {/* SEARCH */}
+        <div className="px-3 pb-3">
+          <input placeholder="Search products" className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 text-sm"/>
+        </div>
+
+        {/* 4 BLACK BUTTONS */}
+        <div className="px-3 pb-3 flex gap-2 overflow-x-auto">
+          {['🎬 Movies','⚽ Live Sports','📄 Invoices','🏷️ Receipts'].map(btn => (
+            <button key={btn} className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap flex items-center gap-1">{btn}</button>
+          ))}
+        </div>
+
+        {/* CATEGORIES GRID */}
+        <div className="grid grid-cols-4 gap-y-4 px-3 pb-4 text-center text-xs">
+          {CATEGORIES.map(cat => (
+            <div key={cat.name} className="flex flex-col items-center gap-1">
+              <div className="text-2xl">{cat.icon}</div>
+              <span className="leading-tight">{cat.name}</span>
             </div>
           ))}
         </div>
-      )}
+      </div>
+
+      {/* ===== BANNER SLIDER SPACE ===== */}
+      <div className="px-3 pt-2">
+        {banners.length > 0 ? (
+          <div ref={scrollRef} className="flex overflow-x-hidden scroll-smooth rounded-2xl">
+            {banners.map((b) => (
+              <Link key={b.id} href={b.link || "/"} className="w-full flex-shrink-0">
+                <img src={b.imageUrl} className="w-full h-44 object-cover rounded-2xl"/>
+              </Link>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      {/* LISTINGS */}
+      <div className="p-3">
+        <h2 className="font-bold text-lg mb-3">Listings ({products.length})</h2>
+        {loading ? <p>Loading...</p> : (
+          <div className="grid grid-cols-2 gap-3">
+            {products.map(p => (
+              <div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border">
+                <img src={p.imageUrl} className="w-full h-40 object-cover"/>
+                <div className="p-2">
+                  <p className="text-xs bg-orange-100 text-orange-700 w-fit px-2 py-0.5 rounded-full mb-1">{p.category}</p>
+                  <p className="font-semibold text-sm truncate">{p.name}</p>
+                  <p className="font-bold">{p.price} UGX</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* BOTTOM NAV */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center py-2 z-30">
+        <button onClick={() => router.push('/')} className="flex flex-col items-center text-xs text-orange-600">
+          <span className="text-xl">🏠</span>Home
+        </button>
+        <button onClick={() => router.push('/chat')} className="flex flex-col items-center text-xs text-gray-500">
+          <span className="text-xl">💬</span>Chat
+        </button>
+        <button className="absolute -top-6 bg-black text-white w-14 h-14 rounded-full flex items-center justify-center text-3xl border-4 border-[#FDF8F3]">+</button>
+        <button onClick={() => router.push('/stress-clinic')} className="flex flex-col items-center text-xs text-gray-500">
+          <span className="text-xl">🧠</span>stress-clinic
+        </button>
+        <button onClick={() => router.push('/profile')} className="flex flex-col items-center text-xs text-gray-500">
+          <span className="text-xl">👤</span>Profile
+        </button>
+      </div>
     </div>
   )
 }
