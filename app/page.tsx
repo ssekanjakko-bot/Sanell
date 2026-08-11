@@ -4,6 +4,7 @@ import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
+import { Coffee } from "lucide-react" // coffee bean icon
 
 const CATEGORIES = [
   {name: 'All', icon: '🌐'}, {name: 'Electronics', icon: '📱'}, {name: 'Home, Furniture & Appliances', icon: '🛋️'}, 
@@ -55,7 +56,9 @@ export default function HomePage() {
   useEffect(() => {
     const q = query(collection(db, 'products'), orderBy("createdAt", "desc"))
     const unsub = onSnapshot(q, (snap) => {
-      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      console.log("Products from DB:", data) // check console to see field names
+      setProducts(data)
       setLoading(false)
     })
     return () => unsub()
@@ -70,7 +73,7 @@ export default function HomePage() {
     })
   }, [products, selectedCategory, search])
 
-  const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, '')}`
+  const whatsappLink = (phone: string) => `https://wa.me/${phone?.replace(/\D/g, '')}`
 
   return (
     <div className="min-h-screen pb-20 bg-[#FDF8F3]">
@@ -90,7 +93,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* SEARCH - WORKS NOW */}
+        {/* SEARCH */}
         <div className="px-3 pb-3">
           <input 
             value={search}
@@ -100,14 +103,15 @@ export default function HomePage() {
           />
         </div>
 
-        {/* 4 BLACK BUTTONS */}
+        {/* 4 BLACK BUTTONS - NOW LINKING */}
         <div className="px-3 pb-3 flex gap-2 overflow-x-auto">
-          {['🎬 Movies','⚽ Live Sports','📄 Invoices','🏷️ Receipts'].map(btn => (
-            <button key={btn} className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">{btn}</button>
-          ))}
+          <Link href="/movies" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">🎬 Movies</Link>
+          <Link href="/live-sports" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">⚽ Live Sports</Link>
+          <Link href="/invoices" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">📄 Invoices</Link>
+          <Link href="/receipts" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">🏷️ Receipts</Link>
         </div>
 
-        {/* CATEGORIES - CLICKABLE NOW */}
+        {/* CATEGORIES - CLICKABLE */}
         <div className="grid grid-cols-4 gap-y-4 px-3 pb-4 text-center text-xs">
           {CATEGORIES.map(cat => (
             <button 
@@ -128,30 +132,31 @@ export default function HomePage() {
           <div ref={scrollRef} className="flex overflow-x-hidden scroll-smooth rounded-2xl">
             {banners.map((b) => (
               <Link key={b.id} href={b.link || "/"} className="w-full flex-shrink-0">
-                <img src={b.imageUrl} className="w-full h-44 object-cover rounded-2xl"/>
+                <img src={b.imageUrl} alt="banner" className="w-full h-44 object-cover rounded-2xl"/>
               </Link>
             ))}
           </div>
         )}
       </div>
 
-      {/* LISTINGS WITH WHATSAPP */}
+      {/* LISTINGS WITH IMAGE + WHATSAPP FIX */}
       <div className="p-3">
         <h2 className="font-bold text-lg mb-3">Listings ({filteredProducts.length})</h2>
         {loading ? <p>Loading...</p> : filteredProducts.length === 0 ? <p>No products found</p> : (
           <div className="grid grid-cols-2 gap-3">
             {filteredProducts.map(p => (
               <div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border">
-                <img src={p.imageUrl} className="w-full h-40 object-cover"/>
+                {/* FIX: try both imageUrl and image */}
+                <img src={p.imageUrl || p.image} alt={p.name} className="w-full h-40 object-cover bg-gray-100"/>
                 <div className="p-2">
                   <p className="text-xs bg-orange-100 text-orange-700 w-fit px-2 py-0.5 rounded-full mb-1">{p.category}</p>
                   <p className="font-semibold text-sm truncate">{p.name}</p>
                   <p className="font-bold">{p.price} UGX</p>
                   
-                  {/* WHATSAPP BUTTON */}
-                  {p.sellerPhone && (
+                  {/* WHATSAPP BUTTON - FIX: try both sellerPhone and phone */}
+                  {(p.sellerPhone || p.phone) && (
                     <a 
-                      href={whatsappLink(p.sellerPhone)} 
+                      href={whatsappLink(p.sellerPhone || p.phone)} 
                       target="_blank"
                       className="mt-2 w-full bg-green-500 text-white text-xs py-1.5 rounded-md flex items-center justify-center gap-1"
                     >
@@ -165,9 +170,9 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* BOTTOM NAV */}
+      {/* BOTTOM NAV WITH COFFEE BEAN ON SIDE */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center py-1 z-30">
-        {BOTTOM_NAV.map((nav) => (
+        {BOTTOM_NAV.slice(0,2).map((nav) => (
           <button 
             key={nav.name} 
             onClick={() => router.push(nav.href)} 
@@ -178,12 +183,24 @@ export default function HomePage() {
           </button>
         ))}
         
+        {/* COFFEE BEAN BUTTON ON THE SIDE */}
         <button 
           onClick={() => router.push('/sell')} 
-          className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white w-14 h-14 rounded-full flex items-center justify-center text-3xl border-4 border-[#FDF8F3] shadow-lg"
+          className="bg-amber-800 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg"
         >
-          +
+          <Coffee size={24} />
         </button>
+
+        {BOTTOM_NAV.slice(2,4).map((nav) => (
+          <button 
+            key={nav.name} 
+            onClick={() => router.push(nav.href)} 
+            className={`flex flex-col items-center text-xs pt-1 ${pathname === nav.href ? 'text-orange-600' : 'text-gray-500'}`}
+          >
+            <span className="text-2xl">{nav.icon}</span>
+            {nav.name}
+          </button>
+        ))}
       </div>
     </div>
   )
