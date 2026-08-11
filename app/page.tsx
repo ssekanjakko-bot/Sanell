@@ -1,10 +1,10 @@
 "use client"
 import { useState, useEffect, useRef, useMemo } from "react"
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore"
+import { collection, onSnapshot, query, orderBy, getDoc, doc } from "firebase/firestore"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { Coffee } from "lucide-react" // coffee bean icon
+import { Coffee } from "lucide-react"
 
 const CATEGORIES = [
   {name: 'All', icon: '🌐'}, {name: 'Electronics', icon: '📱'}, {name: 'Home, Furniture & Appliances', icon: '🛋️'}, 
@@ -56,9 +56,7 @@ export default function HomePage() {
   useEffect(() => {
     const q = query(collection(db, 'products'), orderBy("createdAt", "desc"))
     const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      console.log("Products from DB:", data) // check console to see field names
-      setProducts(data)
+      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
       setLoading(false)
     })
     return () => unsub()
@@ -68,12 +66,30 @@ export default function HomePage() {
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
       const matchCategory = selectedCategory === 'All' || p.category === selectedCategory
-      const matchSearch = p.name?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase())
+      const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase())
       return matchCategory && matchSearch
     })
   }, [products, selectedCategory, search])
 
-  const whatsappLink = (phone: string) => `https://wa.me/${phone?.replace(/\D/g, '')}`
+  // WHATSAPP FUNCTION WITH PRODUCT DETAILS
+  const handleWhatsApp = async (product: any) => {
+    const userDoc = await getDoc(doc(db, 'users', product.sellerId))
+    const phone = userDoc.data()?.phoneNumber || userDoc.data()?.phone
+    
+    if(!phone) return alert("Seller phone not found. Ask seller to add phone in Profile")
+
+    const message = `Hi, I'm interested in your product:
+
+*${product.title}*
+Category: ${product.category}
+Price: ${product.price} UGX
+${product.images?.[0]? `Image: ${product.images[0]}` : ''}
+
+Is it still available?`
+
+    const whatsappUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
+    window.open(whatsappUrl, '_blank')
+  }
 
   return (
     <div className="min-h-screen pb-20 bg-[#FDF8F3]">
@@ -103,7 +119,7 @@ export default function HomePage() {
           />
         </div>
 
-        {/* 4 BLACK BUTTONS - NOW LINKING */}
+        {/* 4 BLACK BUTTONS */}
         <div className="px-3 pb-3 flex gap-2 overflow-x-auto">
           <Link href="/movies" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">🎬 Movies</Link>
           <Link href="/live-sports" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">⚽ Live Sports</Link>
@@ -139,30 +155,33 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* LISTINGS WITH IMAGE + WHATSAPP FIX */}
+      {/* LISTINGS */}
       <div className="p-3">
         <h2 className="font-bold text-lg mb-3">Listings ({filteredProducts.length})</h2>
         {loading ? <p>Loading...</p> : filteredProducts.length === 0 ? <p>No products found</p> : (
           <div className="grid grid-cols-2 gap-3">
             {filteredProducts.map(p => (
               <div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border">
-                {/* FIX: try both imageUrl and image */}
-                <img src={p.imageUrl || p.image} alt={p.name} className="w-full h-40 object-cover bg-gray-100"/>
+                {/* IMAGE FROM images[0] */}
+                <img 
+                  src={p.images?.[0]} 
+                  alt={p.title} 
+                  className="w-full h-40 object-cover bg-gray-100"
+                  onError={(e: any) => e.target.src="https://placehold.co/400x400/FDF8F3/8B4513?text=No+Image"}
+                />
+                
                 <div className="p-2">
-                  <p className="text-xs bg-orange-100 text-orange-700 w-fit px-2 py-0.5 rounded-full mb-1">{p.category}</p>
-                  <p className="font-semibold text-sm truncate">{p.name}</p>
-                  <p className="font-bold">{p.price} UGX</p>
+                  <p className="text-xs bg-orange-100 text-orange-700 w-fit px-2 py-0.5 rounded-md mb-1">{p.category}</p>
+                  <p className="font-semibold text-sm truncate">{p.title}</p>
+                  <p className="font-bold text-orange-700">{p.price} UGX</p>
                   
-                  {/* WHATSAPP BUTTON - FIX: try both sellerPhone and phone */}
-                  {(p.sellerPhone || p.phone) && (
-                    <a 
-                      href={whatsappLink(p.sellerPhone || p.phone)} 
-                      target="_blank"
-                      className="mt-2 w-full bg-green-500 text-white text-xs py-1.5 rounded-md flex items-center justify-center gap-1"
-                    >
-                      📞 WhatsApp
-                    </a>
-                  )}
+                  {/* WHATSAPP BUTTON */}
+                  <button 
+                    onClick={() => handleWhatsApp(p)}
+                    className="mt-2 w-full bg-green-500 hover:bg-green-600 text-white text-xs py-2 rounded-md flex items-center justify-center gap-1 font-semibold"
+                  >
+                    📞 WhatsApp
+                  </button>
                 </div>
               </div>
             ))}
@@ -170,7 +189,7 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* BOTTOM NAV WITH COFFEE BEAN ON SIDE */}
+      {/* BOTTOM NAV WITH COFFEE BEAN */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center py-1 z-30">
         {BOTTOM_NAV.slice(0,2).map((nav) => (
           <button 
@@ -195,13 +214,4 @@ export default function HomePage() {
           <button 
             key={nav.name} 
             onClick={() => router.push(nav.href)} 
-            className={`flex flex-col items-center text-xs pt-1 ${pathname === nav.href ? 'text-orange-600' : 'text-gray-500'}`}
-          >
-            <span className="text-2xl">{nav.icon}</span>
-            {nav.name}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
+            className={`flex flex-col items-center text-xs pt-1 ${pathname === nav.href ? 'text-orange-600' : 'text-gray-
