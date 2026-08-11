@@ -4,7 +4,7 @@ import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, orderBy, getDoc, doc } from "firebase/firestore"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { Coffee } from "lucide-react"
+import { Coffee } from "lucide-react" // this is a coffee BEAN icon
 
 const CATEGORIES = [
   {name: 'All', icon: '🌐'}, {name: 'Electronics', icon: '📱'}, {name: 'Home, Furniture & Appliances', icon: '🛋️'}, 
@@ -92,7 +92,7 @@ Is it still available?`
   }
 
   return (
-    <div className="min-h-screen pb-20 bg-[#FDF8F3]">
+    <div className="min-h-screen pb-20 bg-[#FDF8F3] relative">
       
       {/* HEADER */}
       <div className="bg-white sticky top-0 z-20 shadow-sm">
@@ -189,9 +189,17 @@ Is it still available?`
         )}
       </div>
 
-      {/* BOTTOM NAV WITH COFFEE BEAN */}
+      {/* COFFEE BEAN FLOATING BUTTON - ASIDE RIGHT */}
+      <button 
+        onClick={() => router.push('/sell')} 
+        className="fixed bottom-20 right-4 bg-amber-800 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40 hover:scale-110 transition"
+      >
+        <Coffee size={28} />
+      </button>
+
+      {/* BOTTOM NAV */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center py-1 z-30">
-        {BOTTOM_NAV.slice(0,2).map((nav) => (
+        {BOTTOM_NAV.map((nav) => (
           <button 
             key={nav.name} 
             onClick={() => router.push(nav.href)} 
@@ -201,17 +209,7 @@ Is it still available?`
             {nav.name}
           </button>
         ))}
-        
-        {/* COFFEE BEAN BUTTON ON THE SIDE */}
-        <button 
-          onClick={() => router.push('/sell')} 
-          className="bg-amber-800 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg"
-        >
-          <Coffee size={24} />
-        </button>
-
-        {BOTTOM_NAV.slice(2,4).map((nav) => (
-          <button 
-            key={nav.name} 
-            onClick={() => router.push(nav.href)} 
-            className={`flex flex-col items-center text-xs pt-1 ${pathname === nav.href ? 'text-orange-600' : 'text-gray-
+      </div>
+    </div>
+  )
+}
