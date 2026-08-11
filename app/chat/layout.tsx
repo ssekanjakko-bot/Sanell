@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { auth } from "@/lib/firebase";
-import { signOut } from "firebase/auth";
+import { useState, useEffect } from "react"; // ONLY IMPORT ONCE HERE
+import { db, storage, auth } from "@/lib/firebase";
+import { collection, addDoc, Timestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function ChatLayout({
   children,
@@ -11,12 +13,11 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [showModal, setShowModal] = useState(false); // MOVED HERE
+  const [showModal, setShowModal] = useState(false);
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
       {children}
-      {/* We pass setShowModal down with context later */}
 
       {/* BOTTOM NAV */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-50">
@@ -29,7 +30,7 @@ export default function ChatLayout({
             <span className="text-2xl">⚡</span>
             <span className="text-xs font-bold">Pulse</span>
           </Link>
-          <button onClick={() => setShowModal(true)} className="flex flex-col items-center text-gray-400"> {/* WORKS NOW */}
+          <button onClick={() => setShowModal(true)} className="flex flex-col items-center text-gray-400">
             <span className="text-2xl">🤣</span>
             <span className="text-xs">Post</span>
           </button>
@@ -40,7 +41,7 @@ export default function ChatLayout({
         </div>
       </div>
 
-      {/* POST MODAL - NOW LIVES IN LAYOUT */}
+      {/* POST MODAL */}
       <PostModal show={showModal} onClose={() => setShowModal(false)} />
     </div>
   );
@@ -48,14 +49,8 @@ export default function ChatLayout({
 
 
 // MODAL COMPONENT INSIDE SAME FILE
-import { useState } from "react";
-import { db, storage } from "@/lib/firebase";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { onAuthStateChanged } from "firebase/auth";
-
 function PostModal({ show, onClose }: { show: boolean, onClose: () => void }) {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(null); // USING THE SAME useState FROM TOP
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [type, setType] = useState("general");
@@ -63,7 +58,7 @@ function PostModal({ show, onClose }: { show: boolean, onClose: () => void }) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  useState(() => onAuthStateChanged(auth, setUser));
+  useEffect(() => onAuthStateChanged(auth, setUser), []); // FIXED: useEffect not useState
 
   const handlePost = async () => {
     if (!user) return alert("Login to post");
