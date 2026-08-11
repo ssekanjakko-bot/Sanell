@@ -4,7 +4,7 @@ import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, orderBy, getDoc, doc } from "firebase/firestore"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { Coffee } from "lucide-react" // this is a coffee BEAN icon
+import { Coffee } from "lucide-react"
 
 const CATEGORIES = [
   {name: 'All', icon: '🌐'}, {name: 'Electronics', icon: '📱'}, {name: 'Home, Furniture & Appliances', icon: '🛋️'}, 
@@ -33,14 +33,14 @@ export default function HomePage() {
   const pathname = usePathname()
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // FETCH BANNERS
+  // FETCH BANNERS - THIS WORKS NOW
   useEffect(() => {
     const q = query(collection(db, 'banners'), orderBy("createdAt", "desc"))
     const unsub = onSnapshot(q, (snap) => setBanners(snap.docs.map(d => ({id: d.id, ...d.data()}))))
     return () => unsub()
   }, [])
 
-  // AUTO SLIDE
+  // AUTO SLIDE BANNERS
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || banners.length <= 1) return;
@@ -71,12 +71,20 @@ export default function HomePage() {
     })
   }, [products, selectedCategory, search])
 
-  // WHATSAPP FUNCTION WITH PRODUCT DETAILS
+  // WHATSAPP FUNCTION - FIXED TO CHECK ALL FIELD NAMES
   const handleWhatsApp = async (product: any) => {
     const userDoc = await getDoc(doc(db, 'users', product.sellerId))
-    const phone = userDoc.data()?.phoneNumber || userDoc.data()?.phone
+    const userData = userDoc.data()
+    
+    // Check all possible field names
+    let phone = userData?.phoneNumber || userData?.phone || userData?.whatsapp || userData?.whatsApp || userData?.WhatsApp
     
     if(!phone) return alert("Seller phone not found. Ask seller to add phone in Profile")
+
+    // Clean the number: convert 0700... to 256700...
+    let cleanPhone = phone.replace(/\D/g, '')
+    if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1)
+    if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone
 
     const message = `Hi, I'm interested in your product:
 
@@ -87,7 +95,7 @@ ${product.images?.[0]? `Image: ${product.images[0]}` : ''}
 
 Is it still available?`
 
-    const whatsappUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
   }
 
@@ -127,22 +135,24 @@ Is it still available?`
           <Link href="/receipts" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">🏷️ Receipts</Link>
         </div>
 
-        {/* CATEGORIES - CLICKABLE */}
-        <div className="grid grid-cols-4 gap-y-4 px-3 pb-4 text-center text-xs">
-          {CATEGORIES.map(cat => (
-            <button 
-              key={cat.name} 
-              onClick={() => setSelectedCategory(cat.name)}
-              className={`flex flex-col items-center gap-1 ${selectedCategory === cat.name ? 'text-orange-600 font-bold' : 'text-gray-700'}`}
-            >
-              <div className={`text-2xl p-2 rounded-full ${selectedCategory === cat.name ? 'bg-orange-100' : 'bg-white shadow'}`}>{cat.icon}</div>
-              <span className="leading-tight">{cat.name}</span>
-            </button>
-          ))}
+        {/* CATEGORIES - HORIZONTAL SCROLL NOW */}
+        <div className="px-3 pb-4">
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {CATEGORIES.map(cat => (
+              <button 
+                key={cat.name} 
+                onClick={() => setSelectedCategory(cat.name)}
+                className={`flex flex-col items-center gap-1 min-w-[80px] ${selectedCategory === cat.name ? 'text-orange-600 font-bold' : 'text-gray-700'}`}
+              >
+                <div className={`text-2xl p-2 rounded-full ${selectedCategory === cat.name ? 'bg-orange-100' : 'bg-white shadow'}`}>{cat.icon}</div>
+                <span className="text-xs leading-tight text-center">{cat.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* BANNER SLIDER */}
+      {/* BANNER SLIDER - WORKS WITH FIRESTORE */}
       <div className="px-3 pt-2">
         {banners.length > 0 && (
           <div ref={scrollRef} className="flex overflow-x-hidden scroll-smooth rounded-2xl">
@@ -162,7 +172,6 @@ Is it still available?`
           <div className="grid grid-cols-2 gap-3">
             {filteredProducts.map(p => (
               <div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border">
-                {/* IMAGE FROM images[0] */}
                 <img 
                   src={p.images?.[0]} 
                   alt={p.title} 
@@ -175,7 +184,6 @@ Is it still available?`
                   <p className="font-semibold text-sm truncate">{p.title}</p>
                   <p className="font-bold text-orange-700">{p.price} UGX</p>
                   
-                  {/* WHATSAPP BUTTON */}
                   <button 
                     onClick={() => handleWhatsApp(p)}
                     className="mt-2 w-full bg-green-500 hover:bg-green-600 text-white text-xs py-2 rounded-md flex items-center justify-center gap-1 font-semibold"
