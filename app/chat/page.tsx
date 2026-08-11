@@ -38,15 +38,17 @@ export default function ChatPage() {
 
   return (
     <div>
-      <div className="bg-white shadow-sm sticky top-0 z-10">
+      {/* HEADER - COFFEE BROWN */}
+      <div className="bg-[#6F4E37] shadow-sm sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-600">Sanel Pulse</h1>
-          {user? <button onClick={() => signOut(auth)} className="text-sm text-red-500">Logout</button> : <Link href="/login" className="text-sm text-blue-600 font-bold">Login</Link>}
+          <h1 className="text-2xl font-bold text-white">Sanel Pulse</h1>
+          {user? <button onClick={() => signOut(auth)} className="text-sm text-[#F5F1ED] font-semibold">Logout</button> : <Link href="/login" className="text-sm text-white font-bold">Login</Link>}
         </div>
-        <div className="max-w-lg mx-auto px-2 pb-2 flex gap-2 overflow-x-auto">
+        {/* TABS */}
+        <div className="max-w-lg mx-auto px-2 pb-3 flex gap-2 overflow-x-auto">
           {["all","event","lost","confession","general"].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1.5 text-sm rounded-full font-semibold ${activeTab === tab? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>
+              className={`px-4 py-1.5 text-sm rounded-full font-semibold ${activeTab === tab? 'bg-white text-[#6F4E37]' : 'bg-[#A67B5B] text-white'}`}>
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
@@ -55,25 +57,25 @@ export default function ChatPage() {
 
       <div className="max-w-lg mx-auto p-3 space-y-4">
         {filteredPosts.map(post => (
-          <div key={post.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div key={post.id} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-[#D2B48C]">
             <div className="p-3 flex items-center justify-between">
               <div className="flex gap-3 items-center">
-                <img src={post.photo} className="w-11 h-11 rounded-full"/>
+                <img src={post.photo} className="w-11 h-11 rounded-full border-2 border-[#A67B5B]"/>
                 <div>
-                  <p className="font-bold">{post.name}</p>
-                  <p className="text-xs text-gray-500">{timeAgo(post.createdAt)} · <span className="text-red-500">⏰ {getTimeLeft(post.expiresAt)} left</span></p>
+                  <p className="font-bold text-[#6F4E37]">{post.name}</p>
+                  <p className="text-xs text-gray-500">{timeAgo(post.createdAt)} · <span className="text-red-500 font-semibold">⏰ {getTimeLeft(post.expiresAt)} left</span></p>
                 </div>
               </div>
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">{post.type}</span>
+              <span className="text-xs bg-[#F5F1ED] text-[#6F4E37] px-2 py-1 rounded-full font-semibold">{post.type}</span>
             </div>
             <div className="px-3 pb-2">
-              <p className="font-bold">{post.title}</p>
-              <p className="text-sm">{post.content}</p>
+              <p className="font-bold text-[#6F4E37]">{post.title}</p>
+              <p className="text-sm text-gray-800">{post.content}</p>
             </div>
             {post.image && <img src={post.image} className="w-full"/>}
             {(post.type === "lost" || post.type === "general") && post.whatsapp && (
               <div className="p-3">
-                <a href={`https://wa.me/${post.whatsapp}`} target="_blank" className="w-full flex items-center justify-center gap-2 bg-green-500 text-white py-2 rounded-xl font-bold">
+                <a href={`https://wa.me/${post.whatsapp}`} target="_blank" className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-2 rounded-xl font-bold">
                   💬 Contact on WhatsApp
                 </a>
               </div>
