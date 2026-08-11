@@ -61,23 +61,44 @@ function PostModal({ show, onClose }: { show: boolean, onClose: () => void }) {
     if (!user) return alert("Login to post");
     if (!title) return alert("Add a title");
 
+    // 1. SAVE DATA LOCALLY FIRST
+    const postData = {
+      title, content, type, whatsapp, imageFile
+    };
+
+    // 2. CLOSE MODAL INSTANTLY - USER THINKS IT'S DONE
     setUploading(true);
-    let imageUrl = "";
-    if (imageFile) {
-      const storageRef = ref(storage, `chat/${Date.now()}_${imageFile.name}`);
-      const snap = await uploadBytes(storageRef, imageFile);
-      imageUrl = await getDownloadURL(snap.ref);
+    setTitle(""); setContent(""); setWhatsapp(""); setImageFile(null);
+    onClose(); // CLOSE IMMEDIATELY
+
+    // 3. UPLOAD IN BACKGROUND
+    try {
+      let imageUrl = "";
+      if (postData.imageFile) {
+        const storageRef = ref(storage, `chat/${Date.now()}_${postData.imageFile.name}`);
+        const snap = await uploadBytes(storageRef, postData.imageFile);
+        imageUrl = await getDownloadURL(snap.ref);
+      }
+
+      const createdAt = Timestamp.now();
+      await addDoc(collection(db, "chatPosts"), {
+        title: postData.title,
+        content: postData.content,
+        image: imageUrl,
+        type: postData.type,
+        whatsapp: postData.whatsapp,
+        name: user.displayName || user.email.split("@")[0],
+        photo: user.photoURL,
+        userId: user.uid,
+        createdAt: serverTimestamp(),
+        expiresAt: Timestamp.fromMillis(createdAt.toMillis() + 48 * 60 * 60 * 1000),
+      });
+    } catch (err) {
+      alert("Post failed. Check internet");
+      console.log(err)
+    } finally {
+      setUploading(false);
     }
-
-    const createdAt = Timestamp.now();
-    await addDoc(collection(db, "chatPosts"), {
-      title, content, image: imageUrl, type, whatsapp,
-      name: user.displayName || user.email.split("@")[0], photo: user.photoURL, userId: user.uid,
-      createdAt: serverTimestamp(), // FASTER
-      expiresAt: Timestamp.fromMillis(createdAt.toMillis() + 48 * 60 * 60 * 1000), // 48HRS
-    });
-
-    setTitle(""); setContent(""); setWhatsapp(""); setImageFile(null); setUploading(false); onClose();
   };
 
   if (!show) return null;
@@ -108,7 +129,7 @@ function PostModal({ show, onClose }: { show: boolean, onClose: () => void }) {
             </select>
             <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="mb-4 text-sm"/>
             <button onClick={handlePost} disabled={uploading} className="w-full bg-[#6F4E37] hover:bg-[#5a3e2e] text-white py-3.5 rounded-xl font-bold disabled:bg-gray-300">
-              {uploading? "Posting..." : "Post"}
+              Post
             </button>
           </>
         )}
