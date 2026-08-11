@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { db, storage, auth } from "@/lib/firebase";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+import { collection, addDoc, Timestamp, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -16,7 +16,7 @@ export default function ChatLayout({
   const [showModal, setShowModal] = useState(false);
 
   return (
-    <div className="bg-[#F5F1ED] min-h-screen pb-20"> {/* CREAM BG */}
+    <div className="bg-[#F5F1ED] min-h-screen pb-20">
       {children}
 
       {/* BOTTOM NAV - COFFEE BROWN */}
@@ -30,7 +30,7 @@ export default function ChatLayout({
             <span className="text-2xl">⚡</span>
             <span className="text-xs font-bold">Pulse</span>
           </Link>
-          <button onClick={() => setShowModal(true)} className="flex flex-col items-center text-gray-400">
+          <button onClick={() => setShowModal(true)} className="flex flex-col items-center text-gray-400 active:text-[#6F4E37]">
             <span className="text-2xl">🤣</span>
             <span className="text-xs font-semibold">Post</span>
           </button>
@@ -73,7 +73,8 @@ function PostModal({ show, onClose }: { show: boolean, onClose: () => void }) {
     await addDoc(collection(db, "chatPosts"), {
       title, content, image: imageUrl, type, whatsapp,
       name: user.displayName || user.email.split("@")[0], photo: user.photoURL, userId: user.uid,
-      createdAt, expiresAt: Timestamp.fromMillis(createdAt.toMillis() + 48 * 60 * 60 * 1000),
+      createdAt: serverTimestamp(), // FASTER
+      expiresAt: Timestamp.fromMillis(createdAt.toMillis() + 48 * 60 * 60 * 1000), // 48HRS
     });
 
     setTitle(""); setContent(""); setWhatsapp(""); setImageFile(null); setUploading(false); onClose();
@@ -82,8 +83,8 @@ function PostModal({ show, onClose }: { show: boolean, onClose: () => void }) {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-end" onClick={onClose}> {/* DARKER OVERLAY */}
-      <div className="bg-white w-full rounded-t-3xl p-5" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-end" onClick={onClose}>
+      <div className="bg-white w-full rounded-t-3xl p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         {!user? (
           <div className="text-center py-10">
             <p className="font-bold text-lg mb-2 text-[#6F4E37]">Login to Post</p>
@@ -97,7 +98,7 @@ function PostModal({ show, onClose }: { show: boolean, onClose: () => void }) {
               <button onClick={onClose} className="text-2xl text-gray-400">X</button>
             </div>
             <input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-[#F5F1ED] rounded-xl px-4 py-3 mb-3 outline-none focus:ring-2 focus:ring-[#A67B5B]"/>
-            <textarea placeholder="Details..." value={content} onChange={(e) => setContent(e.target.value)} className="w-full bg-[#F5F1ED] rounded-xl px-4 py-3 mb-3 outline-none focus:ring-2 focus:ring-[#A67B5B]"/>
+            <textarea placeholder="Details..." value={content} onChange={(e) => setContent(e.target.value)} rows={4} className="w-full bg-[#F5F1ED] rounded-xl px-4 py-3 mb-3 outline-none focus:ring-2 focus:ring-[#A67B5B]"/>
             <input placeholder="Your WhatsApp: 2567XXXXXXXX" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="w-full bg-[#F5F1ED] rounded-xl px-4 py-3 mb-3 outline-none focus:ring-2 focus:ring-[#A67B5B]"/>
             <select value={type} onChange={(e) => setType(e.target.value)} className="w-full bg-[#F5F1ED] rounded-xl px-3 py-3 mb-3 outline-none focus:ring-2 focus:ring-[#A67B5B]">
               <option value="general">General</option>
