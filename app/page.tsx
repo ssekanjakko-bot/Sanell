@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useRef, useMemo } from "react"
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, orderBy, getDoc, doc } from "firebase/firestore"
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { Coffee } from "lucide-react"
@@ -33,7 +33,7 @@ export default function HomePage() {
   const pathname = usePathname()
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // FETCH BANNERS - THIS WORKS NOW
+  // FETCH BANNERS
   useEffect(() => {
     const q = query(collection(db, 'banners'), orderBy("createdAt", "desc"))
     const unsub = onSnapshot(q, (snap) => setBanners(snap.docs.map(d => ({id: d.id, ...d.data()}))))
@@ -71,32 +71,46 @@ export default function HomePage() {
     })
   }, [products, selectedCategory, search])
 
-  // WHATSAPP FUNCTION - FIXED TO CHECK ALL FIELD NAMES
-  const handleWhatsApp = async (product: any) => {
-    const userDoc = await getDoc(doc(db, 'users', product.sellerId))
-    const userData = userDoc.data()
-    
-    // Check all possible field names
-    let phone = userData?.phoneNumber || userData?.phone || userData?.whatsapp || userData?.whatsApp || userData?.WhatsApp
-    
-    if(!phone) return alert("Seller phone not found. Ask seller to add phone in Profile")
+  // FIXED WHATSAPP FUNCTION - GETS NUMBER FROM PRODUCT
+  const handleWhatsApp = (product: any) => {
+    try {
+      // Get phone directly from product doc
+      let phone = product.whatsapp || product.whatsApp || product.WhatsApp
+      
+      if(!phone) {
+        return alert("Seller did not add WhatsApp number to this product")
+      }
 
-    // Clean the number: convert 0700... to 256700...
-    let cleanPhone = phone.replace(/\D/g, '')
-    if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1)
-    if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone
+      // Clean the number: 0703123456 -> 256703123456
+      let cleanPhone = phone.toString().replace(/\D/g, '')
+      if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1)
+      else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone
 
-    const message = `Hi, I'm interested in your product:
+      if(cleanPhone.length < 12) {
+        return alert("Invalid phone number: " + phone)
+      }
 
-*${product.title}*
-Category: ${product.category}
-Price: ${product.price} UGX
-${product.images?.[0]? `Image: ${product.images[0]}` : ''}
+      // BEAUTIFUL WHATSAPP MESSAGE WITH IMAGE + TITLE + CATEGORY + PRICE
+      const message = `*Hello! I'm interested in this product* 👋
+
+*📦 PRODUCT DETAILS*
+*Title:* ${product.title}
+*Category:* ${product.category}
+*Price:* ${product.price} UGX
+
+${product.description ? `*Description:* ${product.description}` : ''}
+
+${product.images?.[0] ? `*Image:* ${product.images[0]}` : ''}
 
 Is it still available?`
 
-    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
-    window.open(whatsappUrl, '_blank')
+      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
+      window.location.href = whatsappUrl
+
+    } catch (error) {
+      console.error("WhatsApp Error:", error)
+      alert("Failed to open WhatsApp")
+    }
   }
 
   return (
@@ -135,7 +149,7 @@ Is it still available?`
           <Link href="/receipts" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">🏷️ Receipts</Link>
         </div>
 
-        {/* CATEGORIES - HORIZONTAL SCROLL NOW */}
+        {/* CATEGORIES - HORIZONTAL SCROLL */}
         <div className="px-3 pb-4">
           <div className="flex gap-3 overflow-x-auto pb-2">
             {CATEGORIES.map(cat => (
@@ -152,7 +166,7 @@ Is it still available?`
         </div>
       </div>
 
-      {/* BANNER SLIDER - WORKS WITH FIRESTORE */}
+      {/* BANNER SLIDER */}
       <div className="px-3 pt-2">
         {banners.length > 0 && (
           <div ref={scrollRef} className="flex overflow-x-hidden scroll-smooth rounded-2xl">
@@ -181,14 +195,15 @@ Is it still available?`
                 
                 <div className="p-2">
                   <p className="text-xs bg-orange-100 text-orange-700 w-fit px-2 py-0.5 rounded-md mb-1">{p.category}</p>
-                  <p className="font-semibold text-sm truncate">{p.title}</p>
-                  <p className="font-bold text-orange-700">{p.price} UGX</p>
+                  <p className="font-bold text-sm mb-1 line-clamp-2">{p.title}</p> {/* TITLE NOW BOLD + 2 LINES */}
+                  <p className="font-bold text-lg text-orange-700 mb-2">{p.price} UGX</p>
                   
+                  {/* WHATSAPP BUTTON */}
                   <button 
                     onClick={() => handleWhatsApp(p)}
-                    className="mt-2 w-full bg-green-500 hover:bg-green-600 text-white text-xs py-2 rounded-md flex items-center justify-center gap-1 font-semibold"
+                    className="w-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-sm py-2.5 rounded-md flex items-center justify-center gap-1 font-bold shadow-md"
                   >
-                    📞 WhatsApp
+                    📞 WhatsApp Seller
                   </button>
                 </div>
               </div>
