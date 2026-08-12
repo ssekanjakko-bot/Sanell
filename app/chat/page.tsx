@@ -25,18 +25,18 @@ const faqData = [
 ];
 
 export default function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(1); // "How do I pay" open by default like your screenshot
 
   const toggleFAQ = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
   };
 
   return (
-    <section className="max-w-3xl mx-auto px-4 py-10 font-sans">
-      <h2 className="text-2xl md:text-3xl font-bold text-center text-[#FF6A00] mb-2">
+    <section className="max-w-3xl mx-auto px-4 py-10 font-sans bg-[#FFF8F0] min-h-screen">
+      <h2 className="text-2xl md:text-3xl font-bold text-center text-[#6B4F3B] mb-2">
         FAQ - Frequently Asked Questions
       </h2>
-      <p className="text-center text-gray-600 mb-8">
+      <p className="text-center text-[#8C735F] mb-8">
         Got questions? We’ve got answers. Still stuck? WhatsApp us.
       </p>
 
@@ -44,28 +44,28 @@ export default function FAQ() {
         {faqData.map((item, index) => (
           <div
             key={index}
-            className="border border-gray-200 rounded-lg bg-white overflow-hidden"
+            className="border border-[#D6C2B0] rounded-lg bg-[#FFFDFB] overflow-hidden"
           >
             <button
               onClick={() => toggleFAQ(index)}
-              className="w-full flex justify-between items-center text-left p-4 bg-black text-white font-semibold hover:bg-gray-900 transition"
+              className="w-full flex justify-between items-center text-left p-4 bg-[#6B4F3B] text-[#FFF8F0] font-semibold hover:bg-[#5A4230] transition"
             >
               {item.q}
-              <span className="text-[#FF6A00] text-xl">
+              <span className="text-[#C8A67B] text-xl">
                 {openIndex === index ? "−" : "+"}
               </span>
             </button>
             {openIndex === index && (
-              <div className="p-4 bg-[#FFF5EB] text-gray-800 whitespace-pre-line">
+              <div className="p-4 bg-[#FFF8F0] text-[#4A3B2F] whitespace-pre-line">
                 {item.q.includes("support") ? (
                   <p>
                     WhatsApp us:{" "}
                     <a
                       href="https://wa.me/2567XXXXXXXX"
                       target="_blank"
-                      className="text-[#FF6A00] underline"
+                      className="text-[#6B4F3B] font-semibold underline"
                     >
-                      +256 7XX XXX XXX
+                      +256 7XX XXX
                     </a>
                   </p>
                 ) : (
@@ -81,7 +81,7 @@ export default function FAQ() {
         <a
           href="https://wa.me/2567XXXXXXXX"
           target="_blank"
-          className="bg-[#FF6A00] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#e55f00] transition inline-block"
+          className="bg-[#C8A67B] text-[#3B2F2A] px-6 py-3 rounded-lg font-bold hover:bg-[#B8966A] transition inline-block"
         >
           Chat on WhatsApp
         </a>
