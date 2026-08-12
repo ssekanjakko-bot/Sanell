@@ -124,8 +124,6 @@ Is it still available?`
             <Link href="/about" className="text-xs text-gray-500">About</Link>
           </div>
           <div className="flex gap-1.5 text-xs">
-            <Link href="/get-app" className="bg-black text-white px-2 py-1 rounded-md">GetApp</Link>
-            <Link href="/tools" className="bg-black text-white px-2 py-1 rounded-md">Tools</Link>
             <Link href="/support" className="bg-black text-white px-2 py-1 rounded-md">Support</Link>
             <select className="bg-black text-white px-2 py-1 rounded-md"><option>MUBS</option></select>
           </div>
