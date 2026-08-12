@@ -145,8 +145,6 @@ Is it still available?`
         <div className="px-3 pb-3 flex gap-2 overflow-x-auto">
           <Link href="/movies" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">🎬 Movies</Link>
           <Link href="/stores" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">⚽ Live Sports</Link>
-          <Link href="/invoices" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">📄 Invoices</Link>
-          <Link href="/receipts" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">🏷️ Receipts</Link>
         </div>
 
         {/* CATEGORIES - HORIZONTAL SCROLL */}
