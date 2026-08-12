@@ -8,7 +8,7 @@ const faqData = [
   },
   {
     q: "How do I pay?",
-    a: "We recommend Mobile Money. Pay when you meet the seller in a safe public place on campus."
+    a: "We recommend Mobile Money and cash. Pay  after receiving the product when you meet the seller in a safe public place or at campus."
   },
   {
     q: "How do I become a seller?",
