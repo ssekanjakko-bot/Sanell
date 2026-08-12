@@ -20,7 +20,7 @@ const faqData = [
   },
   {
     q: "How do I contact support?",
-    a: "WhatsApp us: +256 7XX XXX"
+    a: "WhatsApp us: +256 706826774"
   },
 ];
 
@@ -61,11 +61,11 @@ export default function FAQ() {
                   <p>
                     WhatsApp us:{" "}
                     <a
-                      href="https://wa.me/2567XXXXXXXX"
+                      href="https://wa.me/256706826774"
                       target="_blank"
                       className="text-[#6B4F3B] font-semibold underline"
                     >
-                      +256 7XX XXX
+                      +256 706826774
                     </a>
                   </p>
                 ) : (
@@ -79,7 +79,7 @@ export default function FAQ() {
 
       <div className="text-center mt-8">
         <a
-          href="https://wa.me/2567XXXXXXXX"
+          href="https://wa.me/256706826774"
           target="_blank"
           className="bg-[#C8A67B] text-[#3B2F2A] px-6 py-3 rounded-lg font-bold hover:bg-[#B8966A] transition inline-block"
         >
