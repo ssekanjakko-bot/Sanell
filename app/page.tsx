@@ -7,7 +7,7 @@ import Link from "next/link"
 import { Coffee, Eye, X } from "lucide-react"
 
 const CATEGORIES = [
-  {name: 'All', icon: '🌐'}, {name: 'Electronics', icon: '📱'}, {name: 'Home, Furniture & Appliances', icon: '🛋️'}, 
+  {name: 'All', icon: '🌐'}, {name: 'Electronics', icon: '📱'}, {name: 'Home, Furniture & Appliances', icon: '🛋️'},
   {name: 'Health', icon: '💊'}, {name: 'Fashion', icon: '👗'},
   {name: 'Sports, Arts & Outdoor', icon: '⚽'}, {name: 'Babies & Kids', icon: '🧸'},
   {name: 'Animals & Pets', icon: '🐶'}, {name: 'Agriculture & Food', icon: '🌾'},
@@ -23,20 +23,78 @@ const BOTTOM_NAV = [
   { name: 'Profile', icon: '👤', href: '/profile' }
 ]
 
+// === NEW MODAL COMPONENT - HANDLES MANY IMAGES ===
+function ProductViewModal({ product, onClose, onWhatsApp }: any) {
+  const [activeImg, setActiveImg] = useState(product.images?.[0])
+
+  useEffect(() => {
+    setActiveImg(product.images?.[0])
+  }, [product])
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl max-w-[420px] w-full max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-3 right-3 bg-black text-white w-8 h-8 rounded-full flex items-center justify-center z-20">
+          <X size={16} />
+        </button>
+
+        {/* BIG IMAGE THAT CHANGES */}
+        <div className="relative bg-gray-100">
+          <img src={activeImg} alt={product.title} className="w-full h-80 object-contain bg-gray-100" />
+          <div className="absolute bottom-2 left-2 bg-black/70 text-white text-[11px] px-2 py-1 rounded-full">
+            {product.images?.findIndex((i:string)=>i===activeImg)+1} / {product.images?.length}
+          </div>
+        </div>
+
+        {/* THUMBNAILS - NOW SCROLLS AND CLICKABLE FOR MANY IMAGES */}
+        {product.images?.length > 1 && (
+          <div className="flex gap-2 p-2 overflow-x-auto bg-white">
+            {product.images.map((img: string, idx: number) => (
+              <button
+                key={idx}
+                onClick={() => setActiveImg(img)}
+                className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${activeImg === img? 'border-orange-600' : 'border-transparent opacity-70'}`}
+              >
+                <img src={img} className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="p-4">
+          <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-md">{product.category}</span>
+          <h2 className="font-bold text-xl mt-2">{product.title}</h2>
+          <p className="font-bold text-2xl text-orange-700 mt-1">{product.price} UGX</p>
+          <p className="text-sm text-gray-600 mt-3 whitespace-pre-wrap">{product.description || "No description"}</p>
+
+          <div className="mt-5 flex flex-col gap-2">
+            <button onClick={() => onWhatsApp(product)} className="w-full bg-green-600 hover:bg-green-700 text-white py-3.5 rounded-full font-bold">
+              📞 WhatsApp Seller
+            </button>
+            <button onClick={onClose} className="w-full bg-gray-100 text-black py-3 rounded-full font-bold text-sm">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function HomePage() {
   const [products, setProducts] = useState<any[]>([])
   const [banners, setBanners] = useState<any[]>([])
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [viewProduct, setViewProduct] = useState<any>(null) // NEW FOR VIEW
+  const [viewProduct, setViewProduct] = useState<any>(null)
   const router = useRouter()
   const pathname = usePathname()
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const q = query(collection(db, 'banners'), orderBy("createdAt", "desc"))
-    const unsub = onSnapshot(q, (snap) => setBanners(snap.docs.map(d => ({id: d.id, ...d.data()}))))
+    const unsub = onSnapshot(q, (snap) => setBanners(snap.docs.map(d => ({id: d.id,...d.data()}))))
     return () => unsub()
   }, [])
 
@@ -54,7 +112,7 @@ export default function HomePage() {
   useEffect(() => {
     const q = query(collection(db, 'products'), orderBy("createdAt", "desc"))
     const unsub = onSnapshot(q, (snap) => {
-      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setProducts(snap.docs.map(d => ({ id: d.id,...d.data() })))
       setLoading(false)
     })
     return () => unsub()
@@ -76,7 +134,7 @@ export default function HomePage() {
       if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1)
       else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone
       if(cleanPhone.length < 12) return alert("Invalid phone number: " + phone)
-      const message = `*Hello! I'm interested in this product* 👋\n\n*📦 PRODUCT DETAILS*\n*Title:* ${product.title}\n*Category:* ${product.category}\n*Price:* ${product.price} UGX\n\n${product.description ? `*Description:* ${product.description}` : ''}\n\n${product.images?.[0] ? `*Image:* ${product.images[0]}` : ''}\n\nIs it still available?`
+      const message = `*Hello! I'm interested in this product* 👋\n\n*📦 PRODUCT DETAILS*\n*Title:* ${product.title}\n*Category:* ${product.category}\n*Price:* ${product.price} UGX\n\n${product.description? `*Description:* ${product.description}` : ''}\n\n${product.images?.[0]? `*Image:* ${product.images[0]}` : ''}\n\nIs it still available?`
       const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
       window.location.href = whatsappUrl
     } catch (error) {
@@ -87,8 +145,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen pb-20 bg-[#FDF8F3] relative">
-      
-      {/* HEADER */}
       <div className="bg-white sticky top-0 z-20 shadow-sm">
         <div className="p-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -110,8 +166,8 @@ export default function HomePage() {
         <div className="px-3 pb-4">
           <div className="flex gap-3 overflow-x-auto pb-2">
             {CATEGORIES.map(cat => (
-              <button key={cat.name} onClick={() => setSelectedCategory(cat.name)} className={`flex flex-col items-center gap-1 min-w-[80px] ${selectedCategory === cat.name ? 'text-orange-600 font-bold' : 'text-gray-700'}`}>
-                <div className={`text-2xl p-2 rounded-full ${selectedCategory === cat.name ? 'bg-orange-100' : 'bg-white shadow'}`}>{cat.icon}</div>
+              <button key={cat.name} onClick={() => setSelectedCategory(cat.name)} className={`flex flex-col items-center gap-1 min-w-[80px] ${selectedCategory === cat.name? 'text-orange-600 font-bold' : 'text-gray-700'}`}>
+                <div className={`text-2xl p-2 rounded-full ${selectedCategory === cat.name? 'bg-orange-100' : 'bg-white shadow'}`}>{cat.icon}</div>
                 <span className="text-xs leading-tight text-center">{cat.name}</span>
               </button>
             ))}
@@ -119,7 +175,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* BANNER SLIDER */}
       <div className="px-3 pt-2">
         {banners.length > 0 && (
           <div ref={scrollRef} className="flex overflow-x-hidden scroll-smooth rounded-2xl">
@@ -132,30 +187,21 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* LISTINGS */}
       <div className="p-3">
         <h2 className="font-bold text-lg mb-3">Listings ({filteredProducts.length})</h2>
-        {loading ? <p>Loading...</p> : filteredProducts.length === 0 ? <p>No products found</p> : (
+        {loading? <p>Loading...</p> : filteredProducts.length === 0? <p>No products found</p> : (
           <div className="grid grid-cols-2 gap-3">
             {filteredProducts.map(p => (
               <div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border relative group">
-                {/* IMAGE WITH VIEW BUTTON */}
                 <div className="relative w-full h-40 bg-gray-100">
-                  <img 
-                    src={p.images?.[0]} 
-                    alt={p.title} 
-                    className="w-full h-40 object-cover"
-                    onError={(e: any) => e.target.src="https://placehold.co/400x400/FDF8F3/8B4513?text=No+Image"}
-                  />
-                  {/* SMALL VIEW BUTTON - NEW */}
-                  <button
-                    onClick={() => setViewProduct(p)}
-                    className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80 transition shadow"
-                  >
+                  <img src={p.images?.[0]} alt={p.title} className="w-full h-40 object-cover" onError={(e: any) => e.target.src="https://placehold.co/400x400/FDF8F3/8B4513?text=No+Image"} />
+                  <button onClick={() => setViewProduct(p)} className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80 transition shadow">
                     <Eye size={14} />
                   </button>
+                  {p.images?.length > 1 && (
+                    <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-full">+{p.images.length}</span>
+                  )}
                 </div>
-                
                 <div className="p-2">
                   <p className="text-xs bg-orange-100 text-orange-700 w-fit px-2 py-0.5 rounded-md mb-1">{p.category}</p>
                   <p className="font-bold text-sm mb-1 line-clamp-2">{p.title}</p>
@@ -170,40 +216,8 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* FULL VIEW MODAL - NEW FEATURE */}
-      {viewProduct && (
-        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4" onClick={() => setViewProduct(null)}>
-          <div className="bg-white rounded-2xl max-w-[420px] w-full max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setViewProduct(null)} className="absolute top-3 right-3 bg-black text-white w-8 h-8 rounded-full flex items-center justify-center z-10">
-              <X size={16} />
-            </button>
-            <img src={viewProduct.images?.[0]} alt={viewProduct.title} className="w-full h-80 object-cover bg-gray-100" />
-            {/* if multiple images */}
-            {viewProduct.images?.length > 1 && (
-              <div className="flex gap-2 p-2 overflow-x-auto">
-                {viewProduct.images.map((img: string, idx: number) => (
-                  <img key={idx} src={img} className="w-16 h-16 object-cover rounded-lg border" />
-                ))}
-              </div>
-            )}
-            <div className="p-4">
-              <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-md">{viewProduct.category}</span>
-              <h2 className="font-bold text-xl mt-2">{viewProduct.title}</h2>
-              <p className="font-bold text-2xl text-orange-700 mt-1">{viewProduct.price} UGX</p>
-              <p className="text-sm text-gray-600 mt-3 whitespace-pre-wrap">{viewProduct.description || "No description"}</p>
-              
-              <div className="mt-5 flex flex-col gap-2">
-                <button onClick={() => handleWhatsApp(viewProduct)} className="w-full bg-green-600 hover:bg-green-700 text-white py-3.5 rounded-full font-bold flex items-center justify-center gap-2">
-                  📞 WhatsApp Seller
-                </button>
-                <button onClick={() => setViewProduct(null)} className="w-full bg-gray-100 text-black py-3 rounded-full font-bold text-sm">
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* FIXED MODAL */}
+      {viewProduct && <ProductViewModal product={viewProduct} onClose={() => setViewProduct(null)} onWhatsApp={handleWhatsApp} />}
 
       <button onClick={() => router.push('/sell')} className="fixed bottom-20 right-4 bg-amber-800 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40 hover:scale-110 transition">
         <Coffee size={28} />
@@ -211,7 +225,7 @@ export default function HomePage() {
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center py-1 z-30">
         {BOTTOM_NAV.map((nav) => (
-          <button key={nav.name} onClick={() => router.push(nav.href)} className={`flex flex-col items-center text-xs pt-1 ${pathname === nav.href ? 'text-orange-600' : 'text-gray-500'}`}>
+          <button key={nav.name} onClick={() => router.push(nav.href)} className={`flex flex-col items-center text-xs pt-1 ${pathname === nav.href? 'text-orange-600' : 'text-gray-500'}`}>
             <span className="text-2xl">{nav.icon}</span>
             {nav.name}
           </button>
