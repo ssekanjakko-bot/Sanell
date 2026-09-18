@@ -3,8 +3,8 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react'
 import { auth, db, storage } from '@/lib/firebase'
 import {
-          collection, addDoc, query, where, doc, deleteDoc,
-          updateDoc, onSnapshot, serverTimestamp, Timestamp
+  collection, addDoc, query, where, doc, deleteDoc,
+  updateDoc, onSnapshot, serverTimestamp, Timestamp, orderBy
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { onAuthStateChanged, User } from 'firebase/auth'
@@ -13,366 +13,238 @@ import Link from 'next/link'
 const COFFEE_BROWN = '#6F4E37'
 const COFFEE_LIGHT = '#A67B5B'
 
-// Categories from your screenshot
 const CATEGORIES = [
-          'Vehicles',
-          'Phones',
-          'Houses & Rentals',
-          'Electronics',
-          'Home, Furniture & Appliances',
-          'Health',
-          'Fashion',
-          'Sports, Arts & Outdoor',
-          'Babies & Kids',
-          'Animals & Pets',
-          'Agriculture & Food',
-          'Commercial Equipment & Tools',
-          'Repair & Construction',
-          'Stationery',
-          'Services',
-          'Jobs'
+  'Vehicles','Phones','Houses & Rentals','Electronics','Home, Furniture & Appliances','Health','Fashion','Sports, Arts & Outdoor','Babies & Kids','Animals & Pets','Agriculture & Food','Commercial Equipment & Tools','Repair & Construction','Stationery','Services','Jobs'
 ]
 
 type Product = {
-          id: string
-          title: string
-          description: string
-          price: number
-          category: string
-          images: string[]
-          videoUrl: string
-          whatsapp: string
-          sellerId: string
-          sellerEmail: string
-          createdAt: Timestamp
+  id: string
+  title: string
+  description: string
+  price: number
+  category: string
+  images: string[]
+  videoUrl: string
+  whatsapp: string
+  sellerId: string
+  sellerEmail: string
+  createdAt: Timestamp
+}
+
+type ChatMsg = {
+  id: string
+  sellerId: string
+  sellerEmail: string
+  sender: 'seller' | 'admin'
+  message: string
+  createdAt: Timestamp
 }
 
 export default function SellPage() {
-          const [user, setUser] = useState<User | null>(null)
-          const [products, setProducts] = useState<Product[]>([])
-          const [editing, setEditing] = useState<Product | null>(null)
-          const [loading, setLoading] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [products, setProducts] = useState<Product[]>([])
+  const [editing, setEditing] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(false)
 
-          // Form state
-          const [title, setTitle] = useState('')
-          const [description, setDescription] = useState('')
-          const [price, setPrice] = useState('')
-          const [category, setCategory] = useState(CATEGORIES[0])
-          const [whatsapp, setWhatsapp] = useState('') // Format: 2567xxxxxxx
-          const [imageFiles, setImageFiles] = useState<File[]>([])
-          const [videoFile, setVideoFile] = useState<File | null>(null)
+  // Form state
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [price, setPrice] = useState('')
+  const [category, setCategory] = useState(CATEGORIES[0])
+  const [whatsapp, setWhatsapp] = useState('')
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [videoFile, setVideoFile] = useState<File | null>(null)
 
-          useEffect(() => {
-                    const unsubAuth = onAuthStateChanged(auth, (u) => {
-                              setUser(u)
-                              if (u) {
-                                        const q = query(collection(db, 'products'), where('sellerId', '==', u.uid))
-                                        const unsubProducts = onSnapshot(q, (snap) => {
-                                                  const items = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product))
-                                                  setProducts(items.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds))
-                                        })
-                                        return () => unsubProducts()
-                              } else {
-                                        setProducts([])
-                              }
-                    })
-                    return () => unsubAuth()
-          }, [])
+  // === CHAT STATE ADDED ===
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatOpen, setChatOpen] = useState(false)
 
-          const resetForm = () => {
-                    setTitle('')
-                    setDescription('')
-                    setPrice('')
-                    setCategory(CATEGORIES[0])
-                    setWhatsapp('')
-                    setImageFiles([])
-                    setVideoFile(null)
-                    setEditing(null)
-          }
+  useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, (u) => {
+      setUser(u)
+      if (u) {
+        const q = query(collection(db, 'products'), where('sellerId', '==', u.uid))
+        const unsubProducts = onSnapshot(q, (snap) => {
+          const items = snap.docs.map(d => ({ id: d.id,...d.data() } as Product))
+          setProducts(items.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds))
+        })
 
-          const uploadFiles = async (uid: string) => {
-                    const imageUrls: string[] = []
-                    const timestamp = Date.now()
+        // === LISTEN TO CHAT FOR THIS SELLER ===
+        const chatQ = query(collection(db, 'seller_admin_chats'), where('sellerId','==', u.uid), orderBy('createdAt','asc'))
+        const unsubChat = onSnapshot(chatQ, (snap) => {
+          setChatMessages(snap.docs.map(d => ({ id: d.id,...d.data() } as ChatMsg)))
+        })
 
-                    for (let i = 0; i < imageFiles.length; i++) {
-                              const file = imageFiles[i]
-                              const imgRef = ref(storage, `products/${uid}/${timestamp}_img_${i}_${file.name}`)
-                              const snap = await uploadBytes(imgRef, file)
-                              imageUrls.push(await getDownloadURL(snap.ref))
-                    }
+        return () => { unsubProducts(); unsubChat(); }
+      } else {
+        setProducts([])
+        setChatMessages([])
+      }
+    })
+    return () => unsubAuth()
+  }, [])
 
-                    let videoUrl = ''
-                    if (videoFile) {
-                              const vidRef = ref(storage, `products/${uid}/${timestamp}_vid_${videoFile.name}`)
-                              const snap = await uploadBytes(vidRef, videoFile)
-                              videoUrl = await getDownloadURL(snap.ref)
-                    }
+  const sendChat = async () => {
+    if(!chatInput.trim() ||!user) return
+    await addDoc(collection(db, 'seller_admin_chats'), {
+      sellerId: user.uid,
+      sellerEmail: user.email,
+      sender: 'seller',
+      message: chatInput.trim(),
+      createdAt: serverTimestamp()
+    })
+    setChatInput('')
+  }
 
-                    return { imageUrls, videoUrl }
-          }
+  const resetForm = () => {
+    setTitle(''); setDescription(''); setPrice(''); setCategory(CATEGORIES[0]); setWhatsapp(''); setImageFiles([]); setVideoFile(null); setEditing(null)
+  }
 
-          const handleSubmit = async (e: FormEvent) => {
-                    e.preventDefault()
-                    if (!user) return alert('You must be logged in')
-                    if (!whatsapp.match(/^256\d{9}$/)) return alert('WhatsApp format: 2567xxxxxxx no + or spaces')
-                    setLoading(true)
+  const uploadFiles = async (uid: string) => {
+    const imageUrls: string[] = []
+    const timestamp = Date.now()
+    for (let i = 0; i < imageFiles.length; i++) {
+      const file = imageFiles[i]
+      const imgRef = ref(storage, `products/${uid}/${timestamp}_img_${i}_${file.name}`)
+      const snap = await uploadBytes(imgRef, file)
+      imageUrls.push(await getDownloadURL(snap.ref))
+    }
+    let videoUrl = ''
+    if (videoFile) {
+      const vidRef = ref(storage, `products/${uid}/${timestamp}_vid_${videoFile.name}`)
+      const snap = await uploadBytes(vidRef, videoFile)
+      videoUrl = await getDownloadURL(snap.ref)
+    }
+    return { imageUrls, videoUrl }
+  }
 
-                    try {
-                              const { imageUrls, videoUrl } = await uploadFiles(user.uid)
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!user) return alert('You must be logged in')
+    if (!whatsapp.match(/^256\d{9}$/)) return alert('WhatsApp format: 2567xxxxxxx no + or spaces')
+    setLoading(true)
+    try {
+      const { imageUrls, videoUrl } = await uploadFiles(user.uid)
+      if (editing) {
+        await updateDoc(doc(db, 'products', editing.id), {
+          title, description, price: Number(price), category, whatsapp,
+          images: imageUrls.length > 0? imageUrls : editing.images,
+          videoUrl: videoUrl || editing.videoUrl,
+        })
+      } else {
+        if (imageUrls.length === 0) throw new Error('Upload at least 1 photo')
+        await addDoc(collection(db, 'products'), {
+          title, description, price: Number(price), category, whatsapp,
+          images: imageUrls, videoUrl, sellerId: user.uid,
+          sellerEmail: user.email, createdAt: serverTimestamp()
+        })
+      }
+      resetForm()
+    } catch (err: any) {
+      console.error(err); alert('Error: ' + err.message)
+    }
+    setLoading(false)
+  }
 
-                              if (editing) {
-                                        await updateDoc(doc(db, 'products', editing.id), {
-                                                  title, description, price: Number(price), category, whatsapp,
-                                                  images: imageUrls.length > 0 ? imageUrls : editing.images,
-                                                  videoUrl: videoUrl || editing.videoUrl,
-                                        })
-                              } else {
-                                        if (imageUrls.length === 0) throw new Error('Upload at least 1 photo')
-                                        await addDoc(collection(db, 'products'), {
-                                                  title, description, price: Number(price), category, whatsapp,
-                                                  images: imageUrls, videoUrl, sellerId: user.uid,
-                                                  sellerEmail: user.email, createdAt: serverTimestamp()
-                                        })
-                              }
-                              resetForm()
-                    } catch (err: any) {
-                              console.error(err)
-                              alert('Error: ' + err.message)
-                    }
-                    setLoading(false)
-          }
+  const handleEdit = (p: Product) => {
+    setEditing(p); setTitle(p.title); setDescription(p.description); setPrice(String(p.price)); setCategory(p.category); setWhatsapp(p.whatsapp); setImageFiles([]); setVideoFile(null); window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  const handleDelete = async (p: Product) => {
+    if (!confirm(`Delete "${p.title}"?`)) return
+    try { await deleteDoc(doc(db, 'products', p.id)) } catch (err) { console.error(err); alert('Failed to delete') }
+  }
 
-          const handleEdit = (p: Product) => {
-                    setEditing(p)
-                    setTitle(p.title)
-                    setDescription(p.description)
-                    setPrice(String(p.price))
-                    setCategory(p.category)
-                    setWhatsapp(p.whatsapp)
-                    setImageFiles([])
-                    setVideoFile(null)
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-          }
+  if (!user) {
+    return (
+      <div className="p-8 text-center min-h-screen" style={{ backgroundColor: '#FDF8F3' }}>
+        <h1 className="text-2xl font-bold mb-4" style={{ color: COFFEE_BROWN }}>Seller Login Required</h1>
+        <Link href="/admin" className="text-white px-6 py-2 rounded font-medium inline-block" style={{ backgroundColor: COFFEE_BROWN }}>Go to Login</Link>
+      </div>
+    )
+  }
 
-          const handleDelete = async (p: Product) => {
-                    if (!confirm(`Delete "${p.title}"?`)) return
-                    try {
-                              await deleteDoc(doc(db, 'products', p.id))
-                    } catch (err) {
-                              console.error(err)
-                              alert('Failed to delete')
-                    }
-          }
+  return (
+    <div className="p-6 max-w-5xl mx-auto min-h-screen" style={{ backgroundColor: '#FDF8F3' }}>
+      <h1 className="text-3xl font-bold mb-6" style={{ color: COFFEE_BROWN }}>{editing? 'Edit Product' : 'Post New Product'}</h1>
 
-          if (!user) {
-                    return (
-                              <div className="p-8 text-center min-h-screen" style={{ backgroundColor: '#FDF8F3' }}>
-                                        <h1 className="text-2xl font-bold mb-4" style={{ color: COFFEE_BROWN }}>Seller Login Required</h1>
-                                        <Link
-                                                  href="/admin"
-                                                  className="text-white px-6 py-2 rounded font-medium inline-block"
-                                                  style={{ backgroundColor: COFFEE_BROWN }}
-                                        >
-                                                  Go to Login
-                                        </Link>
-                              </div>
-                    )
-          }
+      {/* Form - YOUR ORIGINAL FORM - NOT CHANGED */}
+      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-lg mb-10 border-t-4" style={{ borderColor: COFFEE_BROWN }}>
+        <input className="w-full p-3 border rounded text-black placeholder:text-gray-600" style={{ borderColor: COFFEE_LIGHT }} placeholder="Product Title" value={title} onChange={e => setTitle(e.target.value)} required />
+        <textarea className="w-full p-3 border rounded text-black placeholder:text-gray-600" style={{ borderColor: COFFEE_LIGHT }} placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} rows={3} required />
+        <div className="grid md:grid-cols-3 gap-4">
+          <input className="w-full p-3 border rounded text-black placeholder:text-gray-600" style={{ borderColor: COFFEE_LIGHT }} type="number" placeholder="Price UGX" value={price} onChange={e => setPrice(e.target.value)} required min="0" />
+          <select className="w-full p-3 border rounded text-black" style={{ borderColor: COFFEE_LIGHT, color: COFFEE_BROWN }} value={category} onChange={e => setCategory(e.target.value)} required>{CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select>
+          <input className="w-full p-3 border rounded text-black placeholder:text-gray-600" style={{ borderColor: COFFEE_LIGHT }} placeholder="WhatsApp: 2567xxxxxxx" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} required />
+        </div>
+        <div><label className="block mb-1 font-medium" style={{ color: COFFEE_BROWN }}>Photos: {editing && '(Leave empty to keep current)'}</label><input type="file" multiple accept="image/*" onChange={(e: ChangeEvent<HTMLInputElement>) => setImageFiles(Array.from(e.target.files || []))} required={!editing} className="w-full" /></div>
+        <div><label className="block mb-1 font-medium" style={{ color: COFFEE_BROWN }}>Video: {editing && '(Leave empty to keep current)'}</label><input type="file" accept="video/*" onChange={(e: ChangeEvent<HTMLInputElement>) => setVideoFile(e.target.files?.[0] || null)} className="w-full" /></div>
+        <div className="flex gap-2">
+          <button disabled={loading} className="text-white px-6 py-2 rounded font-medium disabled:opacity-50" style={{ backgroundColor: COFFEE_BROWN }}>{loading? 'Saving...' : editing? 'Update Product' : 'Post Product'}</button>
+          {editing && (<button type="button" onClick={resetForm} className="px-6 py-2 border rounded font-medium" style={{ borderColor: COFFEE_BROWN, color: COFFEE_BROWN }}>Cancel</button>)}
+        </div>
+      </form>
 
-          return (
-                    <div className="p-6 max-w-5xl mx-auto min-h-screen" style={{ backgroundColor: '#FDF8F3' }}>
-                              <h1 className="text-3xl font-bold mb-6" style={{ color: COFFEE_BROWN }}>
-                                        {editing ? 'Edit Product' : 'Post New Product'}
-                              </h1>
+      {/* Delivery Section - YOUR ORIGINAL */}
+      <div className=" mt-6 mb-10 p-5 border rounded-xl bg-amber-50 border-amber-200 text-center">
+        <h3 className="text-lg font-bold text-[#6F4E37] mb-2">🛵 Need Delivery?</h3>
+        <p className="text-sm text-gray-700 mb-4">We can carry out deliveries for you at affordable prices. Contact us through WhatsApp or give us a call directly.</p>
+        <div className="flex gap-3">
+          <a href="https://wa.me/256775760430?text=Hi%20Sanel%20Delivery,%20I%20need%20delivery%20for%20my%20product" target="_blank" rel="nooperner noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shawdow-sm. transition"><span>💬</span>WhatsApp</a>
+          <a href="tel:+256775760430" className="flex-1 flex items-center justify-center gap-2 bg-[#6F4E37] hover:bg-[#5A3E2C] text-white font-semibold py-3 px-4 rounded-lg shadow-sw transition "><span>☎️</span> Call Us</a>
+        </div>
+      </div>
 
-                              {/* Form */}
-                              <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-lg mb-10 border-t-4" style={{ borderColor: COFFEE_BROWN }}>
-                                        <input
-                                                  className="w-full p-3 border rounded text-black placeholder:text-gray-600" 
-                                                  style={{ borderColor: COFFEE_LIGHT }}
-                                                  placeholder="Product Title"
-                                                  value={title}
-                                                  onChange={e => setTitle(e.target.value)}
-                                                  required
-                                        />
-                                        <textarea
-                                                  className="w-full p-3 border rounded text-black placeholder:text-gray-600"
-                                                  style={{ borderColor: COFFEE_LIGHT }}
-                                                  placeholder="Description"
-                                                  value={description}
-                                                  onChange={e => setDescription(e.target.value)}
-                                                  rows={3}
-                                                  required
-                                        />
+      {/* === ADMIN CHAT ADDED HERE === */}
+      <div className="bg-white rounded-lg shadow-lg mb-10 border">
+        <button onClick={()=>setChatOpen(!chatOpen)} className="w-full p-4 flex justify-between items-center font-bold" style={{color: COFFEE_BROWN}}>
+          <span>💬 Talk to Admin {chatMessages.length > 0 && `(${chatMessages.length})`}</span>
+          <span>{chatOpen? '▲' : '▼'}</span>
+        </button>
+        {chatOpen && (
+          <div className="border-t p-4">
+            <div className="h-72 overflow-y-auto bg-[#FDF8F3] p-3 rounded mb-3 space-y-2">
+              {chatMessages.length===0 && <p className="text-gray-500 text-sm text-center">No messages yet. Start chat with admin.</p>}
+              {chatMessages.map(m=>(
+                <div key={m.id} className={`flex ${m.sender==='seller'? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[75%] px-3 py-2 rounded-lg text-sm ${m.sender==='seller'? 'text-white' : 'bg-white border text-black'}`} style={{backgroundColor: m.sender==='seller'? COFFEE_BROWN : 'white'}}>
+                    {m.message}
+                    <div className="text-[10px] opacity-70 mt-1">{m.createdAt?.toDate? m.createdAt.toDate().toLocaleString() : ''}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=> e.key==='Enter' && sendChat()} placeholder="Type message to admin..." className="flex-1 p-3 border rounded" style={{borderColor: COFFEE_LIGHT}} />
+              <button onClick={sendChat} className="text-white px-6 rounded font-medium" style={{backgroundColor: COFFEE_BROWN}}>Send</button>
+            </div>
+          </div>
+        )}
+      </div>
 
-                                        <div className="grid md:grid-cols-3 gap-4">
-                                                  <input
-                                                            className="w-full p-3 border rounded text-black placeholder:text-gray-600"
-                                                            style={{ borderColor: COFFEE_LIGHT }}
-                                                            type="number"
-                                                            placeholder="Price UGX"
-                                                            value={price}
-                                                            onChange={e => setPrice(e.target.value)}
-                                                            required
-                                                            min="0"
-                                                  />
-                                                  <select
-                                                            className="w-full p-3 border rounded text-black placeholder:text-gray-600"
-                                                            style={{ borderColor: COFFEE_LIGHT, color: COFFEE_BROWN }}
-                                                            value={category}
-                                                            onChange={e => setCategory(e.target.value)}
-                                                            required
-                                                  >
-                                                            {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                                  </select>
-                                                  <input
-                                                            className="w-full p-3 border rounded text-black placeholder:text-gray-600"
-                                                            style={{ borderColor: COFFEE_LIGHT }}
-                                                            placeholder="WhatsApp: 2567xxxxxxx"
-                                                            value={whatsapp}
-                                                            onChange={e => setWhatsapp(e.target.value)}
-                                                            required
-                                                  />
-                                        </div>
-
-                                        <div>
-                                                  <label className="block mb-1 font-medium" style={{ color: COFFEE_BROWN }}>
-                                                            Photos: {editing && '(Leave empty to keep current)'}
-                                                  </label>
-                                                  <input
-                                                            type="file"
-                                                            multiple
-                                                            accept="image/*"
-                                                            onChange={(e: ChangeEvent<HTMLInputElement>) => setImageFiles(Array.from(e.target.files || []))}
-                                                            required={!editing}
-                                                            className="w-full"
-                                                  />
-                                        </div>
-                                        <div>
-                                                  <label className="block mb-1 font-medium" style={{ color: COFFEE_BROWN }}>
-                                                            Video: {editing && '(Leave empty to keep current)'}
-                                                  </label>
-                                                  <input
-                                                            type="file"
-                                                            accept="video/*"
-                                                            onChange={(e: ChangeEvent<HTMLInputElement>) => setVideoFile(e.target.files?.[0] || null)}
-                                                            className="w-full"
-                                                  />
-                                        </div>
-
-                                        <div className="flex gap-2">
-                                                  <button
-                                                            disabled={loading}
-                                                            className="text-white px-6 py-2 rounded font-medium disabled:opacity-50"
-                                                            style={{ backgroundColor: COFFEE_BROWN }}
-                                                  >
-                                                            {loading ? 'Saving...' : editing ? 'Update Product' : 'Post Product'}
-                                                  </button>
-                                                  {editing && (
-                                                            <button
-                                                                      type="button"
-                                                                      onClick={resetForm}
-                                                                      className="px-6 py-2 border rounded font-medium"
-                                                                      style={{ borderColor: COFFEE_BROWN, color: COFFEE_BROWN }}
-                                                            >
-                                                                      Cancel
-                                                            </button>
-                                                  )}
-                                        </div>
-                              </form>
-                           {/* Delivery Section -Added after from */}
-                             <div className =" mt-6 mb-10 p-5 border rounded-xl bg-amber-50 border-amber-200 text-center">
-                             <h3 className= "text-lg font-bold text-[#6F4E37] mb-2">
-                              🛵 Need Delivery?
-                             </h3>
-                             <p className="text-sm text-gray-700 mb-4">
-                              We can carry out deliveries for you at affordable prices.
-                              Contact us through WhatsApp or give us a call directly.
-                              </p>
-
-                             <div className="flex gap-3">
-                              {/* WhatsApp Button */}
-                             <a
-                              href="https://wa.me/256775760430?text=Hi%20Sanel%20Delivery,%20I%20need%20delivery%20for%20my%20product"
-                              target="_blank"
-                              rel="nooperner noreferrer"
-                              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shawdow-sm. transition"
-                              >
-                             <span>💬</span>WhatsApp
-                             </a>
-
-                             {/* Call Button */}
-                            <a
-                             href="tel:+256775760430"
-                             className="flex-1 flex items-center justify-center gap-2 bg-[#6F4E37] hover:bg-[#5A3E2C] text-white font-semibold py-3 px-4 rounded-lg shadow-sw transition "
-                            >
-                           <span>☎️</span> Call Us
-                           </a>
-                        </div>
-                      </div>
-                              
-
-                              {/* My Products List */}
-                              <h2 className="text-2xl font-bold mb-4" style={{ color: COFFEE_BROWN }}>
-                                        My Products ({products.length})
-                              </h2>
-
-                              {products.length === 0 ? (
-                                        <p className="text-gray-500">You haven't posted any products yet.</p>
-                              ) : (
-                                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                  {products.map(p => (
-                                                            <div key={p.id} className="border rounded-lg overflow-hidden shadow-sm bg-white">
-                                                                      {p.images[0] && (
-                                                                                <img src={p.images[0]} className="w-full h-48 object-cover" alt={p.title} />
-                                                                      )}
-                                                                      {p.videoUrl && (
-                                                                                <video src={p.videoUrl} controls className="w-full h-48 bg-black" />
-                                                                      )}
-
-                                                                      <div className="p-4">
-                                                                                <span
-                                                                                          className="text-xs px-2 py-1 rounded-full text-white mb-2 inline-block"
-                                                                                          style={{ backgroundColor: COFFEE_LIGHT }}
-                                                                                >
-                                                                                          {p.category}
-                                                                                </span>
-                                                                                <h3 className="font-bold text-lg mb-1" style={{ color: COFFEE_BROWN }}>{p.title}</h3>
-                                                                                <p className="text-sm text-gray-600 mb-2 line-clamp-2">{p.description}</p>
-                                                                                <p className="font-bold text-xl mb-3" style={{ color: COFFEE_BROWN }}>
-                                                                                          {p.price.toLocaleString()} UGX
-                                                                                </p>
-
-                                                                                <a
-                                                                                          href={`https://wa.me/${p.whatsapp}?text=Hi, I'm interested in your product: ${encodeURIComponent(p.title)}`}
-                                                                                          target="_blank"
-                                                                                          rel="noopener noreferrer"
-                                                                                          className="block w-full text-white text-center py-2 rounded font-medium mb-2"
-                                                                                          style={{ backgroundColor: '#25D366' }}
-                                                                                >
-                                                                                          Contact on WhatsApp
-                                                                                </a>
-
-                                                                                <div className="flex gap-2">
-                                                                                          <button
-                                                                                                    onClick={() => handleEdit(p)}
-                                                                                                    className="flex-1 text-white py-2 rounded font-medium"
-                                                                                                    style={{ backgroundColor: COFFEE_LIGHT }}
-                                                                                          >
-                                                                                                    Edit
-                                                                                          </button>
-                                                                                          <button
-                                                                                                    onClick={() => handleDelete(p)}
-                                                                                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded font-medium"
-                                                                                          >
-                                                                                                    Delete
-                                                                                          </button>
-                                                                                </div>
-                                                                      </div>
-                                                            </div>
-                                                  ))}
-                                        </div>
-                              )}
-                    </div>
-          )
+      {/* My Products List - YOUR ORIGINAL */}
+      <h2 className="text-2xl font-bold mb-4" style={{ color: COFFEE_BROWN }}>My Products ({products.length})</h2>
+      {products.length === 0? (<p className="text-gray-500">You haven't posted any products yet.</p>) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {products.map(p => (
+            <div key={p.id} className="border rounded-lg overflow-hidden shadow-sm bg-white">
+              {p.images[0] && (<img src={p.images[0]} className="w-full h-48 object-cover" alt={p.title} />)}
+              {p.videoUrl && (<video src={p.videoUrl} controls className="w-full h-48 bg-black" />)}
+              <div className="p-4">
+                <span className="text-xs px-2 py-1 rounded-full text-white mb-2 inline-block" style={{ backgroundColor: COFFEE_LIGHT }}>{p.category}</span>
+                <h3 className="font-bold text-lg mb-1" style={{ color: COFFEE_BROWN }}>{p.title}</h3>
+                <p className="text-sm text-gray-600 mb-2 line-clamp-2">{p.description}</p>
+                <p className="font-bold text-xl mb-3" style={{ color: COFFEE_BROWN }}>{p.price.toLocaleString()} UGX</p>
+                <a href={`https://wa.me/${p.whatsapp}?text=Hi, I'm interested in your product: ${encodeURIComponent(p.title)}`} target="_blank" rel="noopener noreferrer" className="block w-full text-white text-center py-2 rounded font-medium mb-2" style={{ backgroundColor: '#25D366' }}>Contact on WhatsApp</a>
+                <div className="flex gap-2">
+                  <button onClick={() => handleEdit(p)} className="flex-1 text-white py-2 rounded font-medium" style={{ backgroundColor: COFFEE_LIGHT }}>Edit</button>
+                  <button onClick={() => handleDelete(p)} className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded font-medium">Delete</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
