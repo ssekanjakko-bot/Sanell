@@ -4,7 +4,7 @@ import { useState, useEffect, FormEvent, ChangeEvent } from 'react'
 import { auth, db, storage } from '@/lib/firebase'
 import {
   collection, addDoc, query, where, doc, deleteDoc,
-  updateDoc, onSnapshot, serverTimestamp, Timestamp, orderBy
+  updateDoc, onSnapshot, serverTimestamp, Timestamp
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { onAuthStateChanged, User } from 'firebase/auth'
@@ -46,7 +46,6 @@ export default function SellPage() {
   const [editing, setEditing] = useState<Product | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Form state
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
@@ -55,7 +54,6 @@ export default function SellPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [videoFile, setVideoFile] = useState<File | null>(null)
 
-  // === CHAT STATE ADDED ===
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatOpen, setChatOpen] = useState(false)
@@ -70,11 +68,18 @@ export default function SellPage() {
           setProducts(items.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds))
         })
 
-        // === LISTEN TO CHAT FOR THIS SELLER ===
-        const chatQ = query(collection(db, 'seller_admin_chats'), where('sellerId','==', u.uid), orderBy('createdAt','asc'))
-        const unsubChat = onSnapshot(chatQ, (snap) => {
-          setChatMessages(snap.docs.map(d => ({ id: d.id,...d.data() } as ChatMsg)))
-        })
+        // === FIXED: NO orderBy HERE - SORT IN CLIENT ===
+        const chatQ = query(collection(db, 'seller_admin_chats'), where('sellerId','==', u.uid))
+        const unsubChat = onSnapshot(chatQ,
+          (snap) => {
+            const msgs = snap.docs.map(d => ({ id: d.id,...d.data() } as ChatMsg))
+            msgs.sort((a:any,b:any)=> (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0))
+            setChatMessages(msgs)
+          },
+          (err) => {
+            console.error("CHAT ERROR:", err)
+          }
+        )
 
         return () => { unsubProducts(); unsubChat(); }
       } else {
@@ -87,14 +92,19 @@ export default function SellPage() {
 
   const sendChat = async () => {
     if(!chatInput.trim() ||!user) return
-    await addDoc(collection(db, 'seller_admin_chats'), {
-      sellerId: user.uid,
-      sellerEmail: user.email,
-      sender: 'seller',
-      message: chatInput.trim(),
-      createdAt: serverTimestamp()
-    })
-    setChatInput('')
+    try {
+      await addDoc(collection(db, 'seller_admin_chats'), {
+        sellerId: user.uid,
+        sellerEmail: user.email || '',
+        sender: 'seller',
+        message: chatInput.trim(),
+        createdAt: serverTimestamp()
+      })
+      setChatInput('')
+    } catch (e:any) {
+      console.error(e)
+      alert("Failed: " + e.message + " - Check Firestore Rules")
+    }
   }
 
   const resetForm = () => {
@@ -168,7 +178,6 @@ export default function SellPage() {
     <div className="p-6 max-w-5xl mx-auto min-h-screen" style={{ backgroundColor: '#FDF8F3' }}>
       <h1 className="text-3xl font-bold mb-6" style={{ color: COFFEE_BROWN }}>{editing? 'Edit Product' : 'Post New Product'}</h1>
 
-      {/* Form - YOUR ORIGINAL FORM - NOT CHANGED */}
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-lg mb-10 border-t-4" style={{ borderColor: COFFEE_BROWN }}>
         <input className="w-full p-3 border rounded text-black placeholder:text-gray-600" style={{ borderColor: COFFEE_LIGHT }} placeholder="Product Title" value={title} onChange={e => setTitle(e.target.value)} required />
         <textarea className="w-full p-3 border rounded text-black placeholder:text-gray-600" style={{ borderColor: COFFEE_LIGHT }} placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} rows={3} required />
@@ -185,7 +194,6 @@ export default function SellPage() {
         </div>
       </form>
 
-      {/* Delivery Section - YOUR ORIGINAL */}
       <div className=" mt-6 mb-10 p-5 border rounded-xl bg-amber-50 border-amber-200 text-center">
         <h3 className="text-lg font-bold text-[#6F4E37] mb-2">🛵 Need Delivery?</h3>
         <p className="text-sm text-gray-700 mb-4">We can carry out deliveries for you at affordable prices. Contact us through WhatsApp or give us a call directly.</p>
@@ -195,7 +203,7 @@ export default function SellPage() {
         </div>
       </div>
 
-      {/* === ADMIN CHAT ADDED HERE === */}
+      {/* === ADMIN CHAT - FIXED + GREEN TEXT === */}
       <div className="bg-white rounded-lg shadow-lg mb-10 border">
         <button onClick={()=>setChatOpen(!chatOpen)} className="w-full p-4 flex justify-between items-center font-bold" style={{color: COFFEE_BROWN}}>
           <span>💬 Talk to Admin {chatMessages.length > 0 && `(${chatMessages.length})`}</span>
@@ -207,22 +215,27 @@ export default function SellPage() {
               {chatMessages.length===0 && <p className="text-gray-500 text-sm text-center">No messages yet. Start chat with admin.</p>}
               {chatMessages.map(m=>(
                 <div key={m.id} className={`flex ${m.sender==='seller'? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[75%] px-3 py-2 rounded-lg text-sm ${m.sender==='seller'? 'text-white' : 'bg-white border text-black'}`} style={{backgroundColor: m.sender==='seller'? COFFEE_BROWN : 'white'}}>
+                  <div className={`max-w-[75%] px-3 py-2 rounded-lg text-sm font-medium border ${m.sender==='seller'? 'bg-green-600 text-white' : 'bg-white text-green-700 border-green-600'}`}>
                     {m.message}
-                    <div className="text-[10px] opacity-70 mt-1">{m.createdAt?.toDate? m.createdAt.toDate().toLocaleString() : ''}</div>
+                    <div className="text-[10px] opacity-70 mt-1">{m.createdAt?.toDate? m.createdAt.toDate().toLocaleString() : 'Sending...'}</div>
                   </div>
                 </div>
               ))}
             </div>
             <div className="flex gap-2">
-              <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=> e.key==='Enter' && sendChat()} placeholder="Type message to admin..." className="flex-1 p-3 border rounded" style={{borderColor: COFFEE_LIGHT}} />
-              <button onClick={sendChat} className="text-white px-6 rounded font-medium" style={{backgroundColor: COFFEE_BROWN}}>Send</button>
+              <input
+                value={chatInput}
+                onChange={e=>setChatInput(e.target.value)}
+                onKeyDown={e=> e.key==='Enter' && sendChat()}
+                placeholder="Type message to admin..."
+                className="flex-1 p-3 border-2 rounded text-green-700 font-medium placeholder:text-gray-400 focus:border-green-600 outline-none"
+              />
+              <button onClick={sendChat} className="bg-green-600 hover:bg-green-700 text-white px-6 rounded font-bold">Send</button>
             </div>
           </div>
         )}
       </div>
 
-      {/* My Products List - YOUR ORIGINAL */}
       <h2 className="text-2xl font-bold mb-4" style={{ color: COFFEE_BROWN }}>My Products ({products.length})</h2>
       {products.length === 0? (<p className="text-gray-500">You haven't posted any products yet.</p>) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
