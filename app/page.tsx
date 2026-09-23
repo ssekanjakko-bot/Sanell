@@ -23,30 +23,33 @@ const BOTTOM_NAV = [
   { name: 'Profile', icon: '👤', href: '/profile' }
 ]
 
-// === TRENDING / BOOSTED SECTION - NEW ===
-function TrendingSection({ products, onView, onWhatsApp }: any) {
+// === FIXED TRENDING SECTION ===
+function TrendingSection({ products, onWhatsApp }: any) {
   if (!products || products.length === 0) return null;
-
   return (
-    <div className="px-3 pt-1 pb-2">
-      <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl p-3">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="font-bold text-black text-sm flex items-center gap-2">
-            🔥 Trending Now <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">SPONSORED</span>
+    <div className="px-3 mt-3">
+      <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="font-bold text-[14px] flex items-center gap-2">
+            🔥 Trending Now
+            <span className="bg-black text-white text-[9px] px-2 py-0.5 rounded-full">SPONSORED</span>
           </h2>
-          <span className="text-[10px] text-black/70 font-bold">{products.length}/10 slots</span>
         </div>
         <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
           {products.map((p: any) => {
             const hoursLeft = p.boosted_until? Math.max(0, Math.ceil((p.boosted_until.toDate().getTime() - Date.now()) / 3600000)) : 24;
             return (
-              <div key={p.id} className="min-w-[150px] max-w-[150px] bg-white rounded-xl p-2 shadow-md relative flex-shrink-0">
-                <span className="absolute -top-1.5 -left-1.5 bg-black text-yellow-400 text-[9px] font-bold px-2 py-0.5 rounded-full">BOOSTED</span>
-                <img src={p.images?.[0]} className="w-full h-24 object-cover rounded-lg mb-2" />
-                <p className="font-bold text-xs truncate">{p.title}</p>
-                <p className="font-bold text-sm text-orange-700">{p.price} UGX</p>
-                <p className="text-[10px] text-gray-400">⏳ {hoursLeft}h left</p>
-                <button onClick={() => onWhatsApp(p)} className="w-full mt-1.5 bg-green-500 text-white text-[11px] py-1.5 rounded-md font-bold">WhatsApp</button>
+              <div key={p.id} className="min-w-[150px] max-w-[150px] bg-white border rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
+                <div className="relative">
+                  <img src={p.images?.[0]} className="w-full h-28 object-cover" />
+                  <span className="absolute top-1.5 left-1.5 bg-yellow-400 text-black text-[8px] font-extrabold px-2 py-0.5 rounded-full shadow">BOOSTED</span>
+                  <span className="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded-full">⏳ {hoursLeft}h left</span>
+                </div>
+                <div className="p-2">
+                  <p className="font-semibold text-xs truncate">{p.title}</p>
+                  <p className="font-bold text-sm text-orange-700">{p.price} UGX</p>
+                  <button onClick={() => onWhatsApp(p)} className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white text-[11px] py-1.5 rounded-md font-bold">WhatsApp</button>
+                </div>
               </div>
             )
           })}
@@ -91,7 +94,7 @@ function ProductViewModal({ product, onClose, onWhatsApp }: any) {
 
 export default function HomePage() {
   const [products, setProducts] = useState<any[]>([])
-  const [boostedProducts, setBoostedProducts] = useState<any[]>([]) // NEW
+  const [boostedProducts, setBoostedProducts] = useState<any[]>([])
   const [banners, setBanners] = useState<any[]>([])
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [search, setSearch] = useState('')
@@ -127,16 +130,15 @@ export default function HomePage() {
     return () => unsub()
   }, [])
 
-  // === NEW: FETCH BOOSTED PRODUCTS ===
   useEffect(() => {
     const q = query(collection(db, 'products'), where("is_boosted", "==", true))
     const unsub = onSnapshot(q, (snap) => {
       const now = new Date()
       const boosted = snap.docs
-       .map(d => ({ id: d.id,...d.data() } as any))
-       .filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now)
-       .sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate())
-       .slice(0, 10)
+      .map(d => ({ id: d.id,...d.data() } as any))
+      .filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now)
+      .sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate())
+      .slice(0, 10)
       setBoostedProducts(boosted)
     })
     return () => unsub()
@@ -150,6 +152,7 @@ export default function HomePage() {
     })
   }, [products, selectedCategory, search])
 
+  // === FIXED: WHATSAPP WITH IMAGE ===
   const handleWhatsApp = (product: any) => {
     try {
       let phone = product.whatsapp || product.whatsApp || product.WhatsApp
@@ -158,7 +161,11 @@ export default function HomePage() {
       if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1)
       else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone
       if(cleanPhone.length < 12) return alert("Invalid phone: " + phone)
-      const message = `*Hello! I'm interested in* 👋\n*${product.title}*\n*Price:* ${product.price} UGX\nIs it still available?`
+
+      // Now includes product image link that shows preview in WhatsApp inbox
+      const imageLink = product.images?.[0] || ''
+      const message = `Hello! I'm interested in this product 👋\n\n📦 *${product.title}*\n🏷️ Category: ${product.category}\n💰 Price: ${product.price} UGX\n\n📝 ${product.description? product.description.substring(0,100) : 'No description'}\n\n🖼️ Image: ${imageLink}\n\nIs it still available?`
+
       window.location.href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
     } catch (error) { alert("Failed to open WhatsApp") }
   }
@@ -207,8 +214,7 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* === NEW TRENDING SECTION ADDED HERE - UNDER HERO === */}
-      <TrendingSection products={boostedProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} />
+      <TrendingSection products={boostedProducts} onWhatsApp={handleWhatsApp} />
 
       <div className="p-3">
         <h2 className="font-bold text-lg mb-3">Listings ({filteredProducts.length})</h2>
