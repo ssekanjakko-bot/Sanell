@@ -4,7 +4,7 @@ import { useState, useEffect, FormEvent, ChangeEvent } from 'react'
 import { auth, db, storage } from '@/lib/firebase'
 import {
   collection, addDoc, query, where, doc, deleteDoc,
-  updateDoc, onSnapshot, serverTimestamp, Timestamp
+  updateDoc, onSnapshot, serverTimestamp, Timestamp, getDocs
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { onAuthStateChanged, User } from 'firebase/auth'
@@ -29,6 +29,10 @@ type Product = {
   sellerId: string
   sellerEmail: string
   createdAt: Timestamp
+  is_boosted?: boolean
+  boosted_until?: Timestamp
+  boosted_at?: Timestamp
+  boost_pending?: boolean
 }
 
 type ChatMsg = {
@@ -57,6 +61,7 @@ export default function SellPage() {
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatOpen, setChatOpen] = useState(false)
+  const [boostLoading, setBoostLoading] = useState<string | null>(null)
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => {
@@ -68,7 +73,6 @@ export default function SellPage() {
           setProducts(items.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds))
         })
 
-        // === FIXED: NO orderBy HERE - SORT IN CLIENT ===
         const chatQ = query(collection(db, 'seller_admin_chats'), where('sellerId','==', u.uid))
         const unsubChat = onSnapshot(chatQ,
           (snap) => {
@@ -76,9 +80,7 @@ export default function SellPage() {
             msgs.sort((a:any,b:any)=> (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0))
             setChatMessages(msgs)
           },
-          (err) => {
-            console.error("CHAT ERROR:", err)
-          }
+          (err) => { console.error("CHAT ERROR:", err) }
         )
 
         return () => { unsubProducts(); unsubChat(); }
@@ -89,6 +91,47 @@ export default function SellPage() {
     })
     return () => unsubAuth()
   }, [])
+
+  // === BOOST LOGIC ===
+  const handleBoost = async (product: Product) => {
+    if (!user) return alert("Login required")
+    if (product.is_boosted && product.boosted_until && product.boosted_until.toDate() > new Date()) {
+      return alert("This product is already boosted!")
+    }
+    if (product.boost_pending) {
+      return alert("Already pending approval. Admin will approve soon.")
+    }
+
+    const confirmBoost = confirm(`Boost "${product.title}" for 2,000 UGX?\n\nIt will appear in Trending section under hero banner for 24h.\n\nPay to: MTN 0775760430\nReason: BOOST ${product.id.slice(0,6)}\n\nClick OK then click "I have paid"`)
+    if (!confirmBoost) return
+
+    setBoostLoading(product.id)
+    try {
+      // 1. Create boost request for admin panel
+      await addDoc(collection(db, 'boost_requests'), {
+        productId: product.id,
+        productTitle: product.title,
+        productImage: product.images[0] || '',
+        sellerId: user.uid,
+        sellerEmail: user.email,
+        sellerPhone: product.whatsapp,
+        amount: 2000,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      })
+
+      // 2. Mark product as pending
+      await updateDoc(doc(db, 'products', product.id), {
+        boost_pending: true
+      })
+
+      alert("Boost request sent! Admin will approve after payment.\n\nSend 2k to 0775760430 with reason BOOST")
+    } catch (e:any) {
+      console.error(e)
+      alert("Failed: " + e.message)
+    }
+    setBoostLoading(null)
+  }
 
   const sendChat = async () => {
     if(!chatInput.trim() ||!user) return
@@ -103,7 +146,7 @@ export default function SellPage() {
       setChatInput('')
     } catch (e:any) {
       console.error(e)
-      alert("Failed: " + e.message + " - Check Firestore Rules")
+      alert("Failed: " + e.message)
     }
   }
 
@@ -132,7 +175,7 @@ export default function SellPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!user) return alert('You must be logged in')
-    if (!whatsapp.match(/^256\d{9}$/)) return alert('WhatsApp format: 2567xxxxxxx no + or spaces')
+    if (!whatsapp.match(/^256\d{9}$/)) return alert('WhatsApp format: 2567xxxxxxx')
     setLoading(true)
     try {
       const { imageUrls, videoUrl } = await uploadFiles(user.uid)
@@ -147,7 +190,8 @@ export default function SellPage() {
         await addDoc(collection(db, 'products'), {
           title, description, price: Number(price), category, whatsapp,
           images: imageUrls, videoUrl, sellerId: user.uid,
-          sellerEmail: user.email, createdAt: serverTimestamp()
+          sellerEmail: user.email, createdAt: serverTimestamp(),
+          is_boosted: false, boost_pending: false
         })
       }
       resetForm()
@@ -163,6 +207,17 @@ export default function SellPage() {
   const handleDelete = async (p: Product) => {
     if (!confirm(`Delete "${p.title}"?`)) return
     try { await deleteDoc(doc(db, 'products', p.id)) } catch (err) { console.error(err); alert('Failed to delete') }
+  }
+
+  const getBoostStatus = (p: Product) => {
+    if (p.is_boosted && p.boosted_until && p.boosted_until.toDate() > new Date()) {
+      const hours = Math.ceil((p.boosted_until.toDate().getTime() - Date.now()) / 3600000)
+      return { label: `🔥 BOOSTED - ${hours}h left`, color: 'bg-yellow-400 text-black', active: true }
+    }
+    if (p.boost_pending) {
+      return { label: '⏳ PENDING APPROVAL', color: 'bg-orange-400 text-white', active: false }
+    }
+    return null
   }
 
   if (!user) {
@@ -196,14 +251,13 @@ export default function SellPage() {
 
       <div className=" mt-6 mb-10 p-5 border rounded-xl bg-amber-50 border-amber-200 text-center">
         <h3 className="text-lg font-bold text-[#6F4E37] mb-2">🛵 Need Delivery?</h3>
-        <p className="text-sm text-gray-700 mb-4">We can carry out deliveries for you at affordable prices. Contact us through WhatsApp or give us a call directly.</p>
+        <p className="text-sm text-gray-700 mb-4">We can carry out deliveries for you at affordable prices.</p>
         <div className="flex gap-3">
-          <a href="https://wa.me/256775760430?text=Hi%20Sanel%20Delivery,%20I%20need%20delivery%20for%20my%20product" target="_blank" rel="nooperner noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shawdow-sm. transition"><span>💬</span>WhatsApp</a>
-          <a href="tel:+256775760430" className="flex-1 flex items-center justify-center gap-2 bg-[#6F4E37] hover:bg-[#5A3E2C] text-white font-semibold py-3 px-4 rounded-lg shadow-sw transition "><span>☎️</span> Call Us</a>
+          <a href="https://wa.me/256775760430?text=Hi%20Sanel%20Delivery,%20I%20need%20delivery%20for%20my%20product" target="_blank" rel="nooperner noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg"><span>💬</span>WhatsApp</a>
+          <a href="tel:+256775760430" className="flex-1 flex items-center justify-center gap-2 bg-[#6F4E37] hover:bg-[#5A3E2C] text-white font-semibold py-3 px-4 rounded-lg"><span>☎️</span> Call Us</a>
         </div>
       </div>
 
-      {/* === ADMIN CHAT - FIXED + GREEN TEXT === */}
       <div className="bg-white rounded-lg shadow-lg mb-10 border">
         <button onClick={()=>setChatOpen(!chatOpen)} className="w-full p-4 flex justify-between items-center font-bold" style={{color: COFFEE_BROWN}}>
           <span>💬 Talk to Admin {chatMessages.length > 0 && `(${chatMessages.length})`}</span>
@@ -212,7 +266,7 @@ export default function SellPage() {
         {chatOpen && (
           <div className="border-t p-4">
             <div className="h-72 overflow-y-auto bg-[#FDF8F3] p-3 rounded mb-3 space-y-2">
-              {chatMessages.length===0 && <p className="text-gray-500 text-sm text-center">No messages yet. Start chat with admin.</p>}
+              {chatMessages.length===0 && <p className="text-gray-500 text-sm text-center">No messages yet.</p>}
               {chatMessages.map(m=>(
                 <div key={m.id} className={`flex ${m.sender==='seller'? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[75%] px-3 py-2 rounded-lg text-sm font-medium border ${m.sender==='seller'? 'bg-green-600 text-white' : 'bg-white text-green-700 border-green-600'}`}>
@@ -223,13 +277,7 @@ export default function SellPage() {
               ))}
             </div>
             <div className="flex gap-2">
-              <input
-                value={chatInput}
-                onChange={e=>setChatInput(e.target.value)}
-                onKeyDown={e=> e.key==='Enter' && sendChat()}
-                placeholder="Type message to admin..."
-                className="flex-1 p-3 border-2 rounded text-green-700 font-medium placeholder:text-gray-400 focus:border-green-600 outline-none"
-              />
+              <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=> e.key==='Enter' && sendChat()} placeholder="Type message to admin..." className="flex-1 p-3 border-2 rounded text-green-700 font-medium placeholder:text-gray-400 focus:border-green-600 outline-none" />
               <button onClick={sendChat} className="bg-green-600 hover:bg-green-700 text-white px-6 rounded font-bold">Send</button>
             </div>
           </div>
@@ -239,23 +287,41 @@ export default function SellPage() {
       <h2 className="text-2xl font-bold mb-4" style={{ color: COFFEE_BROWN }}>My Products ({products.length})</h2>
       {products.length === 0? (<p className="text-gray-500">You haven't posted any products yet.</p>) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map(p => (
-            <div key={p.id} className="border rounded-lg overflow-hidden shadow-sm bg-white">
-              {p.images[0] && (<img src={p.images[0]} className="w-full h-48 object-cover" alt={p.title} />)}
-              {p.videoUrl && (<video src={p.videoUrl} controls className="w-full h-48 bg-black" />)}
-              <div className="p-4">
-                <span className="text-xs px-2 py-1 rounded-full text-white mb-2 inline-block" style={{ backgroundColor: COFFEE_LIGHT }}>{p.category}</span>
-                <h3 className="font-bold text-lg mb-1" style={{ color: COFFEE_BROWN }}>{p.title}</h3>
-                <p className="text-sm text-gray-600 mb-2 line-clamp-2">{p.description}</p>
-                <p className="font-bold text-xl mb-3" style={{ color: COFFEE_BROWN }}>{p.price.toLocaleString()} UGX</p>
-                <a href={`https://wa.me/${p.whatsapp}?text=Hi, I'm interested in your product: ${encodeURIComponent(p.title)}`} target="_blank" rel="noopener noreferrer" className="block w-full text-white text-center py-2 rounded font-medium mb-2" style={{ backgroundColor: '#25D366' }}>Contact on WhatsApp</a>
-                <div className="flex gap-2">
-                  <button onClick={() => handleEdit(p)} className="flex-1 text-white py-2 rounded font-medium" style={{ backgroundColor: COFFEE_LIGHT }}>Edit</button>
-                  <button onClick={() => handleDelete(p)} className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded font-medium">Delete</button>
+          {products.map(p => {
+            const boostStatus = getBoostStatus(p)
+            return (
+              <div key={p.id} className={`border rounded-lg overflow-hidden shadow-sm bg-white ${p.is_boosted? 'border-yellow-400 border-2' : ''}`}>
+                {p.images[0] && (<img src={p.images[0]} className="w-full h-48 object-cover" alt={p.title} />)}
+                {p.videoUrl && (<video src={p.videoUrl} controls className="w-full h-48 bg-black" />)}
+                <div className="p-4">
+                  <div className="flex gap-2 mb-2">
+                    <span className="text-xs px-2 py-1 rounded-full text-white inline-block" style={{ backgroundColor: COFFEE_LIGHT }}>{p.category}</span>
+                    {boostStatus && <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${boostStatus.color}`}>{boostStatus.label}</span>}
+                  </div>
+                  <h3 className="font-bold text-lg mb-1" style={{ color: COFFEE_BROWN }}>{p.title}</h3>
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">{p.description}</p>
+                  <p className="font-bold text-xl mb-3" style={{ color: COFFEE_BROWN }}>{p.price.toLocaleString()} UGX</p>
+
+                  {/* BOOST BUTTON - NEW */}
+                  {!boostStatus?.active && (
+                    <button
+                      onClick={() => handleBoost(p)}
+                      disabled={!!p.boost_pending || boostLoading === p.id}
+                      className={`w-full py-2.5 rounded font-bold mb-2 text-sm flex items-center justify-center gap-2 ${p.boost_pending? 'bg-gray-300 text-gray-600' : 'bg-yellow-400 hover:bg-yellow-500 text-black'}`}
+                    >
+                      {boostLoading === p.id? 'Sending...' : p.boost_pending? '⏳ Waiting Approval' : '🚀 Boost for 2k - Trending'}
+                    </button>
+                  )}
+
+                  <a href={`https://wa.me/${p.whatsapp}?text=Hi, I'm interested in: ${encodeURIComponent(p.title)}`} target="_blank" rel="noopener noreferrer" className="block w-full text-white text-center py-2 rounded font-medium mb-2" style={{ backgroundColor: '#25D366' }}>WhatsApp</a>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleEdit(p)} className="flex-1 text-white py-2 rounded font-medium" style={{ backgroundColor: COFFEE_LIGHT }}>Edit</button>
+                    <button onClick={() => handleDelete(p)} className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded font-medium">Delete</button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
