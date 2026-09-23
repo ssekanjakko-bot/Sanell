@@ -23,32 +23,36 @@ const BOTTOM_NAV = [
   { name: 'Profile', icon: '👤', href: '/profile' }
 ]
 
-// === FIXED TRENDING SECTION ===
-function TrendingSection({ products, onWhatsApp }: any) {
+// === FIXED: VISIBLE TRENDING + EYE ICON + VISIBLE TITLES ===
+function TrendingSection({ products, onView, onWhatsApp }: any) {
   if (!products || products.length === 0) return null;
   return (
     <div className="px-3 mt-3">
-      <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm">
+      <div className="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm">
         <div className="flex justify-between items-center mb-3">
-          <h2 className="font-bold text-[14px] flex items-center gap-2">
-            🔥 Trending Now
-            <span className="bg-black text-white text-[9px] px-2 py-0.5 rounded-full">SPONSORED</span>
+          <h2 className="font-black text-[15px] flex items-center gap-2 text-black">
+            🔥 <span className="text-black">Trending Now</span>
+            <span className="bg-black text-white text-[9px] px-2.5 py-0.5 rounded-full font-bold tracking-wider">SPONSORED</span>
           </h2>
         </div>
         <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
           {products.map((p: any) => {
             const hoursLeft = p.boosted_until? Math.max(0, Math.ceil((p.boosted_until.toDate().getTime() - Date.now()) / 3600000)) : 24;
             return (
-              <div key={p.id} className="min-w-[150px] max-w-[150px] bg-white border rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
+              <div key={p.id} className="min-w-[155px] max-w-[155px] bg-white border rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
                 <div className="relative">
                   <img src={p.images?.[0]} className="w-full h-28 object-cover" />
                   <span className="absolute top-1.5 left-1.5 bg-yellow-400 text-black text-[8px] font-extrabold px-2 py-0.5 rounded-full shadow">BOOSTED</span>
-                  <span className="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded-full">⏳ {hoursLeft}h left</span>
+                  {/* MAGNIFICATION ICON */}
+                  <button onClick={() => onView(p)} className="absolute top-1.5 right-1.5 bg-black/70 text-white w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <Eye size={13} />
+                  </button>
+                  <span className="absolute bottom-1.5 left-1.5 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded-full">⏳ {hoursLeft}h</span>
                 </div>
                 <div className="p-2">
-                  <p className="font-semibold text-xs truncate">{p.title}</p>
-                  <p className="font-bold text-sm text-orange-700">{p.price} UGX</p>
-                  <button onClick={() => onWhatsApp(p)} className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white text-[11px] py-1.5 rounded-md font-bold">WhatsApp</button>
+                  <p className="font-bold text-[13px] text-black leading-tight truncate">{p.title}</p>
+                  <p className="font-black text-[13px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p>
+                  <button onClick={() => onWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-[11px] py-1.5 rounded-md font-bold">WhatsApp</button>
                 </div>
               </div>
             )
@@ -79,7 +83,7 @@ function ProductViewModal({ product, onClose, onWhatsApp }: any) {
         )}
         <div className="p-4">
           <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-md">{product.category}</span>
-          <h2 className="font-bold text-xl mt-2">{product.title}</h2>
+          <h2 className="font-bold text-xl mt-2 text-black">{product.title}</h2>
           <p className="font-bold text-2xl text-orange-700 mt-1">{product.price} UGX</p>
           <p className="text-sm text-gray-600 mt-3 whitespace-pre-wrap">{product.description || "No description"}</p>
           <div className="mt-5 flex flex-col gap-2">
@@ -135,10 +139,10 @@ export default function HomePage() {
     const unsub = onSnapshot(q, (snap) => {
       const now = new Date()
       const boosted = snap.docs
-      .map(d => ({ id: d.id,...d.data() } as any))
-      .filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now)
-      .sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate())
-      .slice(0, 10)
+     .map(d => ({ id: d.id,...d.data() } as any))
+     .filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now)
+     .sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate())
+     .slice(0, 10)
       setBoostedProducts(boosted)
     })
     return () => unsub()
@@ -152,7 +156,6 @@ export default function HomePage() {
     })
   }, [products, selectedCategory, search])
 
-  // === FIXED: WHATSAPP WITH IMAGE ===
   const handleWhatsApp = (product: any) => {
     try {
       let phone = product.whatsapp || product.whatsApp || product.WhatsApp
@@ -161,11 +164,8 @@ export default function HomePage() {
       if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1)
       else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone
       if(cleanPhone.length < 12) return alert("Invalid phone: " + phone)
-
-      // Now includes product image link that shows preview in WhatsApp inbox
       const imageLink = product.images?.[0] || ''
       const message = `Hello! I'm interested in this product 👋\n\n📦 *${product.title}*\n🏷️ Category: ${product.category}\n💰 Price: ${product.price} UGX\n\n📝 ${product.description? product.description.substring(0,100) : 'No description'}\n\n🖼️ Image: ${imageLink}\n\nIs it still available?`
-
       window.location.href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
     } catch (error) { alert("Failed to open WhatsApp") }
   }
@@ -214,10 +214,10 @@ export default function HomePage() {
         )}
       </div>
 
-      <TrendingSection products={boostedProducts} onWhatsApp={handleWhatsApp} />
+      <TrendingSection products={boostedProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} />
 
       <div className="p-3">
-        <h2 className="font-bold text-lg mb-3">Listings ({filteredProducts.length})</h2>
+        <h2 className="font-black text-[18px] mb-3 text-black">Listings ({filteredProducts.length})</h2>
         {loading? <p>Loading...</p> : filteredProducts.length === 0? <p>No products found</p> : (
           <div className="grid grid-cols-2 gap-3">
             {filteredProducts.map(p => (
@@ -229,9 +229,9 @@ export default function HomePage() {
                   {p.is_boosted && (<span className="absolute top-2 left-2 bg-yellow-400 text-black text-[9px] font-bold px-2 py-0.5 rounded-full">BOOSTED</span>)}
                 </div>
                 <div className="p-2">
-                  <p className="text-xs bg-orange-100 text-orange-700 w-fit px-2 py-0.5 rounded-md mb-1">{p.category}</p>
-                  <p className="font-bold text-sm mb-1 line-clamp-2">{p.title}</p>
-                  <p className="font-bold text-lg text-orange-700 mb-2">{p.price} UGX</p>
+                  <p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p>
+                  <p className="font-bold text-[14px] mb-1 line-clamp-2 text-black leading-tight">{p.title}</p>
+                  <p className="font-black text-[15px] mb-2" style={{color: '#B45309'}}>{p.price} UGX</p>
                   <button onClick={() => handleWhatsApp(p)} className="w-full bg-green-500 hover:bg-green-600 text-white text-sm py-2.5 rounded-md flex items-center justify-center gap-1 font-bold shadow-md">📞 WhatsApp Seller</button>
                 </div>
               </div>
