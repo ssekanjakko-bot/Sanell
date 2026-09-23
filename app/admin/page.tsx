@@ -6,10 +6,10 @@ import {
   ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject
 } from "firebase/storage";
 import {
-  addDoc, collection, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where
+  addDoc, collection, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, getDoc
 } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
-import { setDoc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
+import { setDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
 
 interface Movie {
   id: string;
@@ -44,6 +44,19 @@ type SellerThread = {
   lastTime: Timestamp
 }
 
+type BoostRequest = {
+  id: string
+  productId: string
+  productTitle: string
+  productImage: string
+  sellerId: string
+  sellerEmail: string
+  sellerPhone: string
+  amount: number
+  status: 'pending' | 'approved' | 'rejected'
+  createdAt: Timestamp
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -70,19 +83,79 @@ export default function AdminPage() {
   const [activeSellerId, setActiveSellerId] = useState<string>('')
   const [adminReply, setAdminReply] = useState('')
 
+  // === NEW BOOST STATE ===
+  const [boostRequests, setBoostRequests] = useState<BoostRequest[]>([])
+  const [boostFilter, setBoostFilter] = useState<'pending'|'approved'|'rejected'>('pending')
+
   useEffect(() => {
     const q = query(collection(db, "movies"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const moviesData: Movie[] = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
-      ...docSnap.data()
+     ...docSnap.data()
       } as Movie));
       setMovies(moviesData);
     });
     return () => unsubscribe();
   }, []);
 
-  // === FIXED CHAT LISTENER - NO orderBy TO AVOID INDEX ERROR ===
+  // === BOOST LISTENER ===
+  useEffect(() => {
+    const q = query(collection(db, "boost_requests"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id,...d.data() } as BoostRequest))
+      setBoostRequests(data)
+    })
+    return () => unsub()
+  }, [])
+
+  const approveBoost = async (req: BoostRequest) => {
+    if (!confirm(`Approve boost for "${req.productTitle}"? It will show in Trending for 24h.`)) return
+    try {
+      // 1. Update product to boosted for 24h
+      const now = new Date()
+      const until = new Date(now.getTime() + 24 * 60 * 60 * 1000) // 24h
+      await updateDoc(doc(db, "products", req.productId), {
+        is_boosted: true,
+        boosted_at: Timestamp.fromDate(now),
+        boosted_until: Timestamp.fromDate(until),
+        boost_pending: false
+      })
+      // 2. Mark request as approved
+      await updateDoc(doc(db, "boost_requests", req.id), {
+        status: 'approved',
+        approvedAt: serverTimestamp()
+      })
+      alert("Boost approved! Product is now in Trending.")
+    } catch (e:any) {
+      alert("Failed: " + e.message)
+    }
+  }
+
+  const rejectBoost = async (req: BoostRequest) => {
+    if (!confirm(`Reject boost for "${req.productTitle}"?`)) return
+    try {
+      await updateDoc(doc(db, "products", req.productId), {
+        boost_pending: false,
+        is_boosted: false
+      })
+      await updateDoc(doc(db, "boost_requests", req.id), {
+        status: 'rejected',
+        rejectedAt: serverTimestamp()
+      })
+    } catch (e:any) {
+      alert("Failed: " + e.message)
+    }
+  }
+
+  const removeBoostEarly = async (productId: string) => {
+    if (!confirm("Remove boost early?")) return
+    await updateDoc(doc(db, "products", productId), {
+      is_boosted: false,
+      boost_pending: false
+    })
+  }
+
   useEffect(() => {
     const q = query(collection(db, "seller_admin_chats"));
     const unsub = onSnapshot(q, (snap) => {
@@ -208,8 +281,55 @@ export default function AdminPage() {
     } catch (error: any) { alert("Failed to delete: " + error.message); }
   };
 
+  const filteredBoosts = boostRequests.filter(b => b.status === boostFilter)
+  const pendingCount = boostRequests.filter(b => b.status === 'pending').length
+
   return (
     <div className="container mx-auto p-4 max-w-4xl">
+
+      {/* ===== NEW BOOST MANAGEMENT ===== */}
+      <div className="mb-8 bg-white border-2 border-yellow-400 rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-yellow-400 text-black p-4 font-bold text-lg flex justify-between items-center">
+          <span>🚀 Boost Requests {pendingCount > 0 && <span className="bg-black text-yellow-400 px-2 py-0.5 rounded-full text-xs ml-2">{pendingCount} pending</span>}</span>
+          <div className="flex gap-2">
+            <button onClick={()=>setBoostFilter('pending')} className={`px-3 py-1 rounded text-xs font-bold ${boostFilter==='pending'?'bg-black text-yellow-400':'bg-white text-black'}`}>Pending</button>
+            <button onClick={()=>setBoostFilter('approved')} className={`px-3 py-1 rounded text-xs font-bold ${boostFilter==='approved'?'bg-black text-yellow-400':'bg-white text-black'}`}>Approved</button>
+            <button onClick={()=>setBoostFilter('rejected')} className={`px-3 py-1 rounded text-xs font-bold ${boostFilter==='rejected'?'bg-black text-yellow-400':'bg-white text-black'}`}>Rejected</button>
+          </div>
+        </div>
+
+        <div className="p-4">
+          {filteredBoosts.length === 0? (
+            <p className="text-center text-gray-500 py-6">No {boostFilter} boost requests</p>
+          ) : (
+            <div className="grid gap-3">
+              {filteredBoosts.map(req => (
+                <div key={req.id} className="border rounded-lg p-3 flex gap-3 items-center">
+                  <img src={req.productImage} alt={req.productTitle} className="w-16 h-16 object-cover rounded-lg" />
+                  <div className="flex-1">
+                    <p className="font-bold text-sm">{req.productTitle}</p>
+                    <p className="text-xs text-gray-500">{req.sellerEmail} | {req.sellerPhone}</p>
+                    <p className="text-xs font-bold">UGX {req.amount} - {req.createdAt?.toDate? req.createdAt.toDate().toLocaleString() : ''}</p>
+                    <p className="text-[10px]">ID: {req.productId.slice(0,8)}</p>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {req.status === 'pending'? (
+                      <>
+                        <button onClick={()=>approveBoost(req)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded text-xs font-bold">Approve 24h</button>
+                        <button onClick={()=>rejectBoost(req)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded text-xs font-bold">Reject</button>
+                      </>
+                    ) : (
+                      <span className={`px-3 py-1 rounded text-xs font-bold text-center ${req.status==='approved'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{req.status}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      {/* ===== END BOOST ===== */}
+
       <h1 className="text-2xl font-bold mb-4">{editingId? "Edit Movie" : "Add Movie"}</h1>
       <form onSubmit={handleSubmit} className="bg-white text-black border-gray-200 rounded-xl p-4 shadow">
         <input className="border p-2 w-full mb-2 rounded" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} required />
@@ -256,7 +376,6 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* === SELLER CHAT - RED CLEAR === */}
       <div className="mt-12 bg-white border-2 border-red-600 rounded-xl shadow-lg overflow-hidden">
         <div className="bg-red-600 text-white p-4 font-bold text-lg flex justify-between">
           <span>💬 Seller Chats ({sellerThreads.length} sellers)</span>
