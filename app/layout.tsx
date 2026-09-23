@@ -2,8 +2,17 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Sanel Uganda",
-  description: "Next.js with Tailwind v4",
+  title: "Sanel Uganda - Quality Shopping in Uganda",
+  description: "Shop quality products at Sanel Uganda",
+  icons: {
+    icon: [
+      { url: "/icon.png" },
+      { url: "/favicon.ico" },
+    ],
+    apple: [
+      { url: "/apple-icon.png" },
+    ],
+  },
 };
 
 export default function RootLayout({
