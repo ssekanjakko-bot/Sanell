@@ -125,7 +125,7 @@ export default function SellPage() {
         boost_pending: true
       })
 
-      alert("Boost request sent! Admin will approve after payment.\n\nSend 2k to 0775760430 with reason BOOST")
+      alert("Boost request sent! Admin will approve after payment.\n\nSend 2k to 0767483636 with reason BOOST")
     } catch (e:any) {
       console.error(e)
       alert("Failed: " + e.message)
