@@ -30,15 +30,11 @@ function getTimeLeft(boosted_until: any) {
   if(!boosted_until) return null
   try {
     const end = boosted_until.toDate? boosted_until.toDate() : new Date(boosted_until)
-    const now = new Date()
-    const diff = end.getTime() - now.getTime()
+    const diff = end.getTime() - new Date().getTime()
     if(diff <= 0) return "Expired"
     const h = Math.floor(diff / (1000 * 60 * 60))
     const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-    if(h > 24) {
-      const d = Math.floor(h / 24)
-      return `${d}d ${h % 24}h left`
-    }
+    if(h > 24) return `${Math.floor(h/24)}d ${h%24}h left`
     if(h > 0) return `${h}h ${m}m left`
     return `${m}m left`
   } catch { return null }
@@ -46,11 +42,7 @@ function getTimeLeft(boosted_until: any) {
 
 function TrendingSection({ products, onView, onWhatsApp }: any) {
   const [tick, setTick] = useState(0)
-  useEffect(() => {
-    const t = setInterval(() => setTick(x => x+1), 60000) // update every 1 min
-    return () => clearInterval(t)
-  }, [])
-
+  useEffect(() => { const t = setInterval(()=>setTick(x=>x+1), 60000); return ()=>clearInterval(t)}, [])
   if (!products || products.length === 0) return null;
   return (
     <div className="px-3 mt-3">
@@ -67,16 +59,13 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
                 <div className="relative">
                   <img src={p.images?.[0]} className="w-full h-32 object-cover" />
                   <span className="absolute top-1.5 left-1.5 bg-yellow-400 text-black text-[7px] font-black px-2 py-0.5 rounded-full shadow-sm">BOOSTED</span>
-                  <button onClick={() => onView(p)} className="absolute top-1.5 right-1.5 bg-black/60 text-white w-6 h-6 rounded-full flex items-center justify-center backdrop-blur-sm"><Eye size={10} /></button>
+                  <button onClick={() => onView(p)} className="absolute top-1.5 right-1.5 bg-black/60 text-white w-6 h-6 rounded-full flex items-center justify-center"><Eye size={10} /></button>
                   {p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">+{p.images.length}</span>}
                 </div>
                 <div className="p-2">
                   <p className="font-bold text-[11px] text-black leading-tight line-clamp-2 min-h-[28px]">{p.title}</p>
                   <p className="font-black text-[13px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p>
-                  {/* TIME REMAINING */}
-                  {timeLeft && (
-                    <p className="text-[9px] mt-1 font-bold flex items-center gap-1 text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full w-fit"><Clock size={10}/> {timeLeft}</p>
-                  )}
+                  {timeLeft && <p className="text-[9px] mt-1 font-bold flex items-center gap-1 text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full w-fit"><Clock size={10}/> {timeLeft}</p>}
                   <button onClick={() => onWhatsApp(p)} className="w-full mt-1.5 bg-green-500 text-white text-[10px] py-1.5 rounded-md font-bold">WhatsApp</button>
                 </div>
               </div>
@@ -89,28 +78,25 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
 }
 
 function SanelBestPicksSection() {
-  const router = useRouter()
   const picks = [
-    { title: 'Call To Order', desc1: 'Shopping Made Easier', desc2: 'Your Needs, One Call Away', icon: '🌍', bg: 'bg-[#FFF7ED]', action: () => window.location.href = `tel:+256700000000` },
-    { title: 'Campus Delivery', desc1: 'Fast Delivery To Campus', desc2: 'MUBS, MUK, KYU & More', icon: '🛵', bg: 'bg-[#F0F9FF]', action: () => window.location.href = `https://wa.me/256700000001?text=Hello%20Sanel!%20I%20need%20delivery` },
-    { title: 'Sell On Sanel', desc1: 'Turn Your Items To Cash', desc2: 'Start Selling In Minutes', icon: '💰', bg: 'bg-[#F0FDF4]', action: () => router.push('/sell') },
-    { title: 'Sanel Support', desc1: 'Need Help? We Are Here', desc2: 'Chat With Us 24/7', icon: '💬', bg: 'bg-[#FEF3F2]', action: () => router.push('/support') },
+    { title: 'Call To Order', desc1: 'Shopping Made Easier', desc2: 'Your Needs, One Call Away', icon: '🌍', bg: 'bg-[#FFF7ED]', href: 'tel:+256700000000' },
+    { title: 'Campus Delivery', desc1: 'Fast Delivery To Campus', desc2: 'MUBS, MUK, KYU & More', icon: '🛵', bg: 'bg-[#F0F9FF]', href: 'https://wa.me/256700000001?text=Hello%20Sanel!%20I%20need%20delivery' },
+    { title: 'Sell On Sanel', desc1: 'Turn Your Items To Cash', desc2: 'Start Selling In Minutes', icon: '💰', bg: 'bg-[#F0FDF4]', href: '/sell' },
+    { title: 'Sanel Support', desc1: 'Need Help? We Are Here', desc2: 'Chat With Us 24/7', icon: '💬', bg: 'bg-[#FEF3F2]', href: '/support' },
   ]
   return (
     <div className="px-3 mt-4">
       <h2 className="font-black text-[16px] mb-2.5 text-black px-1">Unlock big savings on our best picks</h2>
       <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory">
         {picks.map((item, idx) => (
-          <button key={idx} onClick={item.action} className={`min-w-[260px] max-w-[260px] ${item.bg} border border-gray-100 rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 snap-start shadow-sm active:scale-95 transition text-left`}>
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] shadow-sm border border-gray-100 flex-shrink-0">
-              <span className="relative">{item.icon}{idx===0 && <span className="absolute -top-1 -right-1 text-[14px]">📍</span>}</span>
-            </div>
+          <Link key={idx} href={item.href} className={`min-w-[260px] max-w-[260px] ${item.bg} border border-gray-100 rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 snap-start shadow-sm active:scale-95 transition`}>
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] shadow-sm border border-gray-100 flex-shrink-0"><span className="relative">{item.icon}{idx===0 && <span className="absolute -top-1 -right-1 text-[14px]">📍</span>}</span></div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-[13px] text-black leading-tight">{item.title}</p>
               <p className="text-[12px] text-gray-600 leading-tight truncate">{item.desc1}</p>
               <p className="text-[11px] text-gray-500 leading-tight truncate">{item.desc2}</p>
             </div>
-          </button>
+          </Link>
         ))}
       </div>
     </div>
@@ -119,7 +105,6 @@ function SanelBestPicksSection() {
 
 function CategoryRow({ title, icon, products, onView, onWhatsApp, onSeeAll }: any) {
   if (!products || products.length === 0) return null
-  const display = products.slice(0, 3)
   return (
     <div className="mt-5">
       <div className="px-3 flex justify-between items-center mb-2.5">
@@ -127,8 +112,8 @@ function CategoryRow({ title, icon, products, onView, onWhatsApp, onSeeAll }: an
         <button onClick={onSeeAll} className="text-[12px] font-bold px-3 py-1 rounded-full bg-black text-white flex items-center gap-1">See All <ArrowRight size={12}/></button>
       </div>
       <div className="px-3 flex gap-3 overflow-x-auto scrollbar-hide">
-        {display.map((p: any) => (
-          <div key={p.id} className="min-w-[160px] max-w-[160px] bg-white rounded-lg shadow-sm overflow-hidden border relative flex-shrink-0">
+        {products.slice(0,3).map((p: any) => (
+          <div key={p.id} className="min-w-[160px] max-w-[160px] bg-white rounded-lg shadow-sm overflow-hidden border flex-shrink-0">
             <div className="relative w-full h-40 bg-gray-100">
               <img src={p.images?.[0]} alt={p.title} className="w-full h-40 object-cover" />
               <button onClick={() => onView(p)} className="absolute top-2 right-2 bg-black/60 text-white w-7 h-7 rounded-full flex items-center justify-center"><Eye size={12} /></button>
@@ -153,18 +138,23 @@ function CategoryRow({ title, icon, products, onView, onWhatsApp, onSeeAll }: an
   )
 }
 
-function PromoStrip({ index }: { index: number }) {
+function PromoStrip({ catName, catIndex, setCategory, router }: any) {
   const promos = [
-    { text: "🛵 Free Campus Delivery Today - MUBS, MUK, KYU", btn: "Order", bg: "bg-black" },
-    { text: "💰 Sell on Sanel & Get Paid Fast - 10 Mins", btn: "Sell Now", bg: "bg-[#8B4513]" },
-    { text: "🎓 Student Deals - Up to 40% OFF Electronics", btn: "Shop", bg: "bg-gradient-to-r from-orange-600 to-black" },
+    { text: `🛵 Free Delivery on ${catName} Today - MUBS, MUK, KYU`, btn: "Order Now", type: "order", bg: "bg-black" },
+    { text: `💰 Sell on Sanel & Get Paid in 10 Mins`, btn: "Sell Now", type: "sell", bg: "bg-[#8B4513]" },
+    { text: `🎓 Best Deals in ${catName} - Up to 40% OFF`, btn: "Shop Now", type: "shop", bg: "bg-gradient-to-r from-orange-600 to-black" },
   ]
-  const promo = promos[index % promos.length]
+  const promo = promos[catIndex % promos.length]
+  const handleClick = () => {
+    if(promo.type === "sell") router.push('/sell')
+    else if(promo.type === "shop") { setCategory(catName); window.scrollTo({top:0, behavior:'smooth'}) }
+    else { window.location.href = `https://wa.me/256700000001?text=Hello%20Sanel!%20I%20need%20delivery%20for%20${catName}` }
+  }
   return (
-    <div className={`mx-3 mt-5 ${promo.bg} rounded-xl p-3 flex justify-between items-center`}>
-      <p className="text-white font-bold text-[12px]">{promo.text}</p>
-      <span className="bg-white text-black text-[10px] font-black px-3 py-1.5 rounded-full">{promo.btn}</span>
-    </div>
+    <button onClick={handleClick} className={`mx-3 mt-5 rounded-xl p-3 flex justify-between items-center w-[calc(100%-24px)] active:scale-[0.98] transition ${promo.bg}`}>
+      <p className="text-white font-bold text-[12px] text-left">{promo.text}</p>
+      <span className="bg-white text-black text-[10px] font-black px-3 py-1.5 rounded-full ml-2 flex-shrink-0">{promo.btn}</span>
+    </button>
   )
 }
 
@@ -255,10 +245,7 @@ export default function HomePage() {
     return matchCategory && matchSearch
   }), [products, selectedCategory, search])
 
-  const getProductsByCat = (catName: string) => products.filter(p => {
-    const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase())
-    return p.category === catName && matchSearch
-  })
+  const getProductsByCat = (catName: string) => products.filter(p => p.category === catName && p.title?.toLowerCase().includes(search.toLowerCase()))
 
   const handleWhatsApp = (product: any) => {
     let phone = product.whatsapp || product.whatsApp || product.WhatsApp
@@ -266,8 +253,7 @@ export default function HomePage() {
     let cleanPhone = phone.toString().replace(/\D/g, '')
     if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1)
     else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone
-    const message = `Hello! I'm interested in ${product.title} - ${product.price} UGX`
-    window.location.href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
+    window.location.href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hello! I'm interested in ${product.title} - ${product.price} UGX`)}`
   }
 
   return (
@@ -323,7 +309,7 @@ export default function HomePage() {
             return (
               <div key={cat.name}>
                 <CategoryRow title={cat.name} icon={cat.icon} products={catProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} onSeeAll={() => { setSelectedCategory(cat.name); window.scrollTo({top: 0, behavior: 'smooth'}) }} />
-                <PromoStrip index={idx} />
+                <PromoStrip catName={cat.name} catIndex={idx} setCategory={setSelectedCategory} router={router} />
               </div>
             )
           })}
@@ -336,8 +322,8 @@ export default function HomePage() {
 
       {viewProduct && <ProductViewModal product={viewProduct} onClose={() => setViewProduct(null)} onWhatsApp={handleWhatsApp} />}
 
-      <Link href="/movies" className="fixed bottom-20 left-4 bg-black text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40 border-2 border-white"><Film size={22} /></Link>
-      <button onClick={() => router.push('/sell')} className="fixed bottom-20 right-4 bg-amber-800 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40"><Coffee size={28} /></button>
+      <Link href="/movies" className="fixed bottom-24 left-4 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40 border-2 border-white"><Film size={18} /></Link>
+      <button onClick={() => router.push('/sell')} className="fixed bottom-24 right-4 bg-amber-800 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40"><Coffee size={20} /></button>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center py-1 z-30">
         {BOTTOM_NAV.map((nav) => (<button key={nav.name} onClick={() => router.push(nav.href)} className={`flex flex-col items-center text-xs pt-1 ${pathname === nav.href? 'text-orange-600' : 'text-gray-500'}`}><span className="text-2xl">{nav.icon}</span>{nav.name}</button>))}
