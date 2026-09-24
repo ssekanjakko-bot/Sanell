@@ -2,9 +2,9 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, orderBy, where } from "firebase/firestore"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Coffee, Eye, X, LayoutGrid, Film, ArrowRight, Clock, Phone } from "lucide-react"
+import { Coffee, Eye, X, LayoutGrid, Film, ArrowRight, Clock, Phone, ChevronUp } from "lucide-react"
 
 const CATEGORIES = [
   {name: 'All', icon: '🌐'}, {name: 'Electronics', icon: '📱'}, {name: 'Home, Furniture & Appliances', icon: '🛋️'},
@@ -16,8 +16,8 @@ const CATEGORIES = [
   {name: 'Stationery', icon: '📚'}, {name: 'Services', icon: '❤️'},
   {name: 'Jobs', icon: '📢'}
 ]
-
 const HOME_CATEGORIES = CATEGORIES.filter(c => c.name!== 'All')
+
 const BOTTOM_NAV = [
   { name: 'Home', icon: '🏠', href: '/' },
   { name: 'FAQs', icon: '💬', href: '/chat' },
@@ -66,14 +66,10 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
   )
 }
 
-// THIS VERSION WILL NEVER SHOW BLOCKED POPUP - EVEN IN WHATSAPP BROWSER
 function SanelBestPicksSection() {
   const [showCall, setShowCall] = useState(false)
-  const CALL_NUMBER = "0700000000" // display
-  const CALL_TEL = "+256700000000" // tel link
-
-  const copyNumber = () => { navigator.clipboard.writeText(CALL_NUMBER); alert("Number copied: " + CALL_NUMBER) }
-
+  const CALL_NUMBER = "0700000000"
+  const CALL_TEL = "+256700000000"
   return (
     <>
       <div className="px-3 mt-4">
@@ -88,20 +84,17 @@ function SanelBestPicksSection() {
           <Link href="/support" className="min-w-[260px] max-w-[260px] bg-[#FEF3F2] border rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0"><div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px]">💬</div><div><p className="font-bold text-[13px] text-black">Sanel Support</p></div></Link>
         </div>
       </div>
-
       {showCall && (
         <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center p-4" onClick={() => setShowCall(false)}>
           <div className="bg-white rounded-2xl p-5 w-full max-w-[340px]" onClick={e=>e.stopPropagation()}>
             <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mx-auto"><Phone className="text-orange-600"/></div>
             <h3 className="font-black text-[18px] text-black text-center mt-3">Call Sanel Ug</h3>
-            <p className="text-center text-[28px] font-black text-black mt-2 tracking-wide">{CALL_NUMBER}</p>
-            <p className="text-[12px] text-gray-500 text-center mt-1">Mon-Sat 8am - 8pm</p>
+            <p className="text-center text-[28px] font-black text-black mt-2">{CALL_NUMBER}</p>
             <div className="mt-5 flex flex-col gap-2">
               <a href={`tel:${CALL_TEL}`} className="w-full bg-black text-white py-3.5 rounded-full font-bold text-center">📞 Call Now</a>
-              <button onClick={copyNumber} className="w-full bg-[#FFF7ED] border text-black py-3 rounded-full font-bold">Copy Number</button>
+              <button onClick={() => { navigator.clipboard.writeText(CALL_NUMBER); alert("Copied: "+CALL_NUMBER) }} className="w-full bg-[#FFF7ED] border text-black py-3 rounded-full font-bold">Copy Number</button>
               <button onClick={() => setShowCall(false)} className="w-full bg-gray-100 text-black py-3 rounded-full font-bold">Close</button>
             </div>
-            <p className="text-[10px] text-gray-400 text-center mt-3">If you are in WhatsApp browser, tap Copy and paste in your dialer</p>
           </div>
         </div>
       )}
@@ -143,6 +136,39 @@ function PromoStrip({ catName, catIndex, setCategory, router }: any) {
   )
 }
 
+function FooterSanel() {
+  return (
+    <div className="mt-10 bg-[#2B2B2B] text-white">
+      <button onClick={() => window.scrollTo({top:0, behavior:'smooth'})} className="w-full bg-[#3A3A3A] py-4 flex flex-col items-center gap-1 text-[12px] font-bold tracking-wide">
+        <ChevronUp size={20}/> BACK TO TOP
+      </button>
+      <div className="px-4 py-6">
+        <div className="flex flex-wrap gap-x-5 gap-y-3 justify-center font-bold text-[11px] tracking-wide text-center">
+          <Link href="/chat">CHAT WITH US</Link>
+          <Link href="/help">HELP CENTER</Link>
+          <Link href="/contact">CONTACT US</Link>
+          <Link href="/terms">TERMS & CONDITIONS</Link>
+          <Link href="/report">REPORT A PRODUCT</Link>
+          <Link href="/return">RETURN & REFUND POLICY</Link>
+          <Link href="/privacy">PRIVACY POLICY NOTICE</Link>
+          <Link href="/cookies">COOKIE NOTICE</Link>
+        </div>
+        <div className="mt-6 border-t border-gray-600 pt-4">
+          <p className="text-center font-bold text-[12px]">CONTACT US</p>
+          <div className="mt-2 text-[11px] text-gray-300 leading-6">
+            <p>Business Name <span className="text-white">SANEL UG LIMITED</span></p>
+            <p>Address <span className="text-white">Ntinda Industrial Area, Factory Cl, Kampala, Uganda</span></p>
+            <p>Phone Number <span className="text-white">0700000000, 0700000001</span></p>
+          </div>
+        </div>
+        <div className="mt-4 border-t border-gray-600 pt-3 text-center text-[11px] text-gray-400">
+          All Rights Reserved © {new Date().getFullYear()} Sanel Ug
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ProductViewModal({ product, onClose, onWhatsApp }: any) {
   const [activeImg, setActiveImg] = useState(product.images?.[0])
   useEffect(() => { setActiveImg(product.images?.[0]) }, [product])
@@ -167,30 +193,89 @@ export default function HomePage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [viewProduct, setViewProduct] = useState<any>(null)
-  const [showCategories, setShowCategories] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
   const [currentBanner, setCurrentBanner] = useState(0)
   const router = useRouter()
-  const pathname = usePathname()
   const scrollRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => { const q = query(collection(db, 'banners'), orderBy("createdAt", "desc")); const unsub = onSnapshot(q, (snap) => setBanners(snap.docs.map(d => ({id: d.id,...d.data()})))); return () => unsub()}, [])
   useEffect(() => { const el = scrollRef.current; if (!el || banners.length <= 1) return; const handleScroll = () => setCurrentBanner(Math.round(el.scrollLeft / el.clientWidth)); el.addEventListener('scroll', handleScroll); let i = 0; const timer = setInterval(() => { i = (i + 1) % banners.length; if(el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" }); }, 3500); return () => { clearInterval(timer); el.removeEventListener('scroll', handleScroll); }}, [banners.length]);
   useEffect(() => { const q = query(collection(db, 'products'), orderBy("createdAt", "desc")); const unsub = onSnapshot(q, (snap) => { setProducts(snap.docs.map(d => ({ id: d.id,...d.data() }))); setLoading(false) }); return () => unsub()}, [])
   useEffect(() => { const q = query(collection(db, 'products'), where("is_boosted", "==", true)); const unsub = onSnapshot(q, (snap) => { const now = new Date(); const boosted = snap.docs.map(d => ({ id: d.id,...d.data() } as any)).filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now).sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate()).slice(0, 30); setBoostedProducts(boosted)}); return () => unsub()}, [])
+
   const filteredProducts = useMemo(() => products.filter(p => { const matchCategory = selectedCategory === 'All' || p.category === selectedCategory; const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase()); return matchCategory && matchSearch}), [products, selectedCategory, search])
   const getProductsByCat = (catName: string) => products.filter(p => p.category === catName && p.title?.toLowerCase().includes(search.toLowerCase()))
   const handleWhatsApp = (product: any) => { let phone = product.whatsapp || product.whatsApp || product.WhatsApp; if(!phone) return alert("Seller did not add WhatsApp number"); let cleanPhone = phone.toString().replace(/\D/g, ''); if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1); else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone; window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hello! I'm interested in ${product.title} - ${product.price} UGX`)}`, '_blank') }
+
   return (
-    <div className="min-h-screen pb-20 bg-[#FDF8F3] relative">
-      <div className="bg-white sticky top-0 z-20 shadow-sm"><div className="p-3 flex justify-between items-center"><div className="flex items-center gap-2"><button onClick={() => setShowCategories(!showCategories)} className="bg-black text-white w-9 h-9 rounded-full flex items-center justify-center shadow-md"><LayoutGrid size={18} /></button><span className="font-bold text-lg" style={{color: '#8B4513'}}>Sanel Ug</span><Link href="/about" className="text-xs text-gray-500 ml-1">About</Link></div><div className="flex gap-1.5 text-xs items-center">{selectedCategory!== 'All' && <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-[10px] font-bold">{selectedCategory}</span>}<Link href="/support" className="bg-black text-white px-2 py-1 rounded-md">Support</Link><select className="bg-black text-white px-2 py-1 rounded-md"><option>MUBS</option></select></div></div><div className="px-3 pb-3"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products" className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 text-sm placeholder:text-gray-400" /></div>{showCategories && <div className="px-3 pb-3"><div className="bg-gray-50 rounded-2xl p-3 border grid grid-cols-3 gap-2">{CATEGORIES.map(cat => (<button key={cat.name} onClick={() => { setSelectedCategory(cat.name); setShowCategories(false); }} className={`flex flex-col items-center gap-1 p-3 rounded-xl text-xs font-bold ${selectedCategory === cat.name? 'bg-orange-600 text-white' : 'bg-white text-gray-700 shadow-sm border'}`}><span className="text-xl">{cat.icon}</span><span className="text-[10px] leading-tight text-center">{cat.name}</span></button>))}</div></div>}</div>
-      <div className="px-3 pt-2">{banners.length > 0 && <><div ref={scrollRef} className="flex overflow-x-auto scroll-smooth rounded-2xl snap-x snap-mandatory scrollbar-hide">{banners.map((b) => (<Link key={b.id} href={b.link || "/"} className="w-full flex-shrink-0 snap-center"><img src={b.imageUrl} alt="banner" className="w-full h-44 object-cover rounded-2xl"/></Link>))}</div><div className="flex justify-center gap-1.5 mt-2">{banners.map((_, idx) => (<button key={idx} onClick={() => { setCurrentBanner(idx); scrollRef.current?.scrollTo({ left: idx * scrollRef.current.clientWidth, behavior: "smooth" }); }} className={`h-1.5 rounded-full ${currentBanner === idx? 'bg-orange-600 w-6' : 'bg-gray-300 w-1.5'}`} />))}</div></>}</div>
+    <div className="min-h-screen bg-[#FDF8F3] relative">
+      {/* HEADER - BOTTOM NAV NOW HERE ON TOP LEFT */}
+      <div className="bg-white sticky top-0 z-20 shadow-sm">
+        <div className="p-3 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowMenu(true)} className="bg-black text-white w-9 h-9 rounded-full flex items-center justify-center shadow-md"><LayoutGrid size={18} /></button>
+            <span className="font-bold text-lg" style={{color: '#8B4513'}}>Sanel Ug</span>
+          </div>
+          <div className="flex gap-1.5 items-center">
+            {selectedCategory!=='All' && <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-[10px] font-bold">{selectedCategory}</span>}
+            <Link href="/support" className="bg-black text-white px-3 py-1.5 rounded-md text-[11px] font-bold">Support</Link>
+          </div>
+        </div>
+        <div className="px-3 pb-3"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products" className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 text-sm placeholder:text-gray-400" /></div>
+      </div>
+
+      {/* TOP LEFT SLIDE MENU - CONTAINS BOTTOM NAV + CATEGORIES */}
+      {showMenu && (
+        <div className="fixed inset-0 bg-black/60 z-[999] flex">
+          <div className="bg-white w-[85%] max-w-[330px] h-full overflow-y-auto">
+            <div className="p-4 flex justify-between items-center border-b sticky top-0 bg-white z-10">
+              <span className="font-black text-[16px]">Menu</span>
+              <button onClick={() => setShowMenu(false)} className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center"><X size={16}/></button>
+            </div>
+            <div className="p-3">
+              <p className="text-[10px] font-bold text-gray-400 tracking-widest mb-2">NAVIGATION</p>
+              <div className="grid grid-cols-2 gap-2">
+                {BOTTOM_NAV.map(n => (
+                  <button key={n.name} onClick={() => { router.push(n.href); setShowMenu(false) }} className="bg-[#FDF8F3] border rounded-xl p-3 flex items-center gap-2 font-bold text-[12px] text-black">
+                    <span className="text-[18px]">{n.icon}</span>{n.name}
+                  </button>
+                ))}
+                <Link href="/sell" onClick={() => setShowMenu(false)} className="bg-black text-white rounded-xl p-3 flex items-center gap-2 font-bold text-[12px]"><span>💰</span>Sell</Link>
+                <Link href="/movies" onClick={() => setShowMenu(false)} className="bg-gray-900 text-white rounded-xl p-3 flex items-center gap-2 font-bold text-[12px]"><span>🎬</span>Movies</Link>
+              </div>
+            </div>
+            <div className="p-3 border-t mt-2">
+              <p className="text-[10px] font-bold text-gray-400 tracking-widest mb-2">ALL CATEGORIES</p>
+              <div className="grid grid-cols-3 gap-2">
+                {CATEGORIES.map(cat => (
+                  <button key={cat.name} onClick={() => { setSelectedCategory(cat.name); setShowMenu(false) }} className={`flex flex-col items-center gap-1 p-3 rounded-xl text-xs font-bold ${selectedCategory===cat.name?'bg-orange-600 text-white':'bg-white border shadow-sm text-gray-700'}`}>
+                    <span className="text-xl">{cat.icon}</span><span className="text-[10px] text-center leading-tight">{cat.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex-1" onClick={() => setShowMenu(false)}></div>
+        </div>
+      )}
+
+      <div className="px-3 pt-2">
+        {banners.length > 0 && <><div ref={scrollRef} className="flex overflow-x-auto scroll-smooth rounded-2xl snap-x snap-mandatory scrollbar-hide">{banners.map((b) => (<Link key={b.id} href={b.link || "/"} className="w-full flex-shrink-0 snap-center"><img src={b.imageUrl} alt="banner" className="w-full h-44 object-cover rounded-2xl"/></Link>))}</div><div className="flex justify-center gap-1.5 mt-2">{banners.map((_, idx) => (<button key={idx} onClick={() => { setCurrentBanner(idx); scrollRef.current?.scrollTo({ left: idx * scrollRef.current.clientWidth, behavior: "smooth" }); }} className={`h-1.5 rounded-full ${currentBanner === idx? 'bg-orange-600 w-6' : 'bg-gray-300 w-1.5'}`} />))}</div></>}
+      </div>
+
       <TrendingSection products={boostedProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} />
       <SanelBestPicksSection />
+
       <div className="p-3 pb-0"><h2 className="font-black text-[18px] text-black">{selectedCategory === 'All'? 'Shop by Category' : `${selectedCategory} (${filteredProducts.length})`}{selectedCategory!== 'All' && <button onClick={() => setSelectedCategory('All')} className="ml-3 bg-black text-white text-[11px] px-3 py-1 rounded-full">Back</button>}</h2></div>
+
       {loading? <p className="p-3">Loading...</p> : selectedCategory === 'All'? (<>{HOME_CATEGORIES.map((cat, idx) => { const catProducts = getProductsByCat(cat.name); if(catProducts.length === 0) return null; return (<div key={cat.name}><CategoryRow title={cat.name} icon={cat.icon} products={catProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} onSeeAll={() => { setSelectedCategory(cat.name); window.scrollTo({top: 0, behavior: 'smooth'}) }} /><PromoStrip catName={cat.name} catIndex={idx} setCategory={setSelectedCategory} router={router} /></div>)})}</>) : (<div className="p-3"><div className="grid grid-cols-2 gap-3">{filteredProducts.map(p => (<div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border"><div className="relative w-full h-40 bg-gray-100"><img src={p.images?.[0]} className="w-full h-40 object-cover" /><button onClick={() => setViewProduct(p)} className="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center"><Eye size={14} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">+{p.images.length} pics</span>}</div><div className="p-2"><p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p><p className="font-bold text-[14px] line-clamp-2 text-black">{p.title}</p><p className="font-black text-[15px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p><button onClick={() => handleWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-sm py-2.5 rounded-md font-bold">WhatsApp</button></div></div>))}</div></div>)}
+
       {viewProduct && <ProductViewModal product={viewProduct} onClose={() => setViewProduct(null)} onWhatsApp={handleWhatsApp} />}
-      <Link href="/movies" className="fixed bottom-24 left-4 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40 border-2 border-white"><Film size={18} /></Link>
-      <button onClick={() => router.push('/sell')} className="fixed bottom-24 right-4 bg-amber-800 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40"><Coffee size={20} /></button>
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center py-1 z-30">{BOTTOM_NAV.map((nav) => (<button key={nav.name} onClick={() => router.push(nav.href)} className={`flex flex-col items-center text-xs pt-1 ${pathname === nav.href? 'text-orange-600' : 'text-gray-500'}`}><span className="text-2xl">{nav.icon}</span>{nav.name}</button>))}</div>
+
+      <Link href="/movies" className="fixed bottom-6 left-4 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40 border-2 border-white"><Film size={18} /></Link>
+      <button onClick={() => router.push('/sell')} className="fixed bottom-6 right-4 bg-amber-800 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40"><Coffee size={20} /></button>
+
+      <FooterSanel />
     </div>
   )
 }
