@@ -54,17 +54,18 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
   )
 }
 
-// === CLICKABLE BEST PICKS ===
 function SanelBestPicksSection() {
   const router = useRouter()
+  const WHATSAPP_NUMBER = "256706826774" // <- CHANGE TO YOUR REAL NUMBER
+
   const picks = [
     {
       title: 'Call To Order', desc1: 'Shopping Made Easier', desc2: 'Your Needs, One Call Away', icon: '🌍', bg: 'bg-[#FFF7ED]',
-      action: () => window.location.href = 'tel:+256700000000'
+      action: () => window.location.href = `tel:+${WHATSAPP_NUMBER}`
     },
     {
       title: 'Campus Delivery', desc1: 'Fast Delivery To Campus', desc2: 'MUBS, MUK, KYU & More', icon: '🛵', bg: 'bg-[#F0F9FF]',
-      action: () => router.push('/about')
+      action: () => window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hello Sanel! I need campus delivery 🚚\n\nCampus: \nLocation: \nProduct: ")}`
     },
     {
       title: 'Sell On Sanel', desc1: 'Turn Your Items To Cash', desc2: 'Start Selling In Minutes', icon: '💰', bg: 'bg-[#F0FDF4]',
@@ -72,9 +73,10 @@ function SanelBestPicksSection() {
     },
     {
       title: 'Sanel Support', desc1: 'Need Help? We Are Here', desc2: 'Chat With Us 24/7', icon: '💬', bg: 'bg-[#FEF3F2]',
-      action: () => router.push('/support')
+      action: () => window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hello Sanel Support! 👋 I need help")}`
     },
   ]
+
   return (
     <div className="px-3 mt-4">
       <h2 className="font-black text-[16px] mb-2.5 text-black px-1">Unlock big savings on our best picks</h2>
