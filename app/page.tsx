@@ -36,7 +36,6 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
         </div>
         <div className="flex gap-2.5 overflow-x-auto p-2.5 scrollbar-hide">
           {products.map((p: any) => {
-            const hoursLeft = p.boosted_until? Math.max(0, Math.ceil((p.boosted_until.toDate().getTime() - Date.now()) / 3600000)) : 24;
             return (
               <div key={p.id} className="min-w-[145px] max-w-[145px] bg-white border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                 <div className="relative">
@@ -53,6 +52,38 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
             )
           })}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// === NEW: BEST PICKS MANUAL SCROLL - JUST UNDER TRENDING ===
+function SanelBestPicksSection() {
+  const picks = [
+    { title: 'Call To Order', desc1: 'Shopping Made Easier', desc2: 'Your Needs, One Call Away', icon: '🌍', bg: 'bg-[#FFF7ED]' },
+    { title: 'Campus Delivery', desc1: 'Fast Delivery To Campus', desc2: 'MUBS, MUK, KYU & More', icon: '🛵', bg: 'bg-[#F0F9FF]' },
+    { title: 'Sell On Sanel', desc1: 'Turn Your Items To Cash', desc2: 'Start Selling In Minutes', icon: '💰', bg: 'bg-[#F0FDF4]' },
+    { title: 'Sanel Support', desc1: 'Need Help? We Are Here', desc2: 'Chat With Us 24/7', icon: '💬', bg: 'bg-[#FEF3F2]' },
+  ]
+  return (
+    <div className="px-3 mt-4">
+      <h2 className="font-black text-[16px] mb-2.5 text-black px-1">Unlock big savings on our best picks</h2>
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory">
+        {picks.map((item, idx) => (
+          <div key={idx} className={`min-w-[260px] max-w-[260px] ${item.bg} border border-gray-100 rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 snap-start shadow-sm`}>
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] shadow-sm border border-gray-100 flex-shrink-0">
+              <span className="relative">
+                {item.icon}
+                {idx===0 && <span className="absolute -top-1 -right-1 text-[14px]">📍</span>}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-[13px] text-black leading-tight">{item.title}</p>
+              <p className="text-[12px] text-gray-600 leading-tight truncate">{item.desc1}</p>
+              <p className="text-[11px] text-gray-500 leading-tight truncate">{item.desc2}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -111,23 +142,18 @@ export default function HomePage() {
     return () => unsub()
   }, [])
 
-  // BANNER AUTO + MANUAL SCROLL WITH DOTS
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || banners.length <= 1) return;
-
     const handleScroll = () => {
       const index = Math.round(el.scrollLeft / el.clientWidth);
       setCurrentBanner(index);
     };
     el.addEventListener('scroll', handleScroll);
-
     let i = 0;
     const timer = setInterval(() => {
       i = (i + 1) % banners.length;
-      if(el) {
-        el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
-      }
+      if(el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
     }, 3500);
     return () => {
       clearInterval(timer);
@@ -196,7 +222,6 @@ export default function HomePage() {
         <div className="px-3 pb-3">
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products" className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 text-sm placeholder:text-gray-400" />
         </div>
-
         {showCategories && (
           <div className="px-3 pb-3 animate-in slide-in-from-top-2">
             <div className="bg-gray-50 rounded-2xl p-3 border grid grid-cols-3 gap-2">
@@ -211,7 +236,6 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* BANNERS - INDEPENDENT WITH DOTS */}
       <div className="px-3 pt-2 relative">
         {banners.length > 0 && (
           <>
@@ -222,7 +246,6 @@ export default function HomePage() {
                 </Link>
               ))}
             </div>
-            {/* SMALL DOTS AT BOTTOM */}
             <div className="flex justify-center gap-1.5 mt-2">
               {banners.map((_, idx) => (
                 <button key={idx} onClick={() => { setCurrentBanner(idx); scrollRef.current?.scrollTo({ left: idx * scrollRef.current.clientWidth, behavior: "smooth" }); }} className={`h-1.5 rounded-full transition-all ${currentBanner === idx? 'bg-orange-600 w-6' : 'bg-gray-300 w-1.5'}`} />
@@ -233,6 +256,9 @@ export default function HomePage() {
       </div>
 
       <TrendingSection products={boostedProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} />
+
+      {/* NEW BEST PICKS SECTION - MANUAL SCROLL */}
+      <SanelBestPicksSection />
 
       <div className="p-3">
         <h2 className="font-black text-[18px] mb-3 text-black">Listings ({filteredProducts.length})</h2>
