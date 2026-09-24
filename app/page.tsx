@@ -77,27 +77,28 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
   )
 }
 
+// FIXED: use <a> not <Link> for tel: and wa.me
 function SanelBestPicksSection() {
-  const picks = [
-    { title: 'Call To Order', desc1: 'Shopping Made Easier', desc2: 'Your Needs, One Call Away', icon: '🌍', bg: 'bg-[#FFF7ED]', href: 'tel:+256700000000' },
-    { title: 'Campus Delivery', desc1: 'Fast Delivery To Campus', desc2: 'MUBS, MUK, KYU & More', icon: '🛵', bg: 'bg-[#F0F9FF]', href: 'https://wa.me/256700000001?text=Hello%20Sanel!%20I%20need%20delivery' },
-    { title: 'Sell On Sanel', desc1: 'Turn Your Items To Cash', desc2: 'Start Selling In Minutes', icon: '💰', bg: 'bg-[#F0FDF4]', href: '/sell' },
-    { title: 'Sanel Support', desc1: 'Need Help? We Are Here', desc2: 'Chat With Us 24/7', icon: '💬', bg: 'bg-[#FEF3F2]', href: '/support' },
-  ]
   return (
     <div className="px-3 mt-4">
       <h2 className="font-black text-[16px] mb-2.5 text-black px-1">Unlock big savings on our best picks</h2>
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory">
-        {picks.map((item, idx) => (
-          <Link key={idx} href={item.href} className={`min-w-[260px] max-w-[260px] ${item.bg} border border-gray-100 rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 snap-start shadow-sm active:scale-95 transition`}>
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] shadow-sm border border-gray-100 flex-shrink-0"><span className="relative">{item.icon}{idx===0 && <span className="absolute -top-1 -right-1 text-[14px]">📍</span>}</span></div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-[13px] text-black leading-tight">{item.title}</p>
-              <p className="text-[12px] text-gray-600 leading-tight truncate">{item.desc1}</p>
-              <p className="text-[11px] text-gray-500 leading-tight truncate">{item.desc2}</p>
-            </div>
-          </Link>
-        ))}
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+        <a href="tel:+256700000000" className="min-w-[260px] max-w-[260px] bg-[#FFF7ED] border border-gray-100 rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 shadow-sm no-underline">
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] shadow-sm border flex-shrink-0">🌍</div>
+          <div><p className="font-bold text-[13px] text-black">Call To Order</p><p className="text-[12px] text-gray-600 truncate">Shopping Made Easier</p><p className="text-[11px] text-gray-500 truncate">Your Needs, One Call Away</p></div>
+        </a>
+        <a href="https://wa.me/256700000001?text=Hello%20Sanel!%20I%20need%20delivery" target="_blank" className="min-w-[260px] max-w-[260px] bg-[#F0F9FF] border border-gray-100 rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 shadow-sm no-underline">
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] shadow-sm border flex-shrink-0">🛵</div>
+          <div><p className="font-bold text-[13px] text-black">Campus Delivery</p><p className="text-[12px] text-gray-600 truncate">Fast Delivery To Campus</p><p className="text-[11px] text-gray-500 truncate">MUBS, MUK, KYU & More</p></div>
+        </a>
+        <Link href="/sell" className="min-w-[260px] max-w-[260px] bg-[#F0FDF4] border border-gray-100 rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 shadow-sm">
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] shadow-sm border flex-shrink-0">💰</div>
+          <div><p className="font-bold text-[13px] text-black">Sell On Sanel</p><p className="text-[12px] text-gray-600 truncate">Turn Your Items To Cash</p></div>
+        </Link>
+        <Link href="/support" className="min-w-[260px] max-w-[260px] bg-[#FEF3F2] border border-gray-100 rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 shadow-sm">
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] shadow-sm border flex-shrink-0">💬</div>
+          <div><p className="font-bold text-[13px] text-black">Sanel Support</p><p className="text-[12px] text-gray-600 truncate">Need Help? We Are Here</p></div>
+        </Link>
       </div>
     </div>
   )
@@ -140,7 +141,7 @@ function CategoryRow({ title, icon, products, onView, onWhatsApp, onSeeAll }: an
 
 function PromoStrip({ catName, catIndex, setCategory, router }: any) {
   const promos = [
-    { text: `🛵 Free Delivery on ${catName} Today - MUBS, MUK, KYU`, btn: "Order Now", type: "order", bg: "bg-black" },
+    { text: `🛵 Free Delivery on ${catName} Today`, btn: "Order Now", type: "order", bg: "bg-black" },
     { text: `💰 Sell on Sanel & Get Paid in 10 Mins`, btn: "Sell Now", type: "sell", bg: "bg-[#8B4513]" },
     { text: `🎓 Best Deals in ${catName} - Up to 40% OFF`, btn: "Shop Now", type: "shop", bg: "bg-gradient-to-r from-orange-600 to-black" },
   ]
@@ -148,7 +149,7 @@ function PromoStrip({ catName, catIndex, setCategory, router }: any) {
   const handleClick = () => {
     if(promo.type === "sell") router.push('/sell')
     else if(promo.type === "shop") { setCategory(catName); window.scrollTo({top:0, behavior:'smooth'}) }
-    else { window.location.href = `https://wa.me/256700000001?text=Hello%20Sanel!%20I%20need%20delivery%20for%20${catName}` }
+    else { window.open(`https://wa.me/256700000001?text=Hello%20Sanel!%20I%20need%20delivery%20for%20${catName}`, '_blank') }
   }
   return (
     <button onClick={handleClick} className={`mx-3 mt-5 rounded-xl p-3 flex justify-between items-center w-[calc(100%-24px)] active:scale-[0.98] transition ${promo.bg}`}>
@@ -253,7 +254,7 @@ export default function HomePage() {
     let cleanPhone = phone.toString().replace(/\D/g, '')
     if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1)
     else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone
-    window.location.href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hello! I'm interested in ${product.title} - ${product.price} UGX`)}`
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hello! I'm interested in ${product.title} - ${product.price} UGX`)}`, '_blank')
   }
 
   return (
