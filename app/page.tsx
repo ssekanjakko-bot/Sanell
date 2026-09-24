@@ -17,7 +17,6 @@ const CATEGORIES = [
   {name: 'Jobs', icon: '📢'}
 ]
 const HOME_CATEGORIES = CATEGORIES.filter(c => c.name!== 'All')
-
 const BOTTOM_NAV = [
   { name: 'Home', icon: '🏠', href: '/' },
   { name: 'FAQs', icon: '💬', href: '/chat' },
@@ -70,6 +69,7 @@ function SanelBestPicksSection() {
   const [showCall, setShowCall] = useState(false)
   const CALL_NUMBER = "0700000000"
   const CALL_TEL = "+256700000000"
+  const copyNumber = () => { navigator.clipboard.writeText(CALL_NUMBER); alert("Number copied: " + CALL_NUMBER) }
   return (
     <>
       <div className="px-3 mt-4">
@@ -89,10 +89,10 @@ function SanelBestPicksSection() {
           <div className="bg-white rounded-2xl p-5 w-full max-w-[340px]" onClick={e=>e.stopPropagation()}>
             <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mx-auto"><Phone className="text-orange-600"/></div>
             <h3 className="font-black text-[18px] text-black text-center mt-3">Call Sanel Ug</h3>
-            <p className="text-center text-[28px] font-black text-black mt-2">{CALL_NUMBER}</p>
+            <p className="text-center text-[28px] font-black text-black mt-2 tracking-wide">{CALL_NUMBER}</p>
             <div className="mt-5 flex flex-col gap-2">
               <a href={`tel:${CALL_TEL}`} className="w-full bg-black text-white py-3.5 rounded-full font-bold text-center">📞 Call Now</a>
-              <button onClick={() => { navigator.clipboard.writeText(CALL_NUMBER); alert("Copied: "+CALL_NUMBER) }} className="w-full bg-[#FFF7ED] border text-black py-3 rounded-full font-bold">Copy Number</button>
+              <button onClick={copyNumber} className="w-full bg-[#FFF7ED] border text-black py-3 rounded-full font-bold">Copy Number</button>
               <button onClick={() => setShowCall(false)} className="w-full bg-gray-100 text-black py-3 rounded-full font-bold">Close</button>
             </div>
           </div>
@@ -138,12 +138,12 @@ function PromoStrip({ catName, catIndex, setCategory, router }: any) {
 
 function FooterSanel() {
   return (
-    <div className="mt-10 bg-[#2B2B2B] text-white">
-      <button onClick={() => window.scrollTo({top:0, behavior:'smooth'})} className="w-full bg-[#3A3A3A] py-4 flex flex-col items-center gap-1 text-[12px] font-bold tracking-wide">
-        <ChevronUp size={20}/> BACK TO TOP
+    <div className="mt-8 bg-[#2B2B2B] text-white">
+      <button onClick={() => window.scrollTo({top:0, behavior:'smooth'})} className="w-full bg-[#3A3A3A] py-4 flex flex-col items-center gap-1 text-[11px] font-bold tracking-widest">
+        <ChevronUp size={18}/> BACK TO TOP
       </button>
       <div className="px-4 py-6">
-        <div className="flex flex-wrap gap-x-5 gap-y-3 justify-center font-bold text-[11px] tracking-wide text-center">
+        <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center font-bold text-[10px] tracking-wide text-gray-200 text-center">
           <Link href="/chat">CHAT WITH US</Link>
           <Link href="/help">HELP CENTER</Link>
           <Link href="/contact">CONTACT US</Link>
@@ -153,15 +153,16 @@ function FooterSanel() {
           <Link href="/privacy">PRIVACY POLICY NOTICE</Link>
           <Link href="/cookies">COOKIE NOTICE</Link>
         </div>
-        <div className="mt-6 border-t border-gray-600 pt-4">
-          <p className="text-center font-bold text-[12px]">CONTACT US</p>
+        <div className="mt-6 border-t border-[#444] pt-4 text-center">
+          <p className="font-bold text-[12px]">CONTACT US</p>
           <div className="mt-2 text-[11px] text-gray-300 leading-6">
-            <p>Business Name <span className="text-white">SANEL UG LIMITED</span></p>
-            <p>Address <span className="text-white">Ntinda Industrial Area, Factory Cl, Kampala, Uganda</span></p>
-            <p>Phone Number <span className="text-white">0700000000, 0700000001</span></p>
+            <p>Sanel Ug - Campus Marketplace</p>
+            <p>Kampala, Uganda | MUBS, MUK, KYU & More</p>
+            <p className="text-white mt-1">📞 0700 000 000 | WhatsApp: 0700 000 001</p>
+            <p className="text-[10px] text-gray-400 mt-2 italic">Sole proprietor - Business registration in progress</p>
           </div>
         </div>
-        <div className="mt-4 border-t border-gray-600 pt-3 text-center text-[11px] text-gray-400">
+        <div className="mt-5 border-t border-[#444] pt-3 text-center text-[10px] text-gray-400">
           All Rights Reserved © {new Date().getFullYear()} Sanel Ug
         </div>
       </div>
@@ -209,27 +210,29 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] relative">
-      {/* HEADER - BOTTOM NAV NOW HERE ON TOP LEFT */}
+      {/* HEADER - BOTTOM NAV MOVED TO TOP LEFT */}
       <div className="bg-white sticky top-0 z-20 shadow-sm">
         <div className="p-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <button onClick={() => setShowMenu(true)} className="bg-black text-white w-9 h-9 rounded-full flex items-center justify-center shadow-md"><LayoutGrid size={18} /></button>
             <span className="font-bold text-lg" style={{color: '#8B4513'}}>Sanel Ug</span>
+            <Link href="/about" className="text-xs text-gray-500 ml-1">About</Link>
           </div>
-          <div className="flex gap-1.5 items-center">
+          <div className="flex gap-1.5 text-xs items-center">
             {selectedCategory!=='All' && <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-[10px] font-bold">{selectedCategory}</span>}
-            <Link href="/support" className="bg-black text-white px-3 py-1.5 rounded-md text-[11px] font-bold">Support</Link>
+            <Link href="/support" className="bg-black text-white px-2 py-1 rounded-md">Support</Link>
+            <select className="bg-black text-white px-2 py-1 rounded-md"><option>MUBS</option></select>
           </div>
         </div>
         <div className="px-3 pb-3"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products" className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 text-sm placeholder:text-gray-400" /></div>
       </div>
 
-      {/* TOP LEFT SLIDE MENU - CONTAINS BOTTOM NAV + CATEGORIES */}
+      {/* SLIDE MENU - NOW HOLDS BOTTOM NAV + CATEGORIES */}
       {showMenu && (
         <div className="fixed inset-0 bg-black/60 z-[999] flex">
           <div className="bg-white w-[85%] max-w-[330px] h-full overflow-y-auto">
             <div className="p-4 flex justify-between items-center border-b sticky top-0 bg-white z-10">
-              <span className="font-black text-[16px]">Menu</span>
+              <span className="font-black text-[16px]">Sanel Menu</span>
               <button onClick={() => setShowMenu(false)} className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center"><X size={16}/></button>
             </div>
             <div className="p-3">
@@ -259,9 +262,7 @@ export default function HomePage() {
         </div>
       )}
 
-      <div className="px-3 pt-2">
-        {banners.length > 0 && <><div ref={scrollRef} className="flex overflow-x-auto scroll-smooth rounded-2xl snap-x snap-mandatory scrollbar-hide">{banners.map((b) => (<Link key={b.id} href={b.link || "/"} className="w-full flex-shrink-0 snap-center"><img src={b.imageUrl} alt="banner" className="w-full h-44 object-cover rounded-2xl"/></Link>))}</div><div className="flex justify-center gap-1.5 mt-2">{banners.map((_, idx) => (<button key={idx} onClick={() => { setCurrentBanner(idx); scrollRef.current?.scrollTo({ left: idx * scrollRef.current.clientWidth, behavior: "smooth" }); }} className={`h-1.5 rounded-full ${currentBanner === idx? 'bg-orange-600 w-6' : 'bg-gray-300 w-1.5'}`} />))}</div></>}
-      </div>
+      <div className="px-3 pt-2">{banners.length > 0 && <><div ref={scrollRef} className="flex overflow-x-auto scroll-smooth rounded-2xl snap-x snap-mandatory scrollbar-hide">{banners.map((b) => (<Link key={b.id} href={b.link || "/"} className="w-full flex-shrink-0 snap-center"><img src={b.imageUrl} alt="banner" className="w-full h-44 object-cover rounded-2xl"/></Link>))}</div><div className="flex justify-center gap-1.5 mt-2">{banners.map((_, idx) => (<button key={idx} onClick={() => { setCurrentBanner(idx); scrollRef.current?.scrollTo({ left: idx * scrollRef.current.clientWidth, behavior: "smooth" }); }} className={`h-1.5 rounded-full ${currentBanner === idx? 'bg-orange-600 w-6' : 'bg-gray-300 w-1.5'}`} />))}</div></>}</div>
 
       <TrendingSection products={boostedProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} />
       <SanelBestPicksSection />
