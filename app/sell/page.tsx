@@ -102,7 +102,7 @@ export default function SellPage() {
       return alert("Already pending approval. Admin will approve soon.")
     }
 
-    const confirmBoost = confirm(`Boost "${product.title}" for 2,000 UGX?\n\nIt will appear in Trending section under hero banner for 24h.\n\nPay to: MTN 0775760430\nReason: BOOST ${product.id.slice(0,6)}\n\nClick OK then click "I have paid"`)
+    const confirmBoost = confirm(`Boost "${product.title}" for 2,000 UGX?\n\nIt will appear in Trending section under hero banner for 24h.\n\nPay to: MTN 0767483636\nReason: BOOST Plus the product Id or boost Id ${product.id.slice(0,6)}\n\nClick OK then click "I have paid"`)
     if (!confirmBoost) return
 
     setBoostLoading(product.id)
