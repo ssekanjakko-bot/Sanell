@@ -23,39 +23,39 @@ const BOTTOM_NAV = [
   { name: 'Profile', icon: '👤', href: '/profile' }
 ]
 
-// === FIXED: BIG + VISIBLE TRENDING (JUMIA STYLE) ===
+// === BALANCED LIKE JUMIA - BIG BUT WITH SPACE ===
 function TrendingSection({ products, onView, onWhatsApp }: any) {
   if (!products || products.length === 0) return null;
   return (
-    <div className="px-0 mt-4">
-      <div className="bg-white border-y border-gray-200 shadow-sm">
-        {/* HEADER - BIG & VISIBLE */}
-        <div className="flex justify-between items-center px-4 py-4 bg-[#FFF7ED] border-b">
-          <h2 className="font-black text-[22px] flex items-center gap-2 text-black leading-none">
+    <div className="px-3 mt-4">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* HEADER - BALANCED */}
+        <div className="flex justify-between items-center px-4 py-3.5 bg-[#FFF7ED] border-b border-gray-100">
+          <h2 className="font-black text-[19px] flex items-center gap-2 text-black">
             🔥 TRENDING NOW
-            <span className="bg-red-600 text-white text-[10px] px-3 py-1 rounded-full font-black tracking-wider">HOT</span>
+            <span className="bg-red-600 text-white text-[9px] px-2.5 py-1 rounded-full font-black">HOT</span>
           </h2>
-          <span className="bg-black text-white text-[9px] px-2.5 py-1 rounded-full font-bold tracking-wider">SPONSORED</span>
+          <span className="bg-black text-white text-[8px] px-2 py-1 rounded-full font-bold">SPONSORED</span>
         </div>
 
-        {/* CARDS - BIGGER */}
-        <div className="flex gap-4 overflow-x-auto p-4 scrollbar-hide">
+        {/* CARDS - BALANCED GAPS LIKE JUMIA */}
+        <div className="flex gap-3 overflow-x-auto p-3 scrollbar-hide">
           {products.map((p: any) => {
             const hoursLeft = p.boosted_until? Math.max(0, Math.ceil((p.boosted_until.toDate().getTime() - Date.now()) / 3600000)) : 24;
             return (
-              <div key={p.id} className="min-w-[200px] max-w-[200px] bg-white border-2 border-orange-100 rounded-2xl overflow-hidden flex-shrink-0 shadow-md hover:shadow-xl transition">
+              <div key={p.id} className="min-w-[185px] max-w-[185px] bg-white border border-gray-100 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
                 <div className="relative">
-                  <img src={p.images?.[0]} className="w-full h-44 object-cover" />
-                  <span className="absolute top-2 left-2 bg-yellow-400 text-black text-[10px] font-black px-3 py-1 rounded-full shadow">BOOSTED</span>
-                  <button onClick={() => onView(p)} className="absolute top-2 right-2 bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm shadow-lg">
-                    <Eye size={16} />
+                  <img src={p.images?.[0]} className="w-full h-40 object-cover" />
+                  <span className="absolute top-2 left-2 bg-yellow-400 text-black text-[9px] font-black px-2.5 py-1 rounded-full shadow-sm">BOOSTED</span>
+                  <button onClick={() => onView(p)} className="absolute top-2 right-2 bg-black/70 text-white w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <Eye size={14} />
                   </button>
-                  <span className="absolute bottom-2 left-2 bg-red-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow">⏳ {hoursLeft}h left</span>
+                  <span className="absolute bottom-2 left-2 bg-black/75 text-white text-[9px] px-2 py-0.5 rounded-full">⏳ {hoursLeft}h left</span>
                 </div>
-                <div className="p-3">
-                  <p className="font-bold text-[15px] text-black leading-tight line-clamp-2 min-h-[40px]">{p.title}</p>
-                  <p className="font-black text-[18px] mt-2" style={{color: '#B45309'}}>{p.price} UGX</p>
-                  <button onClick={() => onWhatsApp(p)} className="w-full mt-3 bg-green-500 hover:bg-green-600 text-white text-[13px] py-2.5 rounded-xl font-black shadow">WhatsApp Seller</button>
+                <div className="p-2.5">
+                  <p className="font-bold text-[13px] text-black leading-tight line-clamp-2 min-h-[36px]">{p.title}</p>
+                  <p className="font-black text-[16px] mt-1.5" style={{color: '#B45309'}}>{p.price} UGX</p>
+                  <button onClick={() => onWhatsApp(p)} className="w-full mt-2.5 bg-green-500 hover:bg-green-600 text-white text-[12px] py-2 rounded-lg font-bold">WhatsApp</button>
                 </div>
               </div>
             )
