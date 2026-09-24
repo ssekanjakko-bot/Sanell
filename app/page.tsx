@@ -4,12 +4,13 @@ import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, orderBy, where } from "firebase/firestore"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { Coffee, Eye, X } from "lucide-react"
+import { Coffee, Eye, X, LayoutGrid, Film } from "lucide-react"
 
 const CATEGORIES = [
   {name: 'All', icon: '🌐'}, {name: 'Electronics', icon: '📱'}, {name: 'Home, Furniture & Appliances', icon: '🛋️'},
   {name: 'Health', icon: '💊'}, {name: 'Fashion', icon: '👗'},
-  {name: 'Sports, Arts & Outdoor', icon: '⚽'}, {name: 'Babies & Kids', icon: '🧸'},
+  {name: 'Sports, Arts & Outdoor', icon: '⚽'}, {name: 'Live Sports', icon: '🏟️'},
+  {name: 'Babies & Kids', icon: '🧸'},
   {name: 'Animals & Pets', icon: '🐶'}, {name: 'Agriculture & Food', icon: '🌾'},
   {name: 'Commercial Equipment & Tools', icon: '🔧'}, {name: 'Repair & Construction', icon: '🔨'},
   {name: 'Stationery', icon: '📚'}, {name: 'Services', icon: '❤️'},
@@ -23,22 +24,16 @@ const BOTTOM_NAV = [
   { name: 'Profile', icon: '👤', href: '/profile' }
 ]
 
-// === BALANCED LIKE JUMIA - BIG BUT WITH SPACE ===
+// === BALANCED TRENDING ===
 function TrendingSection({ products, onView, onWhatsApp }: any) {
   if (!products || products.length === 0) return null;
   return (
     <div className="px-3 mt-4">
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        {/* HEADER - BALANCED */}
         <div className="flex justify-between items-center px-4 py-3.5 bg-[#FFF7ED] border-b border-gray-100">
-          <h2 className="font-black text-[19px] flex items-center gap-2 text-black">
-            🔥 TRENDING NOW
-            <span className="bg-red-600 text-white text-[9px] px-2.5 py-1 rounded-full font-black">HOT</span>
-          </h2>
+          <h2 className="font-black text-[19px] flex items-center gap-2 text-black">🔥 TRENDING NOW <span className="bg-red-600 text-white text-[9px] px-2.5 py-1 rounded-full font-black">HOT</span></h2>
           <span className="bg-black text-white text-[8px] px-2 py-1 rounded-full font-bold">SPONSORED</span>
         </div>
-
-        {/* CARDS - BALANCED GAPS LIKE JUMIA */}
         <div className="flex gap-3 overflow-x-auto p-3 scrollbar-hide">
           {products.map((p: any) => {
             const hoursLeft = p.boosted_until? Math.max(0, Math.ceil((p.boosted_until.toDate().getTime() - Date.now()) / 3600000)) : 24;
@@ -47,15 +42,13 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
                 <div className="relative">
                   <img src={p.images?.[0]} className="w-full h-40 object-cover" />
                   <span className="absolute top-2 left-2 bg-yellow-400 text-black text-[9px] font-black px-2.5 py-1 rounded-full shadow-sm">BOOSTED</span>
-                  <button onClick={() => onView(p)} className="absolute top-2 right-2 bg-black/70 text-white w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm">
-                    <Eye size={14} />
-                  </button>
+                  <button onClick={() => onView(p)} className="absolute top-2 right-2 bg-black/70 text-white w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm"><Eye size={14} /></button>
                   <span className="absolute bottom-2 left-2 bg-black/75 text-white text-[9px] px-2 py-0.5 rounded-full">⏳ {hoursLeft}h left</span>
                 </div>
                 <div className="p-2.5">
                   <p className="font-bold text-[13px] text-black leading-tight line-clamp-2 min-h-[36px]">{p.title}</p>
                   <p className="font-black text-[16px] mt-1.5" style={{color: '#B45309'}}>{p.price} UGX</p>
-                  <button onClick={() => onWhatsApp(p)} className="w-full mt-2.5 bg-green-500 hover:bg-green-600 text-white text-[12px] py-2 rounded-lg font-bold">WhatsApp</button>
+                  <button onClick={() => onWhatsApp(p)} className="w-full mt-2.5 bg-green-500 text-white text-[12px] py-2 rounded-lg font-bold">WhatsApp</button>
                 </div>
               </div>
             )
@@ -90,7 +83,7 @@ function ProductViewModal({ product, onClose, onWhatsApp }: any) {
           <p className="font-bold text-2xl text-orange-700 mt-1">{product.price} UGX</p>
           <p className="text-sm text-gray-600 mt-3 whitespace-pre-wrap">{product.description || "No description"}</p>
           <div className="mt-5 flex flex-col gap-2">
-            <button onClick={() => onWhatsApp(product)} className="w-full bg-green-600 hover:bg-green-700 text-white py-3.5 rounded-full font-bold">📞 WhatsApp Seller</button>
+            <button onClick={() => onWhatsApp(product)} className="w-full bg-green-600 text-white py-3.5 rounded-full font-bold">📞 WhatsApp Seller</button>
             <button onClick={onClose} className="w-full bg-gray-100 text-black py-3 rounded-full font-bold text-sm">Close</button>
           </div>
         </div>
@@ -107,6 +100,7 @@ export default function HomePage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [viewProduct, setViewProduct] = useState<any>(null)
+  const [showCategories, setShowCategories] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -141,11 +135,7 @@ export default function HomePage() {
     const q = query(collection(db, 'products'), where("is_boosted", "==", true))
     const unsub = onSnapshot(q, (snap) => {
       const now = new Date()
-      const boosted = snap.docs
-    .map(d => ({ id: d.id,...d.data() } as any))
-    .filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now)
-    .sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate())
-    .slice(0, 10)
+      const boosted = snap.docs.map(d => ({ id: d.id,...d.data() } as any)).filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now).sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate()).slice(0, 10)
       setBoostedProducts(boosted)
     })
     return () => unsub()
@@ -153,7 +143,7 @@ export default function HomePage() {
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      const matchCategory = selectedCategory === 'All' || p.category === selectedCategory
+      const matchCategory = selectedCategory === 'All' || p.category === selectedCategory || (selectedCategory === 'Live Sports' && p.category === 'Sports, Arts & Outdoor')
       const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase())
       return matchCategory && matchSearch
     })
@@ -178,10 +168,15 @@ export default function HomePage() {
       <div className="bg-white sticky top-0 z-20 shadow-sm">
         <div className="p-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
+            {/* CATEGORY ICON - FLOATING FROM UPPER LEFT */}
+            <button onClick={() => setShowCategories(!showCategories)} className="bg-black text-white w-9 h-9 rounded-full flex items-center justify-center shadow-md">
+              <LayoutGrid size={18} />
+            </button>
             <span className="font-bold text-lg" style={{color: '#8B4513'}}>Sanel Ug</span>
-            <Link href="/about" className="text-xs text-gray-500">About</Link>
+            <Link href="/about" className="text-xs text-gray-500 ml-1">About</Link>
           </div>
-          <div className="flex gap-1.5 text-xs">
+          <div className="flex gap-1.5 text-xs items-center">
+            {selectedCategory!== 'All' && <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-[10px] font-bold">{selectedCategory}</span>}
             <Link href="/support" className="bg-black text-white px-2 py-1 rounded-md">Support</Link>
             <select className="bg-black text-white px-2 py-1 rounded-md"><option>MUBS</option></select>
           </div>
@@ -189,20 +184,20 @@ export default function HomePage() {
         <div className="px-3 pb-3">
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products" className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 text-sm placeholder:text-gray-400" />
         </div>
-        <div className="px-3 pb-3 flex gap-2 overflow-x-auto">
-          <Link href="/movies" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">🎬 Movies</Link>
-          <Link href="/stores" className="bg-black text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">⚽ Live Sports</Link>
-        </div>
-        <div className="px-3 pb-4">
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {CATEGORIES.map(cat => (
-              <button key={cat.name} onClick={() => setSelectedCategory(cat.name)} className={`flex flex-col items-center gap-1 min-w-[80px] ${selectedCategory === cat.name? 'text-orange-600 font-bold' : 'text-gray-700'}`}>
-                <div className={`text-2xl p-2 rounded-full ${selectedCategory === cat.name? 'bg-orange-100' : 'bg-white shadow'}`}>{cat.icon}</div>
-                <span className="text-xs leading-tight text-center">{cat.name}</span>
-              </button>
-            ))}
+
+        {/* CATEGORIES DRAWER - FLOATS WHEN TAPPED */}
+        {showCategories && (
+          <div className="px-3 pb-3 animate-in slide-in-from-top-2">
+            <div className="bg-gray-50 rounded-2xl p-3 border grid grid-cols-3 gap-2">
+              {CATEGORIES.map(cat => (
+                <button key={cat.name} onClick={() => { setSelectedCategory(cat.name); setShowCategories(false); if(cat.name === 'Live Sports') router.push('/stores'); }} className={`flex flex-col items-center gap-1 p-3 rounded-xl text-xs font-bold ${selectedCategory === cat.name? 'bg-orange-600 text-white' : 'bg-white text-gray-700 shadow-sm border'}`}>
+                  <span className="text-xl">{cat.icon}</span>
+                  <span className="text-[10px] leading-tight text-center">{cat.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="px-3 pt-2">
@@ -227,7 +222,7 @@ export default function HomePage() {
               <div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border relative group">
                 <div className="relative w-full h-40 bg-gray-100">
                   <img src={p.images?.[0]} alt={p.title} className="w-full h-40 object-cover" onError={(e: any) => e.target.src="https://placehold.co/400x400/FDF8F3/8B4513?text=No+Image"} />
-                  <button onClick={() => setViewProduct(p)} className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80 transition shadow"><Eye size={14} /></button>
+                  <button onClick={() => setViewProduct(p)} className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white w-8 h-8 rounded-full flex items-center justify-center shadow"><Eye size={14} /></button>
                   {p.images?.length > 1 && (<span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-full">+{p.images.length}</span>)}
                   {p.is_boosted && (<span className="absolute top-2 left-2 bg-yellow-400 text-black text-[9px] font-bold px-2 py-0.5 rounded-full">BOOSTED</span>)}
                 </div>
@@ -235,7 +230,7 @@ export default function HomePage() {
                   <p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p>
                   <p className="font-bold text-[14px] mb-1 line-clamp-2 text-black leading-tight">{p.title}</p>
                   <p className="font-black text-[15px] mb-2" style={{color: '#B45309'}}>{p.price} UGX</p>
-                  <button onClick={() => handleWhatsApp(p)} className="w-full bg-green-500 hover:bg-green-600 text-white text-sm py-2.5 rounded-md flex items-center justify-center gap-1 font-bold shadow-md">📞 WhatsApp Seller</button>
+                  <button onClick={() => handleWhatsApp(p)} className="w-full bg-green-500 text-white text-sm py-2.5 rounded-md flex items-center justify-center gap-1 font-bold shadow-md">📞 WhatsApp Seller</button>
                 </div>
               </div>
             ))}
@@ -244,6 +239,11 @@ export default function HomePage() {
       </div>
 
       {viewProduct && <ProductViewModal product={viewProduct} onClose={() => setViewProduct(null)} onWhatsApp={handleWhatsApp} />}
+
+      {/* FLOATING CIRCULAR MOVIE BUTTON */}
+      <Link href="/movies" className="fixed bottom-20 left-4 bg-black text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40 hover:scale-110 transition border-2 border-white">
+        <Film size={22} />
+      </Link>
 
       <button onClick={() => router.push('/sell')} className="fixed bottom-20 right-4 bg-amber-800 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40 hover:scale-110 transition"><Coffee size={28} /></button>
 
