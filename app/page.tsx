@@ -23,36 +23,39 @@ const BOTTOM_NAV = [
   { name: 'Profile', icon: '👤', href: '/profile' }
 ]
 
-// === FIXED: VISIBLE TRENDING + EYE ICON + VISIBLE TITLES ===
+// === FIXED: BIG + VISIBLE TRENDING (JUMIA STYLE) ===
 function TrendingSection({ products, onView, onWhatsApp }: any) {
   if (!products || products.length === 0) return null;
   return (
-    <div className="px-3 mt-3">
-      <div className="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-black text-[15px] flex items-center gap-2 text-black">
-            🔥 <span className="text-black">Trending Now</span>
-            <span className="bg-black text-white text-[9px] px-2.5 py-0.5 rounded-full font-bold tracking-wider">SPONSORED</span>
+    <div className="px-0 mt-4">
+      <div className="bg-white border-y border-gray-200 shadow-sm">
+        {/* HEADER - BIG & VISIBLE */}
+        <div className="flex justify-between items-center px-4 py-4 bg-[#FFF7ED] border-b">
+          <h2 className="font-black text-[22px] flex items-center gap-2 text-black leading-none">
+            🔥 TRENDING NOW
+            <span className="bg-red-600 text-white text-[10px] px-3 py-1 rounded-full font-black tracking-wider">HOT</span>
           </h2>
+          <span className="bg-black text-white text-[9px] px-2.5 py-1 rounded-full font-bold tracking-wider">SPONSORED</span>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+
+        {/* CARDS - BIGGER */}
+        <div className="flex gap-4 overflow-x-auto p-4 scrollbar-hide">
           {products.map((p: any) => {
             const hoursLeft = p.boosted_until? Math.max(0, Math.ceil((p.boosted_until.toDate().getTime() - Date.now()) / 3600000)) : 24;
             return (
-              <div key={p.id} className="min-w-[155px] max-w-[155px] bg-white border rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
+              <div key={p.id} className="min-w-[200px] max-w-[200px] bg-white border-2 border-orange-100 rounded-2xl overflow-hidden flex-shrink-0 shadow-md hover:shadow-xl transition">
                 <div className="relative">
-                  <img src={p.images?.[0]} className="w-full h-28 object-cover" />
-                  <span className="absolute top-1.5 left-1.5 bg-yellow-400 text-black text-[8px] font-extrabold px-2 py-0.5 rounded-full shadow">BOOSTED</span>
-                  {/* MAGNIFICATION ICON */}
-                  <button onClick={() => onView(p)} className="absolute top-1.5 right-1.5 bg-black/70 text-white w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-sm">
-                    <Eye size={13} />
+                  <img src={p.images?.[0]} className="w-full h-44 object-cover" />
+                  <span className="absolute top-2 left-2 bg-yellow-400 text-black text-[10px] font-black px-3 py-1 rounded-full shadow">BOOSTED</span>
+                  <button onClick={() => onView(p)} className="absolute top-2 right-2 bg-black/80 text-white w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm shadow-lg">
+                    <Eye size={16} />
                   </button>
-                  <span className="absolute bottom-1.5 left-1.5 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded-full">⏳ {hoursLeft}h</span>
+                  <span className="absolute bottom-2 left-2 bg-red-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow">⏳ {hoursLeft}h left</span>
                 </div>
-                <div className="p-2">
-                  <p className="font-bold text-[13px] text-black leading-tight truncate">{p.title}</p>
-                  <p className="font-black text-[13px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p>
-                  <button onClick={() => onWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-[11px] py-1.5 rounded-md font-bold">WhatsApp</button>
+                <div className="p-3">
+                  <p className="font-bold text-[15px] text-black leading-tight line-clamp-2 min-h-[40px]">{p.title}</p>
+                  <p className="font-black text-[18px] mt-2" style={{color: '#B45309'}}>{p.price} UGX</p>
+                  <button onClick={() => onWhatsApp(p)} className="w-full mt-3 bg-green-500 hover:bg-green-600 text-white text-[13px] py-2.5 rounded-xl font-black shadow">WhatsApp Seller</button>
                 </div>
               </div>
             )
@@ -139,10 +142,10 @@ export default function HomePage() {
     const unsub = onSnapshot(q, (snap) => {
       const now = new Date()
       const boosted = snap.docs
-     .map(d => ({ id: d.id,...d.data() } as any))
-     .filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now)
-     .sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate())
-     .slice(0, 10)
+    .map(d => ({ id: d.id,...d.data() } as any))
+    .filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now)
+    .sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate())
+    .slice(0, 10)
       setBoostedProducts(boosted)
     })
     return () => unsub()
