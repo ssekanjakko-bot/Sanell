@@ -24,7 +24,6 @@ const BOTTOM_NAV = [
   { name: 'Profile', icon: '👤', href: '/profile' }
 ]
 
-// === SMALLER TRENDING - 30 SLOTS ===
 function TrendingSection({ products, onView, onWhatsApp }: any) {
   if (!products || products.length === 0) return null;
   return (
@@ -35,42 +34,53 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
           <span className="bg-black text-white text-[7px] px-2 py-0.5 rounded-full font-bold">SPONSORED</span>
         </div>
         <div className="flex gap-2.5 overflow-x-auto p-2.5 scrollbar-hide">
-          {products.map((p: any) => {
-            return (
-              <div key={p.id} className="min-w-[145px] max-w-[145px] bg-white border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                <div className="relative">
-                  <img src={p.images?.[0]} className="w-full h-32 object-cover" />
-                  <span className="absolute top-1.5 left-1.5 bg-yellow-400 text-black text-[7px] font-black px-2 py-0.5 rounded-full shadow-sm">BOOSTED</span>
-                  <button onClick={() => onView(p)} className="absolute top-1.5 right-1.5 bg-black/60 text-white w-6 h-6 rounded-full flex items-center justify-center backdrop-blur-sm"><Eye size={10} /></button>
-                </div>
-                <div className="p-2">
-                  <p className="font-bold text-[11px] text-black leading-tight line-clamp-2 min-h-[28px]">{p.title}</p>
-                  <p className="font-black text-[13px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p>
-                  <button onClick={() => onWhatsApp(p)} className="w-full mt-1.5 bg-green-500 text-white text-[10px] py-1.5 rounded-md font-bold">WhatsApp</button>
-                </div>
+          {products.map((p: any) => (
+            <div key={p.id} className="min-w-[145px] max-w-[145px] bg-white border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+              <div className="relative">
+                <img src={p.images?.[0]} className="w-full h-32 object-cover" />
+                <span className="absolute top-1.5 left-1.5 bg-yellow-400 text-black text-[7px] font-black px-2 py-0.5 rounded-full shadow-sm">BOOSTED</span>
+                <button onClick={() => onView(p)} className="absolute top-1.5 right-1.5 bg-black/60 text-white w-6 h-6 rounded-full flex items-center justify-center backdrop-blur-sm"><Eye size={10} /></button>
               </div>
-            )
-          })}
+              <div className="p-2">
+                <p className="font-bold text-[11px] text-black leading-tight line-clamp-2 min-h-[28px]">{p.title}</p>
+                <p className="font-black text-[13px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p>
+                <button onClick={() => onWhatsApp(p)} className="w-full mt-1.5 bg-green-500 text-white text-[10px] py-1.5 rounded-md font-bold">WhatsApp</button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   )
 }
 
-// === NEW: BEST PICKS MANUAL SCROLL - JUST UNDER TRENDING ===
+// === CLICKABLE BEST PICKS ===
 function SanelBestPicksSection() {
+  const router = useRouter()
   const picks = [
-    { title: 'Call To Order', desc1: 'Shopping Made Easier', desc2: 'Your Needs, One Call Away', icon: '🌍', bg: 'bg-[#FFF7ED]' },
-    { title: 'Campus Delivery', desc1: 'Fast Delivery To Campus', desc2: 'MUBS, MUK, KYU & More', icon: '🛵', bg: 'bg-[#F0F9FF]' },
-    { title: 'Sell On Sanel', desc1: 'Turn Your Items To Cash', desc2: 'Start Selling In Minutes', icon: '💰', bg: 'bg-[#F0FDF4]' },
-    { title: 'Sanel Support', desc1: 'Need Help? We Are Here', desc2: 'Chat With Us 24/7', icon: '💬', bg: 'bg-[#FEF3F2]' },
+    {
+      title: 'Call To Order', desc1: 'Shopping Made Easier', desc2: 'Your Needs, One Call Away', icon: '🌍', bg: 'bg-[#FFF7ED]',
+      action: () => window.location.href = 'tel:+256700000000'
+    },
+    {
+      title: 'Campus Delivery', desc1: 'Fast Delivery To Campus', desc2: 'MUBS, MUK, KYU & More', icon: '🛵', bg: 'bg-[#F0F9FF]',
+      action: () => router.push('/about')
+    },
+    {
+      title: 'Sell On Sanel', desc1: 'Turn Your Items To Cash', desc2: 'Start Selling In Minutes', icon: '💰', bg: 'bg-[#F0FDF4]',
+      action: () => router.push('/sell')
+    },
+    {
+      title: 'Sanel Support', desc1: 'Need Help? We Are Here', desc2: 'Chat With Us 24/7', icon: '💬', bg: 'bg-[#FEF3F2]',
+      action: () => router.push('/support')
+    },
   ]
   return (
     <div className="px-3 mt-4">
       <h2 className="font-black text-[16px] mb-2.5 text-black px-1">Unlock big savings on our best picks</h2>
       <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory">
         {picks.map((item, idx) => (
-          <div key={idx} className={`min-w-[260px] max-w-[260px] ${item.bg} border border-gray-100 rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 snap-start shadow-sm`}>
+          <button key={idx} onClick={item.action} className={`min-w-[260px] max-w-[260px] ${item.bg} border border-gray-100 rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 snap-start shadow-sm hover:scale-[0.98] active:scale-[0.96] transition text-left`}>
             <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] shadow-sm border border-gray-100 flex-shrink-0">
               <span className="relative">
                 {item.icon}
@@ -82,7 +92,7 @@ function SanelBestPicksSection() {
               <p className="text-[12px] text-gray-600 leading-tight truncate">{item.desc1}</p>
               <p className="text-[11px] text-gray-500 leading-tight truncate">{item.desc2}</p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -256,8 +266,6 @@ export default function HomePage() {
       </div>
 
       <TrendingSection products={boostedProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} />
-
-      {/* NEW BEST PICKS SECTION - MANUAL SCROLL */}
       <SanelBestPicksSection />
 
       <div className="p-3">
