@@ -67,8 +67,8 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
 
 function SanelBestPicksSection() {
   const [showCall, setShowCall] = useState(false)
-  const CALL_NUMBER = "0700000000"
-  const CALL_TEL = "+256700000000"
+  const CALL_NUMBER = "0767483636"
+  const CALL_TEL = "+256767483636"
   const copyNumber = () => { navigator.clipboard.writeText(CALL_NUMBER); alert("Number copied: " + CALL_NUMBER) }
   return (
     <>
@@ -79,7 +79,7 @@ function SanelBestPicksSection() {
             <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] border">🌍</div>
             <div><p className="font-bold text-[13px] text-black">Call To Order</p><p className="text-[12px] text-gray-600 truncate">Tap to see number</p><p className="text-[11px] text-gray-500">{CALL_NUMBER}</p></div>
           </button>
-          <a href="https://wa.me/256700000001" className="min-w-[260px] max-w-[260px] bg-[#F0F9FF] border border-gray-100 rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 shadow-sm"><div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] border">🛵</div><div><p className="font-bold text-[13px] text-black">Campus Delivery</p><p className="text-[12px] text-gray-600">Fast Delivery</p></div></a>
+          <a href="https://wa.me/256775760430" className="min-w-[260px] max-w-[260px] bg-[#F0F9FF] border border-gray-100 rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 shadow-sm"><div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] border">🛵</div><div><p className="font-bold text-[13px] text-black">Campus Delivery</p><p className="text-[12px] text-gray-600">Fast Delivery</p></div></a>
           <Link href="/sell" className="min-w-[260px] max-w-[260px] bg-[#F0FDF4] border rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0"><div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px]">💰</div><div><p className="font-bold text-[13px] text-black">Sell On Sanel</p></div></Link>
           <Link href="/support" className="min-w-[260px] max-w-[260px] bg-[#FEF3F2] border rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0"><div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px]">💬</div><div><p className="font-bold text-[13px] text-black">Sanel Support</p></div></Link>
         </div>
@@ -119,7 +119,7 @@ function CategoryRow({ title, icon, products, onView, onWhatsApp, onSeeAll }: an
 
 function PromoStrip({ catName, catIndex, setCategory, router }: any) {
   const promos = [
-    { text: `🛵 Free Delivery on ${catName} Today`, btn: "Order Now", type: "order", bg: "bg-black" },
+    { text: `🛵 Delivery on ${catName} `, btn: "Order Now", type: "order", bg: "bg-black" },
     { text: `💰 Sell on Sanel & Get Paid in 10 Mins`, btn: "Sell Now", type: "sell", bg: "bg-[#8B4513]" },
     { text: `🎓 Best Deals in ${catName} - Up to 40% OFF`, btn: "Shop Now", type: "shop", bg: "bg-gradient-to-r from-orange-600 to-black" },
   ]
@@ -127,7 +127,7 @@ function PromoStrip({ catName, catIndex, setCategory, router }: any) {
   const handleClick = () => {
     if(promo.type === "sell") router.push('/sell')
     else if(promo.type === "shop") { setCategory(catName); window.scrollTo({top:0, behavior:'smooth'}) }
-    else { window.open(`https://wa.me/256700000001?text=Hello%20Sanel!%20I%20need%20delivery%20for%20${catName}`, '_blank') }
+    else { window.open(`https://wa.me/256775760430?text=Hello%20Sanel!%20I%20need%20delivery%20for%20${catName}`, '_blank') }
   }
   return (
     <button onClick={handleClick} className={`mx-3 mt-5 rounded-xl p-3 flex justify-between items-center w-[calc(100%-24px)] active:scale-[0.98] transition ${promo.bg}`}>
@@ -144,12 +144,9 @@ function FooterSanel() {
       </button>
       <div className="px-4 py-6">
         <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center font-bold text-[10px] tracking-wide text-gray-200 text-center">
-          <Link href="/chat">CHAT WITH US</Link>
-          <Link href="/help">HELP CENTER</Link>
-          <Link href="/contact">CONTACT US</Link>
+          <Link href="/support">HELP CENTER</Link>
+          <Link href="/support">CONTACT US</Link>
           <Link href="/terms">TERMS & CONDITIONS</Link>
-          <Link href="/report">REPORT A PRODUCT</Link>
-          <Link href="/return">RETURN & REFUND POLICY</Link>
           <Link href="/privacy">PRIVACY POLICY NOTICE</Link>
           <Link href="/cookies">COOKIE NOTICE</Link>
         </div>
@@ -158,7 +155,7 @@ function FooterSanel() {
           <div className="mt-2 text-[11px] text-gray-300 leading-6">
             <p>Sanel Ug - Campus Marketplace</p>
             <p>Kampala, Uganda | MUBS, MUK, KYU & More</p>
-            <p className="text-white mt-1">📞 0700 000 000 | WhatsApp: 0700 000 001</p>
+            <p className="text-white mt-1">📞 0767483636 | WhatsApp: 0706826774</p>
             <p className="text-[10px] text-gray-400 mt-2 italic">Sole proprietor - Business registration in progress</p>
           </div>
         </div>
