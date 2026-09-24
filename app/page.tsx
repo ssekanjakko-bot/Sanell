@@ -24,31 +24,30 @@ const BOTTOM_NAV = [
   { name: 'Profile', icon: '👤', href: '/profile' }
 ]
 
-// === BALANCED TRENDING ===
+// === SMALLER TRENDING - 30 SLOTS ===
 function TrendingSection({ products, onView, onWhatsApp }: any) {
   if (!products || products.length === 0) return null;
   return (
-    <div className="px-3 mt-4">
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="flex justify-between items-center px-4 py-3.5 bg-[#FFF7ED] border-b border-gray-100">
-          <h2 className="font-black text-[19px] flex items-center gap-2 text-black">🔥 TRENDING NOW <span className="bg-red-600 text-white text-[9px] px-2.5 py-1 rounded-full font-black">HOT</span></h2>
-          <span className="bg-black text-white text-[8px] px-2 py-1 rounded-full font-bold">SPONSORED</span>
+    <div className="px-3 mt-3">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="flex justify-between items-center px-3 py-2.5 bg-[#FFF7ED] border-b border-gray-100">
+          <h2 className="font-black text-[15px] flex items-center gap-2 text-black">🔥 TRENDING <span className="bg-red-600 text-white text-[8px] px-2 py-0.5 rounded-full font-black">HOT</span></h2>
+          <span className="bg-black text-white text-[7px] px-2 py-0.5 rounded-full font-bold">SPONSORED</span>
         </div>
-        <div className="flex gap-3 overflow-x-auto p-3 scrollbar-hide">
+        <div className="flex gap-2.5 overflow-x-auto p-2.5 scrollbar-hide">
           {products.map((p: any) => {
             const hoursLeft = p.boosted_until? Math.max(0, Math.ceil((p.boosted_until.toDate().getTime() - Date.now()) / 3600000)) : 24;
             return (
-              <div key={p.id} className="min-w-[185px] max-w-[185px] bg-white border border-gray-100 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
+              <div key={p.id} className="min-w-[145px] max-w-[145px] bg-white border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                 <div className="relative">
-                  <img src={p.images?.[0]} className="w-full h-40 object-cover" />
-                  <span className="absolute top-2 left-2 bg-yellow-400 text-black text-[9px] font-black px-2.5 py-1 rounded-full shadow-sm">BOOSTED</span>
-                  <button onClick={() => onView(p)} className="absolute top-2 right-2 bg-black/70 text-white w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm"><Eye size={14} /></button>
-                  <span className="absolute bottom-2 left-2 bg-black/75 text-white text-[9px] px-2 py-0.5 rounded-full">⏳ {hoursLeft}h left</span>
+                  <img src={p.images?.[0]} className="w-full h-32 object-cover" />
+                  <span className="absolute top-1.5 left-1.5 bg-yellow-400 text-black text-[7px] font-black px-2 py-0.5 rounded-full shadow-sm">BOOSTED</span>
+                  <button onClick={() => onView(p)} className="absolute top-1.5 right-1.5 bg-black/60 text-white w-6 h-6 rounded-full flex items-center justify-center backdrop-blur-sm"><Eye size={10} /></button>
                 </div>
-                <div className="p-2.5">
-                  <p className="font-bold text-[13px] text-black leading-tight line-clamp-2 min-h-[36px]">{p.title}</p>
-                  <p className="font-black text-[16px] mt-1.5" style={{color: '#B45309'}}>{p.price} UGX</p>
-                  <button onClick={() => onWhatsApp(p)} className="w-full mt-2.5 bg-green-500 text-white text-[12px] py-2 rounded-lg font-bold">WhatsApp</button>
+                <div className="p-2">
+                  <p className="font-bold text-[11px] text-black leading-tight line-clamp-2 min-h-[28px]">{p.title}</p>
+                  <p className="font-black text-[13px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p>
+                  <button onClick={() => onWhatsApp(p)} className="w-full mt-1.5 bg-green-500 text-white text-[10px] py-1.5 rounded-md font-bold">WhatsApp</button>
                 </div>
               </div>
             )
@@ -101,6 +100,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [viewProduct, setViewProduct] = useState<any>(null)
   const [showCategories, setShowCategories] = useState(false)
+  const [currentBanner, setCurrentBanner] = useState(0)
   const router = useRouter()
   const pathname = usePathname()
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -111,15 +111,28 @@ export default function HomePage() {
     return () => unsub()
   }, [])
 
+  // BANNER AUTO + MANUAL SCROLL WITH DOTS
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || banners.length <= 1) return;
+
+    const handleScroll = () => {
+      const index = Math.round(el.scrollLeft / el.clientWidth);
+      setCurrentBanner(index);
+    };
+    el.addEventListener('scroll', handleScroll);
+
     let i = 0;
     const timer = setInterval(() => {
       i = (i + 1) % banners.length;
-      el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
-    }, 4000);
-    return () => clearInterval(timer);
+      if(el) {
+        el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+      }
+    }, 3500);
+    return () => {
+      clearInterval(timer);
+      el.removeEventListener('scroll', handleScroll);
+    }
   }, [banners.length]);
 
   useEffect(() => {
@@ -135,7 +148,7 @@ export default function HomePage() {
     const q = query(collection(db, 'products'), where("is_boosted", "==", true))
     const unsub = onSnapshot(q, (snap) => {
       const now = new Date()
-      const boosted = snap.docs.map(d => ({ id: d.id,...d.data() } as any)).filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now).sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate()).slice(0, 10)
+      const boosted = snap.docs.map(d => ({ id: d.id,...d.data() } as any)).filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now).sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate()).slice(0, 30)
       setBoostedProducts(boosted)
     })
     return () => unsub()
@@ -168,7 +181,6 @@ export default function HomePage() {
       <div className="bg-white sticky top-0 z-20 shadow-sm">
         <div className="p-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            {/* CATEGORY ICON - FLOATING FROM UPPER LEFT */}
             <button onClick={() => setShowCategories(!showCategories)} className="bg-black text-white w-9 h-9 rounded-full flex items-center justify-center shadow-md">
               <LayoutGrid size={18} />
             </button>
@@ -185,7 +197,6 @@ export default function HomePage() {
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products" className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 text-sm placeholder:text-gray-400" />
         </div>
 
-        {/* CATEGORIES DRAWER - FLOATS WHEN TAPPED */}
         {showCategories && (
           <div className="px-3 pb-3 animate-in slide-in-from-top-2">
             <div className="bg-gray-50 rounded-2xl p-3 border grid grid-cols-3 gap-2">
@@ -200,15 +211,24 @@ export default function HomePage() {
         )}
       </div>
 
-      <div className="px-3 pt-2">
+      {/* BANNERS - INDEPENDENT WITH DOTS */}
+      <div className="px-3 pt-2 relative">
         {banners.length > 0 && (
-          <div ref={scrollRef} className="flex overflow-x-hidden scroll-smooth rounded-2xl">
-            {banners.map((b) => (
-              <Link key={b.id} href={b.link || "/"} className="w-full flex-shrink-0">
-                <img src={b.imageUrl} alt="banner" className="w-full h-44 object-cover rounded-2xl"/>
-              </Link>
-            ))}
-          </div>
+          <>
+            <div ref={scrollRef} className="flex overflow-x-auto scroll-smooth rounded-2xl snap-x snap-mandatory scrollbar-hide">
+              {banners.map((b) => (
+                <Link key={b.id} href={b.link || "/"} className="w-full flex-shrink-0 snap-center">
+                  <img src={b.imageUrl} alt="banner" className="w-full h-44 object-cover rounded-2xl"/>
+                </Link>
+              ))}
+            </div>
+            {/* SMALL DOTS AT BOTTOM */}
+            <div className="flex justify-center gap-1.5 mt-2">
+              {banners.map((_, idx) => (
+                <button key={idx} onClick={() => { setCurrentBanner(idx); scrollRef.current?.scrollTo({ left: idx * scrollRef.current.clientWidth, behavior: "smooth" }); }} className={`h-1.5 rounded-full transition-all ${currentBanner === idx? 'bg-orange-600 w-6' : 'bg-gray-300 w-1.5'}`} />
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -240,7 +260,6 @@ export default function HomePage() {
 
       {viewProduct && <ProductViewModal product={viewProduct} onClose={() => setViewProduct(null)} onWhatsApp={handleWhatsApp} />}
 
-      {/* FLOATING CIRCULAR MOVIE BUTTON */}
       <Link href="/movies" className="fixed bottom-20 left-4 bg-black text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40 hover:scale-110 transition border-2 border-white">
         <Film size={22} />
       </Link>
