@@ -1,57 +1,80 @@
 import Link from 'next/link';
 
 export default function About() {
-          return (
-                    <main className="min-h-screen bg-gray-100 p-4 pb-20">
-                              <Link href="/" className="text-indigo-600 font-semibold">← Back</Link>
+  return (
+    <main className="min-h-screen bg-[#FDF8F3]">
+      <div className="bg-white sticky top-0 z-10 shadow-sm p-3 flex items-center gap-3">
+        <Link href="/" className="bg-black text-white w-9 h-9 rounded-full flex items-center justify-center">←</Link>
+        <span className="font-bold text-[16px]" style={{color: '#8B4513'}}>About Sanel</span>
+      </div>
 
-                              <div className="bg-white rounded-lg shadow p-6 mt-4">
-                                        <div className="text-center mb-6">
-                                                  <div className="text-5xl mb-2">🎓</div>
-                                                  <h1 className="text-3xl font-bold text-indigo-600">Sanel Campus Market</h1>
-                                                  <p className="text-gray-600">Buy & Sell on Campus</p>
-                                        </div>
+      <div className="p-3">
+        {/* HERO */}
+        <div className="bg-gradient-to-br from-black via-[#3A1A00] to-[#8B4513] rounded-[20px] p-6 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+          <div className="text-5xl mb-3">🎓</div>
+          <h1 className="text-[28px] font-black leading-tight">Sanel Campus Market</h1>
+          <p className="text-white/70 text-[13px] mt-1 font-bold tracking-widest">BUY & SELL ON CAMPUS</p>
+          <p className="text-[13px] text-white/80 mt-4 leading-6 max-w-[90%]">
+            Sanel is a student-to-student marketplace made for campus life. Sell your textbooks, laptops, furniture, clothes, and hostel items. Find deals from other students near you without leaving campus.
+          </p>
+        </div>
 
-                                        <div className="space-y-4 text-gray-700">
-                                                  <h2 className="text-xl font-bold">What is Sanel?</h2>
-                                                  <p>
-                                                            Sanel is a student-to-student marketplace made for campus life.
-                                                            Sell your textbooks, laptops, furniture, clothes, and hostel items.
-                                                            Find deals from other students near you without leaving campus.
-                                                  </p>
+        {/* WHY LOVE IT */}
+        <div className="bg-white rounded-2xl border shadow-sm p-4 mt-4">
+          <h2 className="font-black text-[15px] text-black">Why Students Love It</h2>
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div className="bg-[#FFF7ED] border border-orange-100 rounded-xl p-3">
+              <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center text-[18px] shadow-sm">💯</div>
+              <p className="font-bold text-[12px] mt-2 text-black">No Commission</p>
+              <p className="text-[11px] text-gray-600 leading-4 mt-1">100% of your sale money is yours</p>
+            </div>
+            <div className="bg-[#F0F9FF] border border-blue-100 rounded-xl p-3">
+              <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center text-[18px] shadow-sm">📍</div>
+              <p className="font-bold text-[12px] mt-2 text-black">Meet on Campus</p>
+              <p className="text-[11px] text-gray-600 leading-4 mt-1">Exchange at library, hostel, or lecture rooms</p>
+            </div>
+            <div className="bg-[#F0FDF4] border border-green-100 rounded-xl p-3">
+              <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center text-[18px] shadow-sm">💬</div>
+              <p className="font-bold text-[12px] mt-2 text-black">WhatsApp Direct</p>
+              <p className="text-[11px] text-gray-600 leading-4 mt-1">Chat with buyers/sellers instantly</p>
+            </div>
+            <div className="bg-[#FEF3F2] border border-red-100 rounded-xl p-3">
+              <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center text-[18px] shadow-sm">🛡️</div>
+              <p className="font-bold text-[12px] mt-2 text-black">Safe & Local</p>
+              <p className="text-[11px] text-gray-600 leading-4 mt-1">Only students from your campus see your posts</p>
+            </div>
+          </div>
+        </div>
 
-                                                  <h2 className="text-xl font-bold mt-6">Why Students Love It</h2>
-                                                  <ul className="list-disc pl-5 space-y-2">
-                                                            <li><b>No Commission:</b> 100% of your sale money is yours</li>
-                                                            <li><b>Meet on Campus:</b> Exchange items at library, hostel, or lecture rooms</li>
-                                                            <li><b>WhatsApp Direct:</b> Chat with buyers/sellers instantly</li>
-                                                            <li><b>Safe & Local:</b> Only students from your campus can see your posts</li>
-                                                  </ul>
+        {/* HOW IT WORKS */}
+        <div className="bg-white rounded-2xl border shadow-sm p-4 mt-4">
+          <h2 className="font-black text-[15px] text-black">How It Works</h2>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="bg-black text-white p-3 rounded-xl text-center">
+              <div className="text-[22px]">1️⃣</div>
+              <p className="font-black text-[12px] mt-1">Post</p>
+              <p className="text-[10px] text-white/70 mt-1">Tap + to sell</p>
+            </div>
+            <div className="bg-[#8B4513] text-white p-3 rounded-xl text-center">
+              <div className="text-[22px]">2️⃣</div>
+              <p className="font-black text-[12px] mt-1">Chat</p>
+              <p className="text-[10px] text-white/70 mt-1">WhatsApp buyer</p>
+            </div>
+            <div className="bg-white border-2 border-black p-3 rounded-xl text-center">
+              <div className="text-[22px]">3️⃣</div>
+              <p className="font-black text-[12px] mt-1 text-black">Sell</p>
+              <p className="text-[10px] text-gray-600 mt-1">Meet on campus</p>
+            </div>
+          </div>
+        </div>
 
-                                                  <h2 className="text-xl font-bold mt-6">How It Works</h2>
-                                                  <div className="grid grid-cols-3 gap-2 text-center">
-                                                            <div className="bg-indigo-50 p-3 rounded">
-                                                                      <div className="text-2xl">1️⃣</div>
-                                                                      <p className="text-sm font-semibold">Post</p>
-                                                                      <p className="text-xs">Tap + to sell</p>
-                                                            </div>
-                                                            <div className="bg-indigo-50 p-3 rounded">
-                                                                      <div className="text-2xl">2️⃣</div>
-                                                                      <p className="text-sm font-semibold">Chat</p>
-                                                                      <p className="text-xs">WhatsApp buyer</p>
-                                                            </div>
-                                                            <div className="bg-indigo-50 p-3 rounded">
-                                                                      <div className="text-2xl">3️⃣</div>
-                                                                      <p className="text-sm font-semibold">Sell</p>
-                                                                      <p className="text-xs">Meet on campus or anywhere near campus</p>
-                                                            </div>
-                                                  </div>
+        <Link href="/sell" className="block w-full bg-black text-white py-4 rounded-full text-center font-black text-[14px] mt-5 shadow-lg active:scale-[0.98] transition">
+          Start your online SHOP with us →
+        </Link>
 
-                                                  <Link href="/sell" className="block w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-lg text-center font-semibold mt-6">
-                                                            Start your online SHOP with us
-                                                  </Link>
-                                        </div>
-                              </div>
-                    </main>
-          );
+        <p className="text-center text-[10px] text-gray-400 mt-4 pb-6">All Rights Reserved © {new Date().getFullYear()} Sanel Ug • Campus Marketplace</p>
+      </div>
+    </main>
+  );
 }
