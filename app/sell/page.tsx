@@ -73,7 +73,6 @@ export default function SellPage() {
   const [chatOpen, setChatOpen] = useState(false)
   const [boostLoading, setBoostLoading] = useState<string | null>(null)
 
-  // NEW STATES FOR PACKAGE MODAL
   const [showBoostModal, setShowBoostModal] = useState(false)
   const [selectedProductToBoost, setSelectedProductToBoost] = useState<Product | null>(null)
   const [selectedPackage, setSelectedPackage] = useState<any>(BOOST_PACKAGES[1])
@@ -107,7 +106,6 @@ export default function SellPage() {
     return () => unsubAuth()
   }, [])
 
-  // === BOOST LOGIC WITH PACKAGES ===
   const openBoostModal = (product: Product) => {
     if (!user) return alert("Login required")
     if (product.is_boosted && product.boosted_until && product.boosted_until.toDate() > new Date()) {
@@ -128,7 +126,6 @@ export default function SellPage() {
 
     setBoostLoading(product.id)
     try {
-      // 1. Create boost request for admin panel WITH PACKAGE INFO
       await addDoc(collection(db, 'boost_requests'), {
         productId: product.id,
         productTitle: product.title,
@@ -144,7 +141,6 @@ export default function SellPage() {
         createdAt: serverTimestamp()
       })
 
-      // 2. Mark product as pending WITH PACKAGE
       await updateDoc(doc(db, 'products', product.id), {
         boost_pending: true,
         boost_pending_packageId: pkg.id,
@@ -261,40 +257,41 @@ export default function SellPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto min-h-screen" style={{ backgroundColor: '#FDF8F3' }}>
-      {/* BOOST PACKAGE MODAL */}
+      {/* BOOST PACKAGE MODAL - READABLE FIX */}
       {showBoostModal && selectedProductToBoost && (
         <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[400px] p-5 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-[400px] p-5 max-h-[90vh] overflow-y-auto shadow-2xl">
             <h3 className="font-black text-[18px] text-black">🚀 Boost {selectedProductToBoost.title.slice(0,20)}</h3>
-            <p className="text-[12px] text-gray-500 mt-1">Choose package - Pay to <b>0767483636</b></p>
+            <p className="text-[13px] text-black mt-1 font-bold">Choose package - Pay to <b className="text-black">0767483636</b></p>
             <div className="mt-4 space-y-3">
               {BOOST_PACKAGES.map(pkg => (
                 <button
                   key={pkg.id}
                   onClick={() => setSelectedPackage(pkg)}
-                  className={`w-full text-left border-2 rounded-xl p-3 flex justify-between items-center ${selectedPackage.id === pkg.id? 'border-black bg-[#FFF7ED]' : 'border-gray-200 bg-white'}`}
+                  className={`w-full text-left border-2 rounded-xl p-3 flex justify-between items-center ${selectedPackage.id === pkg.id? 'border-black bg-[#FFF7ED]' : 'border-gray-300 bg-white'}`}
                 >
                   <div>
-                    <p className="font-black text-[13px] text-black flex gap-2">{pkg.name} {pkg.popular && <span className="bg-black text-white text-[8px] px-2 py-0.5 rounded-full">POPULAR</span>}</p>
-                    <p className="text-[11px] text-gray-600">{pkg.desc}</p>
-                    <p className="font-bold text-[12px] mt-1" style={{color: COFFEE_BROWN}}>{pkg.durationDays} day{pkg.durationDays>1?'s':''}</p>
+                    <p className="font-black text-[13px] text-black flex gap-2 items-center">{pkg.name} {pkg.popular && <span className="bg-black text-white text-[8px] px-2 py-0.5 rounded-full">POPULAR</span>}</p>
+                    <p className="text-[12px] text-black font-medium">{pkg.desc}</p>
+                    <p className="font-bold text-[12px] mt-1 text-black">{pkg.durationDays} day{pkg.durationDays>1?'s':''}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-black text-[15px] text-black">{pkg.price.toLocaleString()}</p>
-                    <p className="text-[10px] text-gray-500">UGX</p>
+                    <p className="text-[10px] text-black font-bold">UGX</p>
                   </div>
                 </button>
               ))}
             </div>
-            <div className="mt-5 bg-gray-50 border rounded-xl p-3 text-[11px]">
-              <p className="font-bold">How to pay:</p>
-              <p className="mt-1">1. Send <b>{selectedPackage.price} UGX</b> to <b>0767483636</b></p>
-              <p>2. Reason: <b>BOOST {selectedProductToBoost.id.slice(0,6).toUpperCase()}</b></p>
-              <p>3. Click "I Have Paid" below</p>
+            {/* FIXED - HIGH CONTRAST BOX */}
+            <div className="mt-5 bg-white border-2 border-black rounded-xl p-3">
+              <p className="font-black text-[13px] text-black">How to pay:</p>
+              <p className="mt-2 text-[13px] text-black font-bold">1. Send <b>{selectedPackage.price} UGX</b> to <b>0767483636</b></p>
+              <p className="text-[13px] text-black font-bold">2. Reason: <b>BOOST {selectedProductToBoost.id.slice(0,6).toUpperCase()}</b></p>
+              <p className="text-[13px] text-black font-bold">3. Click "I Have Paid" below</p>
             </div>
             <div className="mt-4 flex gap-2">
-              <button onClick={() => setShowBoostModal(false)} className="flex-1 bg-gray-100 text-black py-3 rounded-full font-bold">Cancel</button>
-              <button onClick={handleBoost} disabled={boostLoading === selectedProductToBoost.id} className="flex-1 bg-black text-white py-3 rounded-full font-bold">
+              <button onClick={() => setShowBoostModal(false)} className="flex-1 bg-white border-2 border-black text-black py-3 rounded-full font-black">Cancel</button>
+              <button onClick={handleBoost} disabled={boostLoading === selectedProductToBoost.id} className="flex-1 bg-black text-white py-3 rounded-full font-black">
                 {boostLoading? 'Sending...' : `I Have Paid ${selectedPackage.price}`}
               </button>
             </div>
