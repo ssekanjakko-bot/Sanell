@@ -54,11 +54,22 @@ type BoostRequest = {
   sellerPhone: string
   amount: number
   status: 'pending' | 'approved' | 'rejected'
+  packageId?: string
+  packageName?: string
+  durationDays?: number
   createdAt: Timestamp
+}
+
+const BOOST_LABELS: any = {
+  quick: { label: '24H', color: 'bg-gray-200 text-black' },
+  standard: { label: '3D POPULAR', color: 'bg-yellow-300 text-black' },
+  seller: { label: '7D SELLER', color: 'bg-orange-400 text-white' },
+  king: { label: '14D KING 👑', color: 'bg-black text-yellow-400' },
 }
 
 export default function AdminPage() {
   const router = useRouter();
+  const [tab, setTab] = useState<'dashboard'|'boosts'|'movies'|'chats'|'banners'>('dashboard')
   const [movies, setMovies] = useState<Movie[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [bannerFile,setBannerFile]=useState<File | null>(null)
@@ -82,8 +93,6 @@ export default function AdminPage() {
   const [sellerThreads, setSellerThreads] = useState<SellerThread[]>([])
   const [activeSellerId, setActiveSellerId] = useState<string>('')
   const [adminReply, setAdminReply] = useState('')
-
-  // === NEW BOOST STATE ===
   const [boostRequests, setBoostRequests] = useState<BoostRequest[]>([])
   const [boostFilter, setBoostFilter] = useState<'pending'|'approved'|'rejected'>('pending')
 
@@ -92,14 +101,13 @@ export default function AdminPage() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const moviesData: Movie[] = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
-     ...docSnap.data()
+    ...docSnap.data()
       } as Movie));
       setMovies(moviesData);
     });
     return () => unsubscribe();
   }, []);
 
-  // === BOOST LISTENER ===
   useEffect(() => {
     const q = query(collection(db, "boost_requests"), orderBy("createdAt", "desc"));
     const unsub = onSnapshot(q, (snap) => {
@@ -110,50 +118,37 @@ export default function AdminPage() {
   }, [])
 
   const approveBoost = async (req: BoostRequest) => {
-    if (!confirm(`Approve boost for "${req.productTitle}"? It will show in Trending for 24h.`)) return
+    const days = req.durationDays || 1
+    if (!confirm(`Approve ${req.packageName || ''} - ${days} days for "${req.productTitle}"?`)) return
     try {
-      // 1. Update product to boosted for 24h
       const now = new Date()
-      const until = new Date(now.getTime() + 24 * 60 * 60 * 1000) // 24h
+      const until = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
       await updateDoc(doc(db, "products", req.productId), {
         is_boosted: true,
         boosted_at: Timestamp.fromDate(now),
         boosted_until: Timestamp.fromDate(until),
-        boost_pending: false
+        boostDurationDays: days,
+        boostPackageId: req.packageId || 'standard',
+        boostPackageName: req.packageName || '',
+        boost_pending: false,
+        boost_pending_packageId: null,
+        boost_pending_packageName: null,
       })
-      // 2. Mark request as approved
       await updateDoc(doc(db, "boost_requests", req.id), {
         status: 'approved',
-        approvedAt: serverTimestamp()
+        approvedAt: serverTimestamp(),
+        approvedDurationDays: days
       })
-      alert("Boost approved! Product is now in Trending.")
-    } catch (e:any) {
-      alert("Failed: " + e.message)
-    }
+      alert(`Approved ${days} days!`)
+    } catch (e:any) { alert("Failed: " + e.message) }
   }
 
   const rejectBoost = async (req: BoostRequest) => {
     if (!confirm(`Reject boost for "${req.productTitle}"?`)) return
     try {
-      await updateDoc(doc(db, "products", req.productId), {
-        boost_pending: false,
-        is_boosted: false
-      })
-      await updateDoc(doc(db, "boost_requests", req.id), {
-        status: 'rejected',
-        rejectedAt: serverTimestamp()
-      })
-    } catch (e:any) {
-      alert("Failed: " + e.message)
-    }
-  }
-
-  const removeBoostEarly = async (productId: string) => {
-    if (!confirm("Remove boost early?")) return
-    await updateDoc(doc(db, "products", productId), {
-      is_boosted: false,
-      boost_pending: false
-    })
+      await updateDoc(doc(db, "products", req.productId), { boost_pending: false, is_boosted: false })
+      await updateDoc(doc(db, "boost_requests", req.id), { status: 'rejected', rejectedAt: serverTimestamp() })
+    } catch (e:any) { alert("Failed: " + e.message) }
   }
 
   useEffect(() => {
@@ -165,12 +160,7 @@ export default function AdminPage() {
       const map = new Map<string, SellerThread>()
       msgs.forEach(m => {
         if (!map.has(m.sellerId)) {
-          map.set(m.sellerId, {
-            sellerId: m.sellerId,
-            sellerEmail: m.sellerEmail || 'No email',
-            lastMessage: m.message,
-            lastTime: m.createdAt
-          })
+          map.set(m.sellerId, { sellerId: m.sellerId, sellerEmail: m.sellerEmail || 'No email', lastMessage: m.message, lastTime: m.createdAt })
         }
       })
       setSellerThreads(Array.from(map.values()))
@@ -192,10 +182,7 @@ export default function AdminPage() {
         createdAt: serverTimestamp()
       })
       setAdminReply('')
-    } catch(e:any){
-      console.error(e)
-      alert("Failed: "+e.message)
-    }
+    } catch(e:any){ alert("Failed: "+e.message) }
   }
 
   const resetForm = () => {
@@ -216,14 +203,10 @@ export default function AdminPage() {
         imageUrl: url, linkUrl: bannerLink || '#', active: true, updatedAt: serverTimestamp()
       })
       alert('Banner saved ✅')
-    } catch (e: any) {
-      alert("Upload failed: " + e.code)
-    } finally { setBannerLoading(false) }
+    } catch (e: any) { alert("Upload failed: " + e.code) } finally { setBannerLoading(false) }
   }
   useEffect(() => {
-    getDoc(doc(db, 'banners', 'activeBanner')).then(snap => {
-      if (snap.exists()) setCurrentBanner(snap.data())
-    })
+    getDoc(doc(db, 'banners', 'activeBanner')).then(snap => { if (snap.exists()) setCurrentBanner(snap.data()) })
   }, [])
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -264,12 +247,10 @@ export default function AdminPage() {
       if (editingId) { await updateDoc(doc(db, "movies", editingId), movieData); alert("Movie updated!"); }
       else { await addDoc(collection(db, "movies"), {...movieData, createdAt: new Date() }); alert("Movie added!"); }
       resetForm();
-    } catch (error: any) {
-      alert(`Failed: ${error.message}`);
-    } finally { setIsUploading(false); }
+    } catch (error: any) { alert(`Failed: ${error.message}`); } finally { setIsUploading(false); }
   };
   const handleEdit = (movie: Movie) => {
-    setEditingId(movie.id); setTitle(movie.title); setDescription(movie.description); setReleaseDate(movie.releaseDate); setDuration(movie.duration); setGenre(movie.genre || []); setDirector(movie.director); setCast(movie.cast); setYoutubeUrl(movie.youtubeUrl || ""); setVideoFile(null); setPosterFile(null); window.scrollTo({ top: 0, behavior: "smooth" });
+    setEditingId(movie.id); setTitle(movie.title); setDescription(movie.description); setReleaseDate(movie.releaseDate); setDuration(movie.duration); setGenre(movie.genre || []); setDirector(movie.director); setCast(movie.cast); setYoutubeUrl(movie.youtubeUrl || ""); setVideoFile(null); setPosterFile(null); window.scrollTo({ top: 0, behavior: "smooth" }); setTab('movies')
   };
   const handleDelete = async (movie: Movie) => {
     if (!confirm(`Delete "${movie.title}"? This cannot be undone.`)) return;
@@ -285,135 +266,173 @@ export default function AdminPage() {
   const pendingCount = boostRequests.filter(b => b.status === 'pending').length
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="min-h-screen bg-[#FDF8F3]">
+      {/* HEADER */}
+      <div className="bg-black text-white p-4 sticky top-0 z-20">
+        <h1 className="font-black text-lg">SANEL ADMIN</h1>
+        <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-hide">
+          {[
+            {id:'dashboard', label:'Dashboard'},
+            {id:'boosts', label:`Boosts ${pendingCount>0?`(${pendingCount})`:''}`},
+            {id:'chats', label:`Chats (${sellerThreads.length})`},
+            {id:'movies', label:'Movies'},
+            {id:'banners', label:'Banners'},
+          ].map((t:any)=>(
+            <button key={t.id} onClick={()=>setTab(t.id)} className={`px-4 py-1.5 rounded-full text-xs font-black whitespace-nowrap ${tab===t.id?'bg-white text-black':'bg-[#333] text-white border border-[#555]'}`}>{t.label}</button>
+          ))}
+        </div>
+      </div>
 
-      {/* ===== NEW BOOST MANAGEMENT ===== */}
-      <div className="mb-8 bg-white border-2 border-yellow-400 rounded-xl shadow-lg overflow-hidden">
-        <div className="bg-yellow-400 text-black p-4 font-bold text-lg flex justify-between items-center">
-          <span>🚀 Boost Requests {pendingCount > 0 && <span className="bg-black text-yellow-400 px-2 py-0.5 rounded-full text-xs ml-2">{pendingCount} pending</span>}</span>
-          <div className="flex gap-2">
-            <button onClick={()=>setBoostFilter('pending')} className={`px-3 py-1 rounded text-xs font-bold ${boostFilter==='pending'?'bg-black text-yellow-400':'bg-white text-black'}`}>Pending</button>
-            <button onClick={()=>setBoostFilter('approved')} className={`px-3 py-1 rounded text-xs font-bold ${boostFilter==='approved'?'bg-black text-yellow-400':'bg-white text-black'}`}>Approved</button>
-            <button onClick={()=>setBoostFilter('rejected')} className={`px-3 py-1 rounded text-xs font-bold ${boostFilter==='rejected'?'bg-black text-yellow-400':'bg-white text-black'}`}>Rejected</button>
+      <div className="container mx-auto p-4 max-w-5xl">
+
+      {tab==='dashboard' && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">PENDING BOOSTS</p><p className="text-2xl font-black">{pendingCount}</p><p className="text-xs">0767483636</p></div>
+          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">SELLERS CHATTING</p><p className="text-2xl font-black">{sellerThreads.length}</p></div>
+          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">TOTAL MOVIES</p><p className="text-2xl font-black">{movies.length}</p></div>
+          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">BANNER</p><p className="text-xs font-bold truncate">{currentBanner?.imageUrl? 'Active':'No banner'}</p></div>
+        </div>
+      )}
+
+      {tab==='boosts' && (
+        <div className="bg-white border rounded-xl shadow overflow-hidden">
+          <div className="p-4 border-b flex justify-between items-center">
+            <h2 className="font-black">🚀 Boost Requests</h2>
+            <div className="flex gap-1">
+              {['pending','approved','rejected'].map((f:any)=>(
+                <button key={f} onClick={()=>setBoostFilter(f)} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${boostFilter===f?'bg-black text-white':'bg-gray-100 text-black border'}`}>{f}</button>
+              ))}
+            </div>
+          </div>
+          <div className="p-3">
+            {filteredBoosts.length===0? <p className="text-center text-gray-400 py-10 text-sm">No {boostFilter} boosts</p> :
+              <div className="grid gap-3">
+                {filteredBoosts.map(req=>{
+                  const meta = BOOST_LABELS[req.packageId || ''] || {label: `${req.durationDays||1}D`, color: 'bg-gray-100 text-black'}
+                  return (
+                    <div key={req.id} className="border rounded-xl p-3 flex gap-3 bg-[#FFFEFB]">
+                      <img src={req.productImage} className="w-16 h-16 rounded-lg object-cover border" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex gap-2 items-center flex-wrap">
+                          <p className="font-bold text-sm truncate">{req.productTitle}</p>
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-black ${meta.color}`}>{req.packageName || meta.label} • {req.durationDays||1}D • {req.amount} UGX</span>
+                        </div>
+                        <p className="text-[11px] text-black font-medium mt-1">Seller: {req.sellerEmail} • {req.sellerPhone}</p>
+                        <p className="text-[10px] text-gray-500">ID: {req.productId.slice(0,8)} • {req.createdAt?.toDate? req.createdAt.toDate().toLocaleString():''} • Pay to 0767483636 checked?</p>
+                      </div>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        {req.status==='pending'? <>
+                          <button onClick={()=>approveBoost(req)} className="bg-black text-white px-4 py-2 rounded-full text-xs font-black">Approve {req.durationDays}d</button>
+                          <button onClick={()=>rejectBoost(req)} className="bg-white border border-black text-black px-4 py-1.5 rounded-full text-xs font-black">Reject</button>
+                        </> : <span className={`px-3 py-1 rounded-full text-[10px] font-black text-center ${req.status==='approved'?'bg-green-600 text-white':'bg-red-600 text-white'}`}>{req.status.toUpperCase()}</span>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            }
           </div>
         </div>
+      )}
 
-        <div className="p-4">
-          {filteredBoosts.length === 0? (
-            <p className="text-center text-gray-500 py-6">No {boostFilter} boost requests</p>
-          ) : (
-            <div className="grid gap-3">
-              {filteredBoosts.map(req => (
-                <div key={req.id} className="border rounded-lg p-3 flex gap-3 items-center">
-                  <img src={req.productImage} alt={req.productTitle} className="w-16 h-16 object-cover rounded-lg" />
-                  <div className="flex-1">
-                    <p className="font-bold text-sm">{req.productTitle}</p>
-                    <p className="text-xs text-gray-500">{req.sellerEmail} | {req.sellerPhone}</p>
-                    <p className="text-xs font-bold">UGX {req.amount} - {req.createdAt?.toDate? req.createdAt.toDate().toLocaleString() : ''}</p>
-                    <p className="text-[10px]">ID: {req.productId.slice(0,8)}</p>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    {req.status === 'pending'? (
-                      <>
-                        <button onClick={()=>approveBoost(req)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded text-xs font-bold">Approve 24h</button>
-                        <button onClick={()=>rejectBoost(req)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded text-xs font-bold">Reject</button>
-                      </>
-                    ) : (
-                      <span className={`px-3 py-1 rounded text-xs font-bold text-center ${req.status==='approved'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{req.status}</span>
-                    )}
-                  </div>
+      {tab==='movies' && (
+        <>
+          <form onSubmit={handleSubmit} className="bg-white border rounded-xl p-4 shadow mb-6">
+            <h2 className="font-black mb-3">{editingId? "Edit Movie" : "Add Movie"}</h2>
+            <div className="grid md:grid-cols-2 gap-2">
+              <input className="border p-2 w-full rounded text-black" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} required />
+              <input type="date" className="border p-2 w-full rounded text-black" value={releaseDate} onChange={e => setReleaseDate(e.target.value)} />
+              <input className="border p-2 w-full rounded text-black" placeholder="Duration e.g. 2h 10m" value={duration} onChange={e => setDuration(e.target.value)} />
+              <input className="border p-2 w-full rounded text-black" placeholder="Director" value={director} onChange={e => setDirector(e.target.value)} />
+              <input className="border p-2 w-full rounded text-black col-span-2" placeholder="Cast, comma separated" value={cast} onChange={e => setCast(e.target.value)} />
+              <input className="border p-2 w-full rounded text-black col-span-2" placeholder="YouTube URL (optional)" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} />
+            </div>
+            <textarea className="border p-2 w-full rounded text-black mt-2" placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
+            <div className="mt-3">
+              <label className="font-bold text-xs">Genre:</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-1">
+                {["Action", "Comedy", "Popular Movie", "C-Drama", "Sci-Fi", "Most Popular", "Anime", "DC Movies", "Marvel Movies", "Trending Now", "💖Romance", " Thriller", "Documentary", "Family", "Fantasy", " adventure", "Horror"].map(g => (
+                  <label key={g} className="flex items-center text-xs text-black"><input type="checkbox" value={g} checked={genre.includes(g)} onChange={handleGenreChange} className="mr-2" />{g}</label>
+                ))}
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3 mt-3">
+              <div><label className="font-bold text-xs text-black">Video File {editingId && "(leave empty to keep current)"}</label><input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files?.[0] || null)} className="border p-2 w-full rounded text-sm" /></div>
+              <div><label className="font-bold text-xs text-black">Poster Image {editingId && "(leave empty to keep current)"}</label><input type="file" accept="image/*" onChange={e => setPosterFile(e.target.files?.[0] || null)} className="border p-2 w-full rounded text-sm" /></div>
+            </div>
+            {isUploading && (
+              <div className="mt-4 w-full"><div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-black h-2 rounded-full" style={{ width: `${uploadProgress}%` }}></div></div><p className="text-xs text-center mt-1 text-black">{uploadStatus}</p></div>
+            )}
+            <div className="flex gap-2 mt-4">
+              <button type="submit" disabled={isUploading} className="bg-black text-white px-6 py-2 rounded-full text-sm font-black disabled:opacity-50">{isUploading? "Uploading..." : editingId? "Update Movie" : "Add Movie"}</button>
+              {editingId && <button type="button" onClick={resetForm} className="bg-white border border-black text-black px-6 py-2 rounded-full text-sm font-black">Cancel</button>}
+            </div>
+          </form>
+
+          <div className="bg-white border rounded-xl p-3">
+            <h2 className="font-black mb-2">Posted Movies ({movies.length})</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead><tr className="bg-gray-50 text-left text-xs"><th className="border px-3 py-2">Poster</th><th className="border px-3 py-2">Title</th><th className="border px-3 py-2">Date</th><th className="border px-3 py-2">Actions</th></tr></thead>
+                <tbody>
+                  {movies.map(movie => (
+                    <tr key={movie.id} className="text-black"><td className="border px-3 py-2"><img src={movie.posterUrl} alt={movie.title} className="w-12 h-16 object-cover rounded" /></td><td className="border px-3 py-2 font-bold">{movie.title}</td><td className="border px-3 py-2 text-xs">{movie.releaseDate}</td><td className="border px-3 py-2"><button onClick={() => handleEdit(movie)} className="bg-black text-white px-3 py-1 rounded-full text-xs mr-1">Edit</button><button onClick={() => handleDelete(movie)} className="bg-red-600 text-white px-3 py-1 rounded-full text-xs">Del</button></td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {tab==='banners' && (
+        <div className="bg-white border rounded-xl p-5">
+          <h2 className="font-black mb-4">Homepage Banner</h2>
+          {currentBanner && <img src={currentBanner.imageUrl} className="w-full h-40 object-cover rounded-xl mb-3 border" />}
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setBannerFile(e.target.files?.[0] || null)} className="mb-3 text-sm" />
+          <input type="text" placeholder="Banner link URL e.g. https://sanel-ug.online/promo" value={bannerLink} onChange={e => setBannerLink(e.target.value)} className="w-full border rounded-lg p-2.5 mb-3 text-black" />
+          <button onClick={handleBannerUpload} disabled={bannerLoading} className="px-6 py-2.5 bg-black text-white rounded-full font-black text-sm">{bannerLoading? 'Uploading....': 'Save Banner'}</button>
+        </div>
+      )}
+
+      {tab==='chats' && (
+        <div className="bg-white border rounded-xl shadow overflow-hidden">
+          <div className="p-4 border-b font-black">💬 Seller Chats ({sellerThreads.length})</div>
+          <div className="flex flex-col md:flex-row h-[550px]">
+            <div className="w-full md:w-1/3 border-r overflow-y-auto bg-gray-50">
+              {sellerThreads.length===0 && <p className="p-6 text-gray-400 text-sm text-center">No messages yet</p>}
+              {sellerThreads.map(s => (
+                <div key={s.sellerId} onClick={()=>setActiveSellerId(s.sellerId)} className={`p-3 border-b cursor-pointer ${activeSellerId===s.sellerId? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}>
+                  <p className="font-bold text-xs truncate">{s.sellerEmail}</p>
+                  <p className="text-xs truncate opacity-80">{s.lastMessage}</p>
+                  <p className="text-[9px] opacity-60">ID: {s.sellerId.slice(0,8)}</p>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      </div>
-      {/* ===== END BOOST ===== */}
-
-      <h1 className="text-2xl font-bold mb-4">{editingId? "Edit Movie" : "Add Movie"}</h1>
-      <form onSubmit={handleSubmit} className="bg-white text-black border-gray-200 rounded-xl p-4 shadow">
-        <input className="border p-2 w-full mb-2 rounded" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} required />
-        <textarea className="border p-2 w-full mb-2 rounded" placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
-        <input type="date" className="border p-2 w-full mb-2 rounded" value={releaseDate} onChange={e => setReleaseDate(e.target.value)} />
-        <input className="border p-2 w-full mb-2 rounded" placeholder="Duration e.g. 2h 10m" value={duration} onChange={e => setDuration(e.target.value)} />
-        <input className="border p-2 w-full mb-2 rounded" placeholder="Director" value={director} onChange={e => setDirector(e.target.value)} />
-        <input className="border p-2 w-full mb-2 rounded" placeholder="Cast, comma separated" value={cast} onChange={e => setCast(e.target.value)} />
-        <input className="border p-2 w-full mb-2 rounded" placeholder="YouTube URL (optional)" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} />
-        <div className="mb-2">
-          <label className="font-semibold">Genre:</label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
-            {["Action", "Comedy", "Popular Movie", "C-Drama", "Sci-Fi", "Most Popular", "Anime", "DC Movies", "Marvel Movies", "Trending Now", "💖Romance", " Thriller", "Documentary", "Family", "Fantasy", " adventure", "Horror"].map(g => (
-              <label key={g} className="flex items-center"><input type="checkbox" value={g} checked={genre.includes(g)} onChange={handleGenreChange} className="mr-2" />{g}</label>
-            ))}
-          </div>
-        </div>
-        <div className="mb-2"><label className="font-semibold">Video File {editingId && "(leave empty to keep current)"}</label><input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files?.[0] || null)} className="border p-2 w-full rounded" /></div>
-        <div className="mb-4"><label className="font-semibold">Poster Image {editingId && "(leave empty to keep current)"}</label><input type="file" accept="image/*" onChange={e => setPosterFile(e.target.files?.[0] || null)} className="border p-2 w-full rounded" /></div>
-        {isUploading && (
-          <div className="mt-4 w-full mb-4"><div className="w-full bg-gray-200 rounded-full h-2.5"><div className="bg-red-600 h-2.5 rounded-full" style={{ width: `${uploadProgress}%` }}></div></div><p className="text-sm text-center mt-2">{uploadStatus}</p></div>
-        )}
-        <div className="flex gap-2">
-          <button type="submit" disabled={isUploading} className="bg-red-600 text-white px-4 py-2 rounded disabled:opacity-50">{isUploading? "Uploading..." : editingId? "Update Movie" : "Add Movie"}</button>
-          {editingId && <button type="button" onClick={resetForm} className="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>}
-        </div>
-      </form>
-
-      <h2 className="text-xl font-bold mb-2 mt-6">Posted Movies</h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border rounded">
-          <thead><tr className="bg-gray-100"><th className="border px-4 py-2 text-left">Poster</th><th className="border px-4 py-2 text-left">Title</th><th className="border px-4 py-2 text-left">Date</th><th className="border px-4 py-2 text-left">Actions</th></tr></thead>
-          <tbody>
-            {movies.map(movie => (
-              <tr key={movie.id}><td className="border px-4 py-2"><img src={movie.posterUrl} alt={movie.title} className="w-16 h-24 object-cover rounded" /></td><td className="border px-4 py-2">{movie.title}</td><td className="border px-4 py-2">{movie.releaseDate}</td><td className="border px-4 py-2"><button onClick={() => handleEdit(movie)} className="bg-blue-500 text-white px-3 py-1 rounded mr-2">Edit</button><button onClick={() => handleDelete(movie)} className="bg-red-500 text-white px-3 py-1 rounded">Delete</button></td></tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="mt-10 p-6 bg-gray-50 rounded-2x1 border">
-          <h2 className="text-x1 font-bold mb-4">Homepage Banner</h2>
-          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setBannerFile(e.target.files?.[0] || null)} className="mb-3" />
-          <input type="text" placeholder="Banner link URL e.g. https://sanel-ug.online/promo" value={bannerLink} onChange={e => setBannerLink(e.target.value)} className="w-full border rounded p-2 mb-3" />
-          <button onClick={handleBannerUpload} disabled={bannerLoading} className="p-4 py-2 bg-black text-white rounded-lg">{bannerLoading? 'Uploading....': 'Save Banner'}</button>
-        </div>
-      </div>
-
-      <div className="mt-12 bg-white border-2 border-red-600 rounded-xl shadow-lg overflow-hidden">
-        <div className="bg-red-600 text-white p-4 font-bold text-lg flex justify-between">
-          <span>💬 Seller Chats ({sellerThreads.length} sellers)</span>
-        </div>
-        <div className="flex flex-col md:flex-row h-[500px]">
-          <div className="w-full md:w-1/3 border-r overflow-y-auto bg-gray-50">
-            {sellerThreads.length===0 && <p className="p-4 text-red-600 font-bold text-sm">No messages yet from sellers</p>}
-            {sellerThreads.map(s => (
-              <div key={s.sellerId} onClick={()=>setActiveSellerId(s.sellerId)} className={`p-3 border-b cursor-pointer hover:bg-red-50 ${activeSellerId===s.sellerId? 'bg-red-50 border-l-4 border-l-red-600' : ''}`}>
-                <p className="font-bold text-sm truncate text-red-700">{s.sellerEmail}</p>
-                <p className="text-sm text-black font-medium truncate">{s.lastMessage}</p>
-                <p className="text-[10px] text-gray-500">ID: {s.sellerId.slice(0,8)}...</p>
-              </div>
-            ))}
-          </div>
-          <div className="flex-1 flex flex-col">
-            {!activeSellerId? (
-              <div className="flex-1 flex items-center justify-center text-red-600 font-bold">Select a seller to start chatting</div>
-            ) : (
-              <>
-                <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-white">
-                  {activeMessages.map(m=>(
-                    <div key={m.id} className={`flex ${m.sender==='admin'? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[70%] px-4 py-2 rounded-lg text-[15px] font-bold border-2 shadow-sm ${m.sender==='admin'? 'bg-red-600 text-white border-red-600' : 'bg-white text-red-600 border-red-600'}`}>
-                        {m.message}
-                        <div className={`text-[10px] mt-1 ${m.sender==='admin'? 'text-white/80' : 'text-red-400'}`}>{m.createdAt?.toDate? m.createdAt.toDate().toLocaleString() : 'just now'}</div>
+            <div className="flex-1 flex flex-col">
+              {!activeSellerId? <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Select a seller</div> : (
+                <>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#FDF8F3]">
+                    {activeMessages.map(m=>(
+                      <div key={m.id} className={`flex ${m.sender==='admin'? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm font-medium ${m.sender==='admin'? 'bg-black text-white' : 'bg-white border text-black'}`}>
+                          {m.message}
+                          <div className="text-[9px] mt-1 opacity-60">{m.createdAt?.toDate? m.createdAt.toDate().toLocaleString() : 'just now'}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="p-3 border-t-2 border-red-600 flex gap-2 bg-gray-50">
-                  <input value={adminReply} onChange={e=>setAdminReply(e.target.value)} onKeyDown={e=> e.key==='Enter' && sendAdminReply()} placeholder={`Reply to ${sellerThreads.find(s=>s.sellerId===activeSellerId)?.sellerEmail}...`} className="flex-1 border-2 border-red-600 p-2 rounded text-red-600 font-bold placeholder:text-red-400 focus:outline-none" />
-                  <button onClick={sendAdminReply} className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded font-bold">Send</button>
-                </div>
-              </>
-            )}
+                    ))}
+                  </div>
+                  <div className="p-3 border-t flex gap-2 bg-white">
+                    <input value={adminReply} onChange={e=>setAdminReply(e.target.value)} onKeyDown={e=> e.key==='Enter' && sendAdminReply()} placeholder={`Reply to ${sellerThreads.find(s=>s.sellerId===activeSellerId)?.sellerEmail}...`} className="flex-1 border-2 border-black p-2.5 rounded-full text-black text-sm focus:outline-none" />
+                    <button onClick={sendAdminReply} className="bg-black text-white px-6 py-2 rounded-full font-black text-sm">Send</button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
+      )}
+
       </div>
     </div>
   );
