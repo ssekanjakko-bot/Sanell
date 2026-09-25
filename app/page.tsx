@@ -7,13 +7,22 @@ import Link from "next/link"
 import { Coffee, Eye, X, LayoutGrid, Film, ArrowRight, Clock, Phone, ChevronUp } from "lucide-react"
 
 const CATEGORIES = [
-  {name: 'All', icon: '🌐'}, {name: 'Electronics', icon: '📱'}, {name: 'Home, Furniture & Appliances', icon: '🛋️'},
-  {name: 'Health', icon: '💊'}, {name: 'Fashion', icon: '👗'},
+  {name: 'All', icon: '🌐'},
+  {name: 'Phones', icon: '📱'},
+  {name: 'Vehicles', icon: '🚗'},
+  {name: 'Hostels', icon: '🏠'},
+  {name: 'Electronics', icon: '💻'},
+  {name: 'Home, Furniture & Appliances', icon: '🛋️'},
+  {name: 'Health', icon: '💊'},
+  {name: 'Fashion', icon: '👗'},
   {name: 'Sports, Arts & Outdoor', icon: '⚽'},
   {name: 'Babies & Kids', icon: '🧸'},
-  {name: 'Animals & Pets', icon: '🐶'}, {name: 'Agriculture & Food', icon: '🌾'},
-  {name: 'Commercial Equipment & Tools', icon: '🔧'}, {name: 'Repair & Construction', icon: '🔨'},
-  {name: 'Stationery', icon: '📚'}, {name: 'Services', icon: '❤️'},
+  {name: 'Animals & Pets', icon: '🐶'},
+  {name: 'Agriculture & Food', icon: '🌾'},
+  {name: 'Commercial Equipment & Tools', icon: '🔧'},
+  {name: 'Repair & Construction', icon: '🔨'},
+  {name: 'Stationery', icon: '📚'},
+  {name: 'Services', icon: '❤️'},
   {name: 'Jobs', icon: '📢'}
 ]
 const HOME_CATEGORIES = CATEGORIES.filter(c => c.name!== 'All')
@@ -48,14 +57,14 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
     if (!products) return []
     const now = new Date()
     return products
-    .filter((p: any) => {
+   .filter((p: any) => {
         if(!p.boosted_until) return false
         try {
           const end = p.boosted_until.toDate? p.boosted_until.toDate() : new Date(p.boosted_until)
           return end > now
         } catch { return false }
       })
-    .sort((a: any, b: any) => {
+   .sort((a: any, b: any) => {
         const durA = a.boostDurationDays || a.boost_duration_days || 1
         const durB = b.boostDurationDays || b.boost_duration_days || 1
         if(durB!== durA) return durB - durA
