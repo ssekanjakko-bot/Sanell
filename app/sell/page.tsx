@@ -17,6 +17,14 @@ const CATEGORIES = [
   'Vehicles','Phones','Houses & Rentals','Electronics','Home, Furniture & Appliances','Health','Fashion','Sports, Arts & Outdoor','Babies & Kids','Animals & Pets','Agriculture & Food','Commercial Equipment & Tools','Repair & Construction','Stationery','Services','Jobs'
 ]
 
+// --- NEW PACKAGES ---
+const BOOST_PACKAGES = [
+  { id: 'quick', name: 'Quick Boost', price: 1000, durationDays: 1, desc: '24 Hours in Trending' },
+  { id: 'standard', name: 'Standard Boost', price: 2000, durationDays: 3, desc: '3 Days in Trending - MOST POPULAR', popular: true },
+  { id: 'seller', name: 'Seller Boost', price: 5000, durationDays: 7, desc: '7 Days + Top of Category' },
+  { id: 'king', name: 'Hostel King', price: 10000, durationDays: 14, desc: '14 Days + Top 3 + VIP Badge' },
+]
+
 type Product = {
   id: string
   title: string
@@ -33,6 +41,8 @@ type Product = {
   boosted_until?: Timestamp
   boosted_at?: Timestamp
   boost_pending?: boolean
+  boostDurationDays?: number
+  boostPackageId?: string
 }
 
 type ChatMsg = {
@@ -63,6 +73,11 @@ export default function SellPage() {
   const [chatOpen, setChatOpen] = useState(false)
   const [boostLoading, setBoostLoading] = useState<string | null>(null)
 
+  // NEW STATES FOR PACKAGE MODAL
+  const [showBoostModal, setShowBoostModal] = useState(false)
+  const [selectedProductToBoost, setSelectedProductToBoost] = useState<Product | null>(null)
+  const [selectedPackage, setSelectedPackage] = useState<any>(BOOST_PACKAGES[1])
+
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       setUser(u)
@@ -92,8 +107,8 @@ export default function SellPage() {
     return () => unsubAuth()
   }, [])
 
-  // === BOOST LOGIC ===
-  const handleBoost = async (product: Product) => {
+  // === BOOST LOGIC WITH PACKAGES ===
+  const openBoostModal = (product: Product) => {
     if (!user) return alert("Login required")
     if (product.is_boosted && product.boosted_until && product.boosted_until.toDate() > new Date()) {
       return alert("This product is already boosted!")
@@ -101,13 +116,19 @@ export default function SellPage() {
     if (product.boost_pending) {
       return alert("Already pending approval. Admin will approve soon.")
     }
+    setSelectedProductToBoost(product)
+    setSelectedPackage(BOOST_PACKAGES[1])
+    setShowBoostModal(true)
+  }
 
-    const confirmBoost = confirm(`Boost "${product.title}" for 2,000 UGX?\n\nIt will appear in Trending section under hero banner for 24h.\n\nPay to: MTN 0767483636\nReason: BOOST Plus the product Id or boost Id ${product.id.slice(0,6)}\n\nClick OK then click "I have paid"`)
-    if (!confirmBoost) return
+  const handleBoost = async () => {
+    if (!selectedProductToBoost ||!user) return
+    const product = selectedProductToBoost
+    const pkg = selectedPackage
 
     setBoostLoading(product.id)
     try {
-      // 1. Create boost request for admin panel
+      // 1. Create boost request for admin panel WITH PACKAGE INFO
       await addDoc(collection(db, 'boost_requests'), {
         productId: product.id,
         productTitle: product.title,
@@ -115,17 +136,25 @@ export default function SellPage() {
         sellerId: user.uid,
         sellerEmail: user.email,
         sellerPhone: product.whatsapp,
-        amount: 2000,
+        amount: pkg.price,
+        packageId: pkg.id,
+        packageName: pkg.name,
+        durationDays: pkg.durationDays,
         status: 'pending',
         createdAt: serverTimestamp()
       })
 
-      // 2. Mark product as pending
+      // 2. Mark product as pending WITH PACKAGE
       await updateDoc(doc(db, 'products', product.id), {
-        boost_pending: true
+        boost_pending: true,
+        boost_pending_packageId: pkg.id,
+        boost_pending_packageName: pkg.name,
+        boost_pending_durationDays: pkg.durationDays,
+        boost_pending_amount: pkg.price
       })
 
-      alert("Boost request sent! Admin will approve after payment.\n\nSend 2k to 0767483636 with reason BOOST")
+      alert(`Boost request sent!\n${pkg.name} - ${pkg.price} UGX for ${pkg.durationDays} days\n\nSend ${pkg.price} to 0767483636 with reason BOOST ${product.id.slice(0,6)}`)
+      setShowBoostModal(false)
     } catch (e:any) {
       console.error(e)
       alert("Failed: " + e.message)
@@ -215,7 +244,8 @@ export default function SellPage() {
       return { label: `🔥 BOOSTED - ${hours}h left`, color: 'bg-yellow-400 text-black', active: true }
     }
     if (p.boost_pending) {
-      return { label: '⏳ PENDING APPROVAL', color: 'bg-orange-400 text-white', active: false }
+      const pendName = (p as any).boost_pending_packageName || 'Pending'
+      return { label: `⏳ ${pendName.toUpperCase()} PENDING`, color: 'bg-orange-400 text-white', active: false }
     }
     return null
   }
@@ -231,6 +261,47 @@ export default function SellPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto min-h-screen" style={{ backgroundColor: '#FDF8F3' }}>
+      {/* BOOST PACKAGE MODAL */}
+      {showBoostModal && selectedProductToBoost && (
+        <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[400px] p-5 max-h-[90vh] overflow-y-auto">
+            <h3 className="font-black text-[18px] text-black">🚀 Boost {selectedProductToBoost.title.slice(0,20)}</h3>
+            <p className="text-[12px] text-gray-500 mt-1">Choose package - Pay to <b>0767483636</b></p>
+            <div className="mt-4 space-y-3">
+              {BOOST_PACKAGES.map(pkg => (
+                <button
+                  key={pkg.id}
+                  onClick={() => setSelectedPackage(pkg)}
+                  className={`w-full text-left border-2 rounded-xl p-3 flex justify-between items-center ${selectedPackage.id === pkg.id? 'border-black bg-[#FFF7ED]' : 'border-gray-200 bg-white'}`}
+                >
+                  <div>
+                    <p className="font-black text-[13px] text-black flex gap-2">{pkg.name} {pkg.popular && <span className="bg-black text-white text-[8px] px-2 py-0.5 rounded-full">POPULAR</span>}</p>
+                    <p className="text-[11px] text-gray-600">{pkg.desc}</p>
+                    <p className="font-bold text-[12px] mt-1" style={{color: COFFEE_BROWN}}>{pkg.durationDays} day{pkg.durationDays>1?'s':''}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-black text-[15px] text-black">{pkg.price.toLocaleString()}</p>
+                    <p className="text-[10px] text-gray-500">UGX</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="mt-5 bg-gray-50 border rounded-xl p-3 text-[11px]">
+              <p className="font-bold">How to pay:</p>
+              <p className="mt-1">1. Send <b>{selectedPackage.price} UGX</b> to <b>0767483636</b></p>
+              <p>2. Reason: <b>BOOST {selectedProductToBoost.id.slice(0,6).toUpperCase()}</b></p>
+              <p>3. Click "I Have Paid" below</p>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <button onClick={() => setShowBoostModal(false)} className="flex-1 bg-gray-100 text-black py-3 rounded-full font-bold">Cancel</button>
+              <button onClick={handleBoost} disabled={boostLoading === selectedProductToBoost.id} className="flex-1 bg-black text-white py-3 rounded-full font-bold">
+                {boostLoading? 'Sending...' : `I Have Paid ${selectedPackage.price}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h1 className="text-3xl font-bold mb-6" style={{ color: COFFEE_BROWN }}>{editing? 'Edit Product' : 'Post New Product'}</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-lg mb-10 border-t-4" style={{ borderColor: COFFEE_BROWN }}>
@@ -302,14 +373,13 @@ export default function SellPage() {
                   <p className="text-sm text-gray-600 mb-2 line-clamp-2">{p.description}</p>
                   <p className="font-bold text-xl mb-3" style={{ color: COFFEE_BROWN }}>{p.price.toLocaleString()} UGX</p>
 
-                  {/* BOOST BUTTON - NEW */}
                   {!boostStatus?.active && (
                     <button
-                      onClick={() => handleBoost(p)}
+                      onClick={() => openBoostModal(p)}
                       disabled={!!p.boost_pending || boostLoading === p.id}
                       className={`w-full py-2.5 rounded font-bold mb-2 text-sm flex items-center justify-center gap-2 ${p.boost_pending? 'bg-gray-300 text-gray-600' : 'bg-yellow-400 hover:bg-yellow-500 text-black'}`}
                     >
-                      {boostLoading === p.id? 'Sending...' : p.boost_pending? '⏳ Waiting Approval' : '🚀 Boost for 2k - Trending'}
+                      {boostLoading === p.id? 'Sending...' : p.boost_pending? '⏳ Waiting Approval' : '🚀 Boost - From 1k'}
                     </button>
                   )}
 
