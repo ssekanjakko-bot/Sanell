@@ -60,6 +60,18 @@ type BoostRequest = {
   createdAt: Timestamp
 }
 
+type MovieSubRequest = {
+  id: string
+  userId: string
+  email: string
+  packageId: string
+  packageName: string
+  amount: number
+  days: number
+  status: 'pending' | 'approved' | 'rejected'
+  createdAt: Timestamp
+}
+
 const BOOST_LABELS: any = {
   quick: { label: '24H', color: 'bg-gray-200 text-black' },
   standard: { label: '3D POPULAR', color: 'bg-yellow-300 text-black' },
@@ -69,7 +81,7 @@ const BOOST_LABELS: any = {
 
 export default function AdminPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<'dashboard'|'boosts'|'movies'|'chats'|'banners'>('dashboard')
+  const [tab, setTab] = useState<'dashboard'|'boosts'|'flixsubs'|'movies'|'chats'|'banners'>('dashboard')
   const [movies, setMovies] = useState<Movie[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [bannerFile,setBannerFile]=useState<File | null>(null)
@@ -95,13 +107,15 @@ export default function AdminPage() {
   const [adminReply, setAdminReply] = useState('')
   const [boostRequests, setBoostRequests] = useState<BoostRequest[]>([])
   const [boostFilter, setBoostFilter] = useState<'pending'|'approved'|'rejected'>('pending')
+  const [flixRequests, setFlixRequests] = useState<MovieSubRequest[]>([])
+  const [flixFilter, setFlixFilter] = useState<'pending'|'approved'|'rejected'>('pending')
 
   useEffect(() => {
     const q = query(collection(db, "movies"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const moviesData: Movie[] = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
-    ...docSnap.data()
+   ...docSnap.data()
       } as Movie));
       setMovies(moviesData);
     });
@@ -113,6 +127,15 @@ export default function AdminPage() {
     const unsub = onSnapshot(q, (snap) => {
       const data = snap.docs.map(d => ({ id: d.id,...d.data() } as BoostRequest))
       setBoostRequests(data)
+    })
+    return () => unsub()
+  }, [])
+
+  useEffect(() => {
+    const q = query(collection(db, "movie_boost_requests"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id,...d.data() } as MovieSubRequest))
+      setFlixRequests(data)
     })
     return () => unsub()
   }, [])
@@ -149,6 +172,31 @@ export default function AdminPage() {
       await updateDoc(doc(db, "products", req.productId), { boost_pending: false, is_boosted: false })
       await updateDoc(doc(db, "boost_requests", req.id), { status: 'rejected', rejectedAt: serverTimestamp() })
     } catch (e:any) { alert("Failed: " + e.message) }
+  }
+
+  const approveFlix = async (req: MovieSubRequest) => {
+    if (!confirm(`Approve ${req.packageName} (${req.days} days) for ${req.email}? Amount ${req.amount} UGX to 0767483636 verified?`)) return
+    try {
+      const until = new Date(Date.now() + req.days * 24 * 60 * 60 * 1000)
+      await setDoc(doc(db, 'movie_subscriptions', req.userId), {
+        userId: req.userId,
+        email: req.email,
+        packageId: req.packageId,
+        packageName: req.packageName,
+        amount: req.amount,
+        days: req.days,
+        validUntil: Timestamp.fromDate(until),
+        startedAt: serverTimestamp(),
+        lastApprovedAt: serverTimestamp(),
+      }, { merge: true })
+      await updateDoc(doc(db, 'movie_boost_requests', req.id), { status: 'approved', approvedAt: serverTimestamp(), validUntil: Timestamp.fromDate(until) })
+      alert(`Approved ${req.days} days until ${until.toLocaleDateString()}`)
+    } catch(e:any){ alert("Failed: "+e.message) }
+  }
+
+  const rejectFlix = async (req: MovieSubRequest) => {
+    if(!confirm(`Reject ${req.packageName} for ${req.email}?`)) return
+    await updateDoc(doc(db, 'movie_boost_requests', req.id), { status:'rejected', rejectedAt: serverTimestamp() })
   }
 
   useEffect(() => {
@@ -264,21 +312,23 @@ export default function AdminPage() {
 
   const filteredBoosts = boostRequests.filter(b => b.status === boostFilter)
   const pendingCount = boostRequests.filter(b => b.status === 'pending').length
+  const filteredFlix = flixRequests.filter(b => b.status === flixFilter)
+  const flixPendingCount = flixRequests.filter(b => b.status === 'pending').length
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
-      {/* HEADER */}
       <div className="bg-black text-white p-4 sticky top-0 z-20">
         <h1 className="font-black text-lg">SANEL ADMIN</h1>
         <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-hide">
           {[
             {id:'dashboard', label:'Dashboard'},
             {id:'boosts', label:`Boosts ${pendingCount>0?`(${pendingCount})`:''}`},
+            {id:'flixsubs', label:`SanelFlix ${flixPendingCount>0?`(${flixPendingCount})`:''}`},
             {id:'chats', label:`Chats (${sellerThreads.length})`},
             {id:'movies', label:'Movies'},
             {id:'banners', label:'Banners'},
           ].map((t:any)=>(
-            <button key={t.id} onClick={()=>setTab(t.id)} className={`px-4 py-1.5 rounded-full text-xs font-black whitespace-nowrap ${tab===t.id?'bg-white text-black':'bg-[#333] text-white border border-[#555]'}`}>{t.label}</button>
+            <button key={t.id} onClick={()=>setTab(t.id as any)} className={`px-4 py-1.5 rounded-full text-xs font-black whitespace-nowrap ${tab===t.id?'bg-white text-black':'bg-[#333] text-white border border-[#555]'}`}>{t.label}</button>
           ))}
         </div>
       </div>
@@ -287,17 +337,17 @@ export default function AdminPage() {
 
       {tab==='dashboard' && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">PENDING BOOSTS</p><p className="text-2xl font-black">{pendingCount}</p><p className="text-xs">0767483636</p></div>
-          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">SELLERS CHATTING</p><p className="text-2xl font-black">{sellerThreads.length}</p></div>
-          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">TOTAL MOVIES</p><p className="text-2xl font-black">{movies.length}</p></div>
-          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">BANNER</p><p className="text-xs font-bold truncate">{currentBanner?.imageUrl? 'Active':'No banner'}</p></div>
+          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">PENDING BOOSTS</p><p className="text-2xl font-black text-black">{pendingCount}</p><p className="text-xs text-black font-bold">0767483636</p></div>
+          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">FLIX SUBS PENDING</p><p className="text-2xl font-black text-black">{flixPendingCount}</p><p className="text-xs text-black">Movies 5 days free</p></div>
+          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">SELLERS CHATTING</p><p className="text-2xl font-black text-black">{sellerThreads.length}</p></div>
+          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">TOTAL MOVIES</p><p className="text-2xl font-black text-black">{movies.length}</p></div>
         </div>
       )}
 
       {tab==='boosts' && (
         <div className="bg-white border rounded-xl shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
-            <h2 className="font-black">🚀 Boost Requests</h2>
+            <h2 className="font-black text-black">🚀 Boost Requests</h2>
             <div className="flex gap-1">
               {['pending','approved','rejected'].map((f:any)=>(
                 <button key={f} onClick={()=>setBoostFilter(f)} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${boostFilter===f?'bg-black text-white':'bg-gray-100 text-black border'}`}>{f}</button>
@@ -314,7 +364,7 @@ export default function AdminPage() {
                       <img src={req.productImage} className="w-16 h-16 rounded-lg object-cover border" />
                       <div className="flex-1 min-w-0">
                         <div className="flex gap-2 items-center flex-wrap">
-                          <p className="font-bold text-sm truncate">{req.productTitle}</p>
+                          <p className="font-bold text-sm truncate text-black">{req.productTitle}</p>
                           <span className={`text-[9px] px-2 py-0.5 rounded-full font-black ${meta.color}`}>{req.packageName || meta.label} • {req.durationDays||1}D • {req.amount} UGX</span>
                         </div>
                         <p className="text-[11px] text-black font-medium mt-1">Seller: {req.sellerEmail} • {req.sellerPhone}</p>
@@ -335,10 +385,46 @@ export default function AdminPage() {
         </div>
       )}
 
+      {tab==='flixsubs' && (
+        <div className="bg-white border rounded-xl shadow overflow-hidden">
+          <div className="p-4 border-b flex justify-between items-center bg-black text-white">
+            <h2 className="font-black">🎬 SanelFlix Subscriptions - 5 Days Free then Pay</h2>
+            <div className="flex gap-1">
+              {['pending','approved','rejected'].map((f:any)=>(
+                <button key={f} onClick={()=>setFlixFilter(f)} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${flixFilter===f?'bg-white text-black':'bg-[#333] text-white border border-[#555]'}`}>{f}</button>
+              ))}
+            </div>
+          </div>
+          <div className="p-3">
+            <p className="text-xs text-black font-bold mb-3 bg-yellow-100 border border-yellow-300 p-2 rounded">Packages: Daily 1k, 3days 2.5k, 7days 5k, 15days 8k, 30days 12k, 60days 20k, 180days 50k, 365days 90k • All pay to <b>0767483636</b> Reason: MOVIE + ID</p>
+            {filteredFlix.length===0? <p className="text-center text-gray-400 py-10 text-sm">No {flixFilter} flix requests</p> :
+              <div className="grid gap-3">
+                {filteredFlix.map(req=>(
+                  <div key={req.id} className="border-2 rounded-xl p-3 flex gap-3 bg-white">
+                    <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center font-black text-xs">{req.days}D</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-sm text-black">{req.packageName} • {req.amount.toLocaleString()} UGX • {req.days} Days</p>
+                      <p className="text-[11px] text-black font-medium mt-1">User: {req.email}</p>
+                      <p className="text-[10px] text-gray-500">UID: {req.userId.slice(0,8)} • {req.createdAt?.toDate? req.createdAt.toDate().toLocaleString():''}</p>
+                    </div>
+                    <div className="flex flex-col gap-1 shrink-0">
+                      {req.status==='pending'? <>
+                        <button onClick={()=>approveFlix(req)} className="bg-black text-white px-4 py-2 rounded-full text-xs font-black">Approve {req.days}D</button>
+                        <button onClick={()=>rejectFlix(req)} className="bg-white border border-black text-black px-4 py-1.5 rounded-full text-xs font-black">Reject</button>
+                      </> : <span className={`px-3 py-1 rounded-full text-[10px] font-black text-center ${req.status==='approved'?'bg-green-600 text-white':'bg-red-600 text-white'}`}>{req.status.toUpperCase()}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            }
+          </div>
+        </div>
+      )}
+
       {tab==='movies' && (
         <>
           <form onSubmit={handleSubmit} className="bg-white border rounded-xl p-4 shadow mb-6">
-            <h2 className="font-black mb-3">{editingId? "Edit Movie" : "Add Movie"}</h2>
+            <h2 className="font-black mb-3 text-black">{editingId? "Edit Movie" : "Add Movie"}</h2>
             <div className="grid md:grid-cols-2 gap-2">
               <input className="border p-2 w-full rounded text-black" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} required />
               <input type="date" className="border p-2 w-full rounded text-black" value={releaseDate} onChange={e => setReleaseDate(e.target.value)} />
@@ -349,7 +435,7 @@ export default function AdminPage() {
             </div>
             <textarea className="border p-2 w-full rounded text-black mt-2" placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
             <div className="mt-3">
-              <label className="font-bold text-xs">Genre:</label>
+              <label className="font-bold text-xs text-black">Genre:</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-1">
                 {["Action", "Comedy", "Popular Movie", "C-Drama", "Sci-Fi", "Most Popular", "Anime", "DC Movies", "Marvel Movies", "Trending Now", "💖Romance", " Thriller", "Documentary", "Family", "Fantasy", " adventure", "Horror"].map(g => (
                   <label key={g} className="flex items-center text-xs text-black"><input type="checkbox" value={g} checked={genre.includes(g)} onChange={handleGenreChange} className="mr-2" />{g}</label>
@@ -370,7 +456,7 @@ export default function AdminPage() {
           </form>
 
           <div className="bg-white border rounded-xl p-3">
-            <h2 className="font-black mb-2">Posted Movies ({movies.length})</h2>
+            <h2 className="font-black mb-2 text-black">Posted Movies ({movies.length})</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead><tr className="bg-gray-50 text-left text-xs"><th className="border px-3 py-2">Poster</th><th className="border px-3 py-2">Title</th><th className="border px-3 py-2">Date</th><th className="border px-3 py-2">Actions</th></tr></thead>
@@ -387,9 +473,9 @@ export default function AdminPage() {
 
       {tab==='banners' && (
         <div className="bg-white border rounded-xl p-5">
-          <h2 className="font-black mb-4">Homepage Banner</h2>
+          <h2 className="font-black mb-4 text-black">Homepage Banner</h2>
           {currentBanner && <img src={currentBanner.imageUrl} className="w-full h-40 object-cover rounded-xl mb-3 border" />}
-          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setBannerFile(e.target.files?.[0] || null)} className="mb-3 text-sm" />
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setBannerFile(e.target.files?.[0] || null)} className="mb-3 text-sm text-black" />
           <input type="text" placeholder="Banner link URL e.g. https://sanel-ug.online/promo" value={bannerLink} onChange={e => setBannerLink(e.target.value)} className="w-full border rounded-lg p-2.5 mb-3 text-black" />
           <button onClick={handleBannerUpload} disabled={bannerLoading} className="px-6 py-2.5 bg-black text-white rounded-full font-black text-sm">{bannerLoading? 'Uploading....': 'Save Banner'}</button>
         </div>
@@ -397,7 +483,7 @@ export default function AdminPage() {
 
       {tab==='chats' && (
         <div className="bg-white border rounded-xl shadow overflow-hidden">
-          <div className="p-4 border-b font-black">💬 Seller Chats ({sellerThreads.length})</div>
+          <div className="p-4 border-b font-black text-black">💬 Seller Chats ({sellerThreads.length})</div>
           <div className="flex flex-col md:flex-row h-[550px]">
             <div className="w-full md:w-1/3 border-r overflow-y-auto bg-gray-50">
               {sellerThreads.length===0 && <p className="p-6 text-gray-400 text-sm text-center">No messages yet</p>}
