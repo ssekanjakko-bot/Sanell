@@ -4,6 +4,7 @@ import { auth, db } from '@/lib/firebase'
 import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth'
 import { doc, setDoc } from 'firebase/firestore'
 import Link from 'next/link'
+import { ShieldCheck, LogOut, ArrowRight, User, Mail, Phone, Lock } from 'lucide-react'
 
 export default function SellLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null)
@@ -54,67 +55,103 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
     }
   }
 
-  if (loading) return <div className="p-8 text-center bg-black min-h-screen text-white">Loading...</div>
+  if (loading) return (
+    <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+      <div className="w-10 h-10 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  )
 
-  // IF LOGGED IN: Show header + your sell/page.tsx
+  // IF LOGGED IN
   if(user){
     return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center sticky top-0 shadow-sm">
-          <p className="text-amber-900 font-semibold">Welcome, {user.displayName || 'Seller'}</p>
-          <button onClick={handleLogout} className="text-amber-900 font-semibold hover:underline">Logout</button>
+      <div className="min-h-screen bg-[#FDF8F3]">
+        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b">
+          <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-black text-white rounded-full flex items-center justify-center font-black text-[13px]">{user.displayName?.[0] || 'S'}</div>
+              <div>
+                <p className="font-black text-[13px] leading-none">Hi, {user.displayName || 'Seller'}</p>
+                <p className="text-[11px] text-gray-500">{user.email}</p>
+              </div>
+            </div>
+            <button onClick={handleLogout} className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full text-[12px] font-bold hover:bg-zinc-800 transition"><LogOut size={14}/> Logout</button>
+          </div>
         </header>
-        <main className="p-4">{children}</main>
+        <main>{children}</main>
       </div>
     )
   }
 
-  // IF NOT LOGGED IN: EXACT LOGIN CARD WITH WORKING LINKS
+  // MODERN LOGIN
   return (
-    <div className="min-h-screen w-full bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-amber-900 rounded-xl p-5 shadow-2xl">
+    <div className="min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* glow bg */}
+      <div className="absolute top-[-20%] left-[-20%] w-[600px] h-[600px] bg-orange-600/20 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-20%] right-[-20%] w-[600px] h-[600px] bg-amber-400/10 rounded-full blur-[120px]" />
 
-        <div className="bg-green-900/30 border border-green-700 text-green-200 text-xs rounded-lg p-3 mb-4 text-center flex items-center justify-center gap-2">
-          🔒 Secure Login. Your data is encrypted and protected by Sanel Uganda
+      <div className="w-full max-w-[420px] relative">
+        {/* logo */}
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto font-black">S</div>
+          <h1 className="text-white font-black text-[20px] mt-3 tracking-tight">Sanel Uganda</h1>
+          <p className="text-white/50 text-[12px]">Official Seller Portal • sanel-ug.online</p>
         </div>
 
-        <div className="flex mb-4 border-b border-amber-800">
-          <button onClick={() => setIsLogin(false)} className={`flex-1 pb-2 text-white ${!isLogin? 'border-b-2 border-white font-bold' : ''}`}>SignUp</button>
-          <button onClick={() => setIsLogin(true)} className={`flex-1 pb-2 text-white ${isLogin? 'border-b-2 border-white font-bold' : ''}`}>Login</button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {!isLogin && 
-            <input placeholder="Name" value={name} onChange={e=>setName(e.target.value)} className="w-full p-3 rounded bg-amber-50 text-amber-900 placeholder-amber-700 outline-none" required />
-          }
-          
-          <input placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-3 rounded bg-amber-800 text-white placeholder-amber-300 outline-none" required />
-          
-          {!isLogin && (
-            <div className="flex rounded bg-amber-50">
-              <span className="p-3 text-amber-900 font-bold">+256</span>
-              <input placeholder="77XXXXXXX" type="tel" value={phone} onChange={e=>setPhone(e.target.value)} className="flex-1 p-3 bg-transparent text-amber-900 placeholder-gray-500 outline-none" required />
-            </div>
-          )}
-          
-          <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 rounded bg-amber-50 text-amber-900 placeholder-amber-700 outline-none" required />
-          
-          <button type="submit" className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold p-3 rounded">Continue</button>
-        </form>
-
-        {isLogin && (
-          <p onClick={handleForgot} className="text-center text-sm text-amber-200 underline mt-3 cursor-pointer">Forgot Password?</p>
-        )}
-
-        {/* WORKING FOOTER LINKS */}
-        <div className="text-center text-xs text-amber-200 mt-4 space-y-1">
-          <p>© 2026 Sanel Uganda. All rights reserved.</p>
-          <div className="flex justify-center gap-3 underline">
-            <Link href="app/sell/privacy">Privacy Policy</Link>
-            <Link href="app/sell/terms">Terms</Link>
-            <Link href="app/sell/contact">Contact Us</Link>
+        <div className="bg-white rounded-[28px] p-6 shadow-2xl">
+          <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-[11px] font-bold rounded-full px-3 py-2 mb-5">
+            <ShieldCheck size={14}/> Secure login • Encrypted • Protected
           </div>
-          <p>This is the official seller portal for sanel-ug.online</p>
+
+          <div className="flex bg-[#FDF8F3] p-1 rounded-full mb-6">
+            <button onClick={() => setIsLogin(false)} className={`flex-1 py-2.5 rounded-full text-[13px] font-black transition ${!isLogin? 'bg-black text-white shadow' : 'text-gray-500'}`}>Sign Up</button>
+            <button onClick={() => setIsLogin(true)} className={`flex-1 py-2.5 rounded-full text-[13px] font-black transition ${isLogin? 'bg-black text-white shadow' : 'text-gray-500'}`}>Login</button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-3">
+            {!isLogin &&
+              <div className="relative">
+                <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+                <input placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)} className="w-full bg-[#FDF8F3] focus:bg-white border border-transparent focus:border-black outline-none pl-11 pr-4 py-3.5 rounded-full text-[14px] font-medium placeholder:text-gray-400 transition" required />
+              </div>
+            }
+
+            <div className="relative">
+              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+              <input placeholder="Email address" type="email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full bg-[#FDF8F3] focus:bg-white border border-transparent focus:border-black outline-none pl-11 pr-4 py-3.5 rounded-full text-[14px] font-medium placeholder:text-gray-400 transition" required />
+            </div>
+
+            {!isLogin && (
+              <div className="flex gap-2">
+                <div className="bg-black text-white px-4 py-3.5 rounded-full font-black text-[13px] flex items-center">+256</div>
+                <div className="relative flex-1">
+                  <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+                  <input placeholder="77XXXXXXX" type="tel" value={phone} onChange={e=>setPhone(e.target.value)} className="w-full bg-[#FDF8F3] focus:bg-white border border-transparent focus:border-black outline-none pl-11 pr-4 py-3.5 rounded-full text-[14px] font-medium placeholder:text-gray-400 transition" required />
+                </div>
+              </div>
+            )}
+
+            <div className="relative">
+              <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+              <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full bg-[#FDF8F3] focus:bg-white border border-transparent focus:border-black outline-none pl-11 pr-4 py-3.5 rounded-full text-[14px] font-medium placeholder:text-gray-400 transition" required />
+            </div>
+
+            <button type="submit" className="w-full bg-black hover:bg-zinc-800 text-white font-black py-4 rounded-full text-[14px] flex items-center justify-center gap-2 transition">
+              Continue <ArrowRight size={16}/>
+            </button>
+          </form>
+
+          {isLogin && (
+            <p onClick={handleForgot} className="text-center text-[12px] font-bold mt-4 cursor-pointer underline">Forgot Password?</p>
+          )}
+
+          <div className="mt-6 pt-5 border-t text-center">
+            <p className="text-[11px] text-gray-400">© 2026 Sanel Uganda • Campus Marketplace</p>
+            <div className="flex justify-center gap-4 mt-2 text-[11px] font-bold">
+              <Link href="/privacy" className="underline">Privacy</Link>
+              <Link href="/terms" className="underline">Terms</Link>
+              <Link href="/support" className="underline">Contact</Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>
