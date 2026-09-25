@@ -2,20 +2,21 @@
 import { useState, useEffect, type ReactNode } from 'react'
 import { auth, db } from '@/lib/firebase'
 import {
-  createUserWithEmailAndPassword, signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
   updateProfile, onAuthStateChanged
 } from 'firebase/auth'
 import { doc, setDoc } from 'firebase/firestore'
+import { User, Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, ArrowRight } from 'lucide-react'
 
 export default function ProfileLayout({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState<'signup' | 'login'>('signup')
-
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
+  const [showPass, setShowPass] = useState(false)
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -46,72 +47,67 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
     }
   }
 
-  if (loading) return <div className="p-10 text-center text-white">Loading profile...</div>
+  if (loading) return <div className="min-h-screen bg-white flex items-center justify-center"><div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin"/></div>
 
   if (user) return <>{children}</>
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
-      <div className="bg-[#7C2D12] p-5 rounded-lg w-[90%] max-w-sm shadow-2xl">
-        <h2 className="text-xl font-bold mb-4 text-center text-white">Welcome to Sanel</h2>
-        
-        <div className="flex mb-4 text-white border-b border-[#C2410C]">
-          <button 
-            onClick={() => setMode('signup')} 
-            className={`flex-1 p-2 text-center ${mode==='signup'?'font-bold border-b-2 border-white':''}`}
-          >
-            SignUp
-          </button>
-          <button 
-            onClick={() => setMode('login')} 
-            className={`flex-1 p-2 text-center ${mode==='login'?'font-bold border-b-2 border-white':''}`}
-          >
-            Login
-          </button>
+    <div className="fixed inset-0 bg-[#0a0a0a] z-50 flex items-center justify-center p-4">
+      {/* glow */}
+      <div className="absolute top-[-15%] left-[-15%] w-[500px] h-[500px] bg-white/10 rounded-full blur-[100px]" />
+
+      <div className="w-full max-w-[400px] relative">
+        <div className="text-center mb-5">
+          <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center mx-auto font-black text-xl">S</div>
+          <h2 className="text-white font-black text-[20px] mt-3">Welcome to Sanel</h2>
+          <p className="text-white/50 text-[12px] font-medium">Join to buy & sell on campus</p>
         </div>
 
-        <div className="space-y-3">
-          {mode === 'signup' && 
-            <input 
-              placeholder="Name" 
-              value={name} 
-              onChange={e=>setName(e.target.value)} 
-              className="bg-[#FFFBEB] text-[#7C2D12] placeholder-[#C2410C] w-full p-3 rounded-md outline-none"
-            />
-          }
-          
-          <input 
-            placeholder="Email" 
-            type="email" 
-            value={email} 
-            onChange={e=>setEmail(e.target.value)} 
-            className="bg-[#7C2D12] border-[#C2410C] text-[#FFFBEB] placeholder-[#C2410C] w-full p-3 rounded-md outline-none"
-          />
-
-          <div className="flex bg-[#FFFBEB] rounded-md overflow-hidden">
-            <span className="px-3 py-3 text-[#7C2D12] font-bold">+256</span>
-            <input 
-              placeholder="77XXXXXXX" 
-              value={phone} 
-              onChange={e=>setPhone(e.target.value)} 
-              className="bg-transparent text-[#7C2D12] placeholder-gray-500 w-full p-3 outline-none"
-            />
+        <div className="bg-white rounded-[28px] p-6 shadow-2xl">
+          <div className="flex items-center gap-2 bg-black text-white text-[11px] font-black rounded-full px-3 py-2 mb-5 justify-center">
+            <ShieldCheck size={14}/> Secure • Encrypted • Verified Sellers
           </div>
-          
-          <input 
-            placeholder="Password" 
-            type="password" 
-            value={password} 
-            onChange={e=>setPassword(e.target.value)} 
-            className="bg-[#FFFBEB] text-[#7C2D12] placeholder-[#C2410C] w-full p-3 rounded-md outline-none"
-          />
-          
-          <button 
-            onClick={submit} 
-            className="bg-[#C2410C] hover:bg-[#9A3412] text-white font-bold w-full p-3 rounded-md transition"
-          >
-            Continue
-          </button>
+
+          <div className="flex bg-gray-100 p-1 rounded-full mb-6">
+            <button onClick={() => setMode('signup')} className={`flex-1 py-2.5 rounded-full text-[13px] font-black transition ${mode==='signup'?'bg-black text-white shadow':'text-gray-500'}`}>Sign Up</button>
+            <button onClick={() => setMode('login')} className={`flex-1 py-2.5 rounded-full text-[13px] font-black transition ${mode==='login'?'bg-black text-white shadow':'text-gray-500'}`}>Login</button>
+          </div>
+
+          <div className="space-y-3">
+            {mode === 'signup' &&
+              <div className="relative">
+                <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"/>
+                <input placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)} className="w-full bg-white border border-gray-300 focus:border-black text-black font-bold outline-none pl-11 pr-4 py-3.5 rounded-full text-[14px] placeholder:text-gray-500" />
+              </div>
+            }
+
+            <div className="relative">
+              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"/>
+              <input placeholder="Email address" type="email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full bg-white border border-gray-300 focus:border-black text-black font-bold outline-none pl-11 pr-4 py-3.5 rounded-full text-[14px] placeholder:text-gray-500" />
+            </div>
+
+            <div className="flex gap-2">
+              <div className="bg-black text-white px-4 py-3.5 rounded-full font-black text-[13px] flex items-center">+256</div>
+              <div className="relative flex-1">
+                <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"/>
+                <input placeholder="77XXXXXXX" value={phone} onChange={e=>setPhone(e.target.value)} className="w-full bg-white border border-gray-300 focus:border-black text-black font-bold outline-none pl-11 pr-4 py-3.5 rounded-full text-[14px] placeholder:text-gray-500" />
+              </div>
+            </div>
+
+            <div className="relative">
+              <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"/>
+              <input placeholder="Password" type={showPass?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} className="w-full bg-white border border-gray-300 focus:border-black text-black font-bold outline-none pl-11 pr-12 py-3.5 rounded-full text-[14px] placeholder:text-gray-500" />
+              <button type="button" onClick={()=>setShowPass(!showPass)} className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-black">
+                {showPass?<EyeOff size={16}/>:<Eye size={16}/>}
+              </button>
+            </div>
+
+            <button onClick={submit} className="w-full bg-black hover:bg-zinc-800 text-white font-black py-4 rounded-full text-[14px] flex items-center justify-center gap-2 transition">
+              Continue <ArrowRight size={16}/>
+            </button>
+          </div>
+
+          <p className="text-center text-[11px] text-gray-500 font-bold mt-5">© 2026 Sanel Uganda • sanel-ug.online</p>
         </div>
       </div>
     </div>
