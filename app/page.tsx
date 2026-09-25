@@ -29,32 +29,59 @@ function getTimeLeft(boosted_until: any) {
   try {
     const end = boosted_until.toDate? boosted_until.toDate() : new Date(boosted_until)
     const diff = end.getTime() - new Date().getTime()
-    if(diff <= 0) return "Expired"
-    const h = Math.floor(diff / (1000 * 60 * 60))
-    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-    if(h > 24) return `${Math.floor(h/24)}d ${h%24}h left`
-    if(h > 0) return `${h}h ${m}m left`
-    return `${m}m left`
+    if(diff <= 0) return null
+    const totalMins = Math.floor(diff / 60000)
+    const days = Math.floor(totalMins / 1440)
+    const hours = Math.floor((totalMins % 1440) / 60)
+    const mins = totalMins % 60
+    if(days > 0) return `${days}d ${hours}h left`
+    if(hours > 0) return `${hours}h ${mins}m left`
+    return `${mins}m left`
   } catch { return null }
 }
 
 function TrendingSection({ products, onView, onWhatsApp }: any) {
   const [tick, setTick] = useState(0)
   useEffect(() => { const t = setInterval(()=>setTick(x=>x+1), 60000); return ()=>clearInterval(t)}, [])
-  if (!products || products.length === 0) return null;
+
+  const activeTrending = useMemo(() => {
+    if (!products) return []
+    const now = new Date()
+    return products
+    .filter((p: any) => {
+        if(!p.boosted_until) return false
+        try {
+          const end = p.boosted_until.toDate? p.boosted_until.toDate() : new Date(p.boosted_until)
+          return end > now
+        } catch { return false }
+      })
+    .sort((a: any, b: any) => {
+        const durA = a.boostDurationDays || a.boost_duration_days || 1
+        const durB = b.boostDurationDays || b.boost_duration_days || 1
+        if(durB!== durA) return durB - durA
+        const at = a.boosted_at?.toDate? a.boosted_at.toDate() : new Date(a.boosted_at || 0)
+        const bt = b.boosted_at?.toDate? b.boosted_at.toDate() : new Date(b.boosted_at || 0)
+        return bt.getTime() - at.getTime()
+      })
+  }, [products, tick])
+
+  if (!activeTrending || activeTrending.length === 0) return null;
+
   return (
     <div className="px-3 mt-3">
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="flex justify-between items-center px-3 py-2.5 bg-[#FFF7ED] border-b border-gray-100">
           <h2 className="font-black text-[15px] flex items-center gap-2 text-black">🔥 TRENDING <span className="bg-red-600 text-white text-[8px] px-2 py-0.5 rounded-full font-black">HOT</span></h2>
-          <span className="bg-black text-white text-[7px] px-2 py-0.5 rounded-full font-bold">SPONSORED • {products.length} SLOTS</span>
+          <span className="bg-black text-white text-[7px] px-2 py-0.5 rounded-full font-bold">SPONSORED • {activeTrending.length} SLOTS</span>
         </div>
         <div className="flex gap-2.5 overflow-x-auto p-2.5 scrollbar-hide">
-          {products.map((p: any) => {
+          {activeTrending.map((p: any) => {
             const timeLeft = getTimeLeft(p.boosted_until)
+            const dur = p.boostDurationDays || p.boost_duration_days || 1
+            const pkgLabel = dur === 14? '14D KING' : dur === 7? '7D' : dur === 3? '3D' : '24H'
             return (
               <div key={p.id} className="min-w-[145px] max-w-[145px] bg-white border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                <div className="relative"><img src={p.images?.[0]} className="w-full h-32 object-cover" /><span className="absolute top-1.5 left-1.5 bg-yellow-400 text-black text-[7px] font-black px-2 py-0.5 rounded-full">BOOSTED</span><button onClick={() => onView(p)} className="absolute top-1.5 right-1.5 bg-black/60 text-white w-6 h-6 rounded-full flex items-center justify-center"><Eye size={10} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">+{p.images.length}</span>}</div>
+                <div className="relative"><img src={p.images?.[0]} className="w-full h-32 object-cover" /><span className="absolute top-1.5 left-1.5 bg-yellow-400 text-black text-[7px] font-black px-2 py-0.5 rounded-full">{pkgLabel} BOOSTED</span><button onClick={() => onView(p)} className="absolute top-1.5 right-1.5 bg-black/60 text-white w-6 h-6 rounded-full flex items-center justify-center"><Eye size={10} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">+{p.images.length}</span>}</div>
                 <div className="p-2"><p className="font-bold text-[11px] text-black line-clamp-2 min-h-[28px]">{p.title}</p><p className="font-black text-[13px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p>{timeLeft && <p className="text-[9px] mt-1 font-bold flex items-center gap-1 text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full w-fit"><Clock size={10}/> {timeLeft}</p>}<button onClick={() => onWhatsApp(p)} className="w-full mt-1.5 bg-green-500 text-white text-[10px] py-1.5 rounded-md font-bold">WhatsApp</button></div>
               </div>
             )
@@ -207,7 +234,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] relative">
-      {/* HEADER - BOTTOM NAV MOVED TO TOP LEFT */}
       <div className="bg-white sticky top-0 z-20 shadow-sm">
         <div className="p-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -224,7 +250,6 @@ export default function HomePage() {
         <div className="px-3 pb-3"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products" className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 text-sm placeholder:text-gray-400" /></div>
       </div>
 
-      {/* SLIDE MENU - NOW HOLDS BOTTOM NAV + CATEGORIES */}
       {showMenu && (
         <div className="fixed inset-0 bg-black/60 z-[999] flex">
           <div className="bg-white w-[85%] max-w-[330px] h-full overflow-y-auto">
