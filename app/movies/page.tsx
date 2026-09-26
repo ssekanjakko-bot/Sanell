@@ -31,9 +31,8 @@ export default function MoviesPage() {
     const [heroIndex, setHeroIndex] = useState(0)
     const [user, setUser] = useState<User | null>(null)
 
-    // Trial / sub logic
-    const [hasAccess, setHasAccess] = useState(true) // default true while checking
-    const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null)
+    // NEW 1 MIN LOGIC
+    const [hasAccess, setHasAccess] = useState(false)
     const [showPaywall, setShowPaywall] = useState(false)
     const [selectedPackage, setSelectedPackage] = useState(MOVIE_PACKAGES[1])
     const [payLoading, setPayLoading] = useState(false)
@@ -54,49 +53,21 @@ export default function MoviesPage() {
         fetchMovies()
     }, [])
 
-    // === 5 DAYS FREE LOGIC ===
+    // === NEW: ONLY CHECK SUBSCRIPTION, NO 5 DAYS ===
     useEffect(() => {
         const checkAccess = async () => {
-            if(!user) {
-                // guest trial using localStorage
-                const firstVisit = localStorage.getItem('sanel_movies_first_visit')
-                if(!firstVisit) {
-                    localStorage.setItem('sanel_movies_first_visit', new Date().toISOString())
-                    setTrialDaysLeft(5); setHasAccess(true); return
-                }
-                const start = new Date(firstVisit)
-                const diffDays = Math.floor((Date.now() - start.getTime())/(1000*60*60*24))
-                const left = 5 - diffDays
-                if(left > 0) { setTrialDaysLeft(left); setHasAccess(true) }
-                else { setTrialDaysLeft(0); setHasAccess(false); setShowPaywall(true) }
-                return
-            }
-            // logged in user - check Firestore subscription
+            if(!user) { setHasAccess(false); return }
             const subRef = doc(db, 'movie_subscriptions', user.uid)
             const subSnap = await getDoc(subRef)
             if(subSnap.exists()) {
                 const data = subSnap.data()
                 const until = data.validUntil?.toDate() as Date
-                if(until && until > new Date()) { setHasAccess(true); setTrialDaysLeft(null); return }
+                if(until && until > new Date()) { setHasAccess(true); return }
             }
-            // check trial in Firestore too
-            const trialRef = doc(db, 'movie_trials', user.uid)
-            const trialSnap = await getDoc(trialRef)
-            if(!trialSnap.exists()) {
-                await setDoc(trialRef, { startedAt: serverTimestamp(), userId: user.uid, email: user.email })
-                setTrialDaysLeft(5); setHasAccess(true); return
-            } else {
-                const data = trialSnap.data()
-                const started = data.startedAt?.toDate() as Date
-                if(!started) { setTrialDaysLeft(5); setHasAccess(true); return }
-                const diff = Math.floor((Date.now() - started.getTime())/(1000*60*60*24))
-                const left = 5 - diff
-                if(left>0){ setTrialDaysLeft(left); setHasAccess(true) }
-                else { setTrialDaysLeft(0); setHasAccess(false); setShowPaywall(true) }
-            }
+            setHasAccess(false)
         }
-        checkAccess()
-    }, [user, loading])
+        if(user!==undefined) checkAccess()
+    }, [user])
 
     useEffect(() => {
         if(movies.length===0) return
@@ -140,15 +111,15 @@ export default function MoviesPage() {
 
     return (
         <div className="min-h-screen bg-[#0A0A0A] text-white pb-24 relative">
-            {/* PAYWALL MODAL */}
+            {/* PAYWALL MODAL - 1 MIN */}
             {showPaywall && (
                 <div className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4 overflow-y-auto">
                     <div className="bg-white rounded-[24px] w-full max-w-[400px] p-6 text-black max-h-[90vh] overflow-y-auto">
                         <div className="text-center">
                             <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto"><Crown className="text-yellow-400" /></div>
-                            <h2 className="font-black text-xl mt-3">Your 5 Days Free Ended</h2>
-                            <p className="text-sm text-black/70 mt-1 font-medium">Subscribe to continue watching unlimited movies</p>
-                            {trialDaysLeft===0 && <p className="text-xs mt-2 bg-red-100 text-red-600 font-bold py-1 px-3 rounded-full inline-block">Pay to 0767483636</p>}
+                            <h2 className="font-black text-xl mt-3">1 Min Free Ended 🔒</h2>
+                            <p className="text-sm text-black/70 mt-1 font-medium">You get 60 seconds free per movie. Subscribe to continue</p>
+                            <p className="text-xs mt-2 bg-red-100 text-red-600 font-bold py-1 px-3 rounded-full inline-block">Pay to 0767483636</p>
                         </div>
 
                         <div className="mt-5 space-y-2">
@@ -173,7 +144,7 @@ export default function MoviesPage() {
                             {payLoading? 'Sending...' : `I Have Paid ${selectedPackage.price} UGX`}
                         </button>
                         {!user && <Link href="/admin" className="block text-center text-xs font-bold mt-3 underline">Login First</Link>}
-                        {hasAccess && <button onClick={()=>setShowPaywall(false)} className="block w-full text-center text-xs font-bold mt-2 text-gray-500">Continue with trial ({trialDaysLeft} days left)</button>}
+                        <button onClick={()=>setShowPaywall(false)} className="block w-full text-center text-xs font-bold mt-2 text-gray-500">Browse movies (1 min free)</button>
                     </div>
                 </div>
             )}
@@ -183,7 +154,7 @@ export default function MoviesPage() {
                 <div className="px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Link href="/" className="flex items-center gap-2"><div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center font-black">S</div><h1 className="text-xl font-black tracking-tight">SANEL<span className="text-red-600">FLIX</span></h1></Link>
-                        {trialDaysLeft!==null && hasAccess && <span className="bg-yellow-400 text-black text-[10px] font-black px-2 py-1 rounded-full">{trialDaysLeft}d FREE</span>}
+                        {hasAccess? <span className="bg-green-500 text-black text-[10px] font-black px-2 py-1 rounded-full">VIP</span> : <span className="bg-yellow-400 text-black text-[10px] font-black px-2 py-1 rounded-full">1 MIN FREE</span>}
                     </div>
                     <div className="flex gap-2 items-center">
                         {!hasAccess && <button onClick={()=>setShowPaywall(true)} className="bg-red-600 text-white px-3 py-1.5 rounded-full text-[11px] font-black flex gap-1 items-center"><Lock size={12}/> SUBSCRIBE</button>}
@@ -198,18 +169,18 @@ export default function MoviesPage() {
                 </div>
             </header>
 
-            {/* CONTENT BLURRED IF NO ACCESS */}
-            <div className={`${!hasAccess?'blur-[12px] pointer-events-none select-none':''}`}>
+            {/* CONTENT - NO BLUR NOW */}
+            <div className="">
                 {!searchQuery && hero && (
                     <div className="relative mx-3 mt-3 rounded-[20px] overflow-hidden h-[460px]">
                         <img src={hero.posterUrl} alt={hero.title} className="absolute inset-0 w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
                         <div className="absolute bottom-0 p-5 w-full">
-                            <div className="flex gap-2 mb-3"><span className="bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full">TRENDING # {heroIndex+1}</span></div>
+                            <div className="flex gap-2 mb-3"><span className="bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full">1 MIN FREE PREVIEW</span></div>
                             <h2 className="text-3xl font-black leading-tight line-clamp-2">{hero.title}</h2>
                             <p className="text-sm text-white/70 mt-2 line-clamp-2">{hero.description}</p>
                             <div className="flex gap-2 mt-4">
-                                <Link href={`/movies/watch/${hero.id}`} className="flex-1 bg-white text-black py-3 rounded-full font-black text-sm flex items-center justify-center gap-2"><Play size={16} fill="black"/> Watch Now</Link>
+                                <Link href={`/movies/watch/${hero.id}`} className="flex-1 bg-white text-black py-3 rounded-full font-black text-sm flex items-center justify-center gap-2"><Play size={16} fill="black"/> Watch 1 Min Free</Link>
                             </div>
                         </div>
                     </div>
@@ -228,7 +199,10 @@ export default function MoviesPage() {
                         {filteredMovies.map((m) => (
                             <Link key={m.id} href={`/movies/watch/${m.id}`} className="group">
                                 <div className="rounded-xl overflow-hidden bg-white/5 border border-white/10">
-                                    <div className="aspect-[2/3] overflow-hidden"><img src={m.posterUrl} alt={m.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /></div>
+                                    <div className="aspect-[2/3] overflow-hidden relative">
+                                        <img src={m.posterUrl} alt={m.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                        <span className="absolute bottom-1 left-1 bg-black/80 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">1 MIN FREE</span>
+                                    </div>
                                     <div className="p-2"><h3 className="font-bold text-[11px] truncate">{m.title}</h3></div>
                                 </div>
                             </Link>
