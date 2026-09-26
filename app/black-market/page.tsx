@@ -4,7 +4,7 @@ import { collection, onSnapshot, query, orderBy, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Eye, X } from "lucide-react"
+import { Eye, X, Share2 } from "lucide-react"
 
 type Product = {
   id: string
@@ -66,6 +66,16 @@ export default function BlackMarketPage(){
     window.open(`https://wa.me/${clean}?text=${encodeURIComponent(`Hi, I'm interested in ${product.title} - ${product.price} UGX`)}`, '_blank')
   }
 
+  const handleShare = (product: Product) => {
+    const url = `${window.location.origin}/product/${product.id}`
+    if(navigator.share){
+      navigator.share({ title: product.title, text: `${product.title} - ${product.price} UGX`, url })
+    } else {
+      navigator.clipboard.writeText(url)
+      alert("Link copied!")
+    }
+  }
+
   if(loading) return <div className="p-6 bg-black min-h-screen text-white text-center">Loading Black Market...</div>
 
   return (
@@ -90,11 +100,10 @@ export default function BlackMarketPage(){
               </div>
               <div className="mt-2 bg-white rounded-xl h-[110px] overflow-hidden relative">
                 <img src={p.images?.[0]} alt={p.title} className="w-full h-full object-cover cursor-pointer" onClick={()=>setViewProduct(p)} />
-                {/* EYE ICON */}
-                <button onClick={()=>setViewProduct(p)} className="absolute top-1.5 right-1.5 bg-black/70 text-white w-7 h-7 rounded-full flex items-center justify-center">
-                  <Eye size={14}/>
+                <button onClick={()=>setViewProduct(p)} className="absolute top-1.5 right-1.5 bg-black text-white w-7 h-7 rounded-full flex items-center justify-center border border-white shadow-lg">
+                  <Eye size={14} strokeWidth={2.5}/>
                 </button>
-                {p.images && p.images.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">+{p.images.length}</span>}
+                {p.images && p.images.length > 1 && <span className="absolute bottom-1 left-1 bg-black/80 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">+{p.images.length}</span>}
               </div>
               <button onClick={()=>handleWhatsApp(p)} className="mt-2 block w-full bg-black text-white text-center text-[11px] font-bold py-2 rounded-full">
                 Shop Now →
@@ -105,40 +114,46 @@ export default function BlackMarketPage(){
       </div>
 
       {filtered.length===0 && (
-        <div className="p-10 text-center text-white/60">
-          No products under {adminSettings.blackMarketMaxPrice} UGX found.
-        </div>
+        <div className="p-10 text-center text-white/60">No products under {adminSettings.blackMarketMaxPrice} UGX found.</div>
       )}
 
-      {/* MAGNIFY MODAL WITH EYE */}
+      {/* MAGNIFY MODAL - CLEAR SHARE BUTTON */}
       {viewProduct && (
         <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4" onClick={()=>setViewProduct(null)}>
           <div className="bg-white rounded-2xl max-w-[420px] w-full max-h-[90vh] overflow-y-auto relative text-black" onClick={e=>e.stopPropagation()}>
-            <button onClick={()=>setViewProduct(null)} className="absolute top-3 right-3 bg-black text-white w-8 h-8 rounded-full flex items-center justify-center z-20"><X size={16}/></button>
-            <div className="relative bg-gray-100">
+            {/* TOP BAR CLEAR */}
+            <div className="absolute top-0 left-0 right-0 z-20 flex justify-between p-3">
+              <button onClick={()=>handleShare(viewProduct)} className="bg-white border-2 border-black w-9 h-9 rounded-full flex items-center justify-center shadow-lg">
+                <Share2 size={16} className="text-black" strokeWidth={2.5}/>
+              </button>
+              <button onClick={()=>setViewProduct(null)} className="bg-black text-white w-9 h-9 rounded-full flex items-center justify-center shadow-lg"><X size={16}/></button>
+            </div>
+
+            <div className="relative bg-gray-100 pt-2">
               <img src={activeImg} className="w-full h-80 object-contain" />
-              <div className="absolute bottom-2 left-2 bg-black/70 text-white text-[11px] px-3 py-1 rounded-full font-bold">
+              <div className="absolute bottom-2 left-2 bg-black text-white text-[11px] px-3 py-1 rounded-full font-bold">
                 {(viewProduct.images?.findIndex(i=>i===activeImg)?? 0) + 1} / {viewProduct.images?.length} pics
               </div>
             </div>
             {viewProduct.images && viewProduct.images.length > 1 && (
-              <div className="flex gap-2 p-2 overflow-x-auto">
+              <div className="flex gap-2 p-2 overflow-x-auto bg-white">
                 {viewProduct.images.map((img, idx)=>(
-                  <button key={idx} onClick={()=>setActiveImg(img)} className={`w-16 h-16 rounded-lg overflow-hidden border-2 flex-shrink-0 ${activeImg===img? 'border-orange-600':'border-transparent opacity-70'}`}>
+                  <button key={idx} onClick={()=>setActiveImg(img)} className={`w-16 h-16 rounded-lg overflow-hidden border-[2.5px] flex-shrink-0 ${activeImg===img? 'border-orange-600':'border-gray-200'}`}>
                     <img src={img} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
             )}
             <div className="p-4">
-              <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-md font-bold">{viewProduct.category} • {viewProduct.images?.length} pics</span>
-              <h2 className="font-bold text-xl mt-2">{viewProduct.title}</h2>
-              <p className="font-black text-2xl mt-1" style={{color:'#B45309'}}>{viewProduct.price} UGX</p>
-              <p className="text-sm text-gray-600 mt-3 whitespace-pre-wrap">{viewProduct.description || "No description"}</p>
-              <div className="mt-5 flex flex-col gap-2">
-                <button onClick={()=>handleWhatsApp(viewProduct)} className="w-full bg-green-600 text-white py-3.5 rounded-full font-bold">📞 WhatsApp Seller</button>
-                <Link href={`/product/${viewProduct.id}`} className="w-full bg-black text-white py-3 rounded-full font-bold text-center text-sm">View Full Details</Link>
-                <button onClick={()=>setViewProduct(null)} className="w-full bg-gray-100 text-black py-3 rounded-full font-bold text-sm">Close</button>
+              <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-md font-black">{viewProduct.category} • {viewProduct.images?.length} pics</span>
+              <h2 className="font-black text-xl mt-2 text-black">{viewProduct.title}</h2>
+              <p className="font-black text-2xl mt-1" style={{color:'#B45309'}}>{Number(String(viewProduct.price).replace(/,/g,'')).toLocaleString()} UGX</p>
+              <p className="text-sm text-gray-700 mt-3 whitespace-pre-wrap leading-6">{viewProduct.description || "No description"}</p>
+
+              <div className="mt-5 flex flex-col gap-2.5">
+                <button onClick={()=>handleWhatsApp(viewProduct)} className="w-full bg-green-600 active:bg-green-700 text-white py-4 rounded-full font-black text-[15px] shadow-lg">📞 WhatsApp Seller</button>
+                <Link href={`/product/${viewProduct.id}`} className="w-full bg-black text-white py-3.5 rounded-full font-bold text-center text-[14px]">View Full Details →</Link>
+                <button onClick={()=>setViewProduct(null)} className="w-full bg-gray-100 text-black py-3 rounded-full font-bold text-sm border border-gray-200">Close</button>
               </div>
             </div>
           </div>
