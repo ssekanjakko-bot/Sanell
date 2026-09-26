@@ -81,7 +81,7 @@ const BOOST_LABELS: any = {
 
 export default function AdminPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<'dashboard'|'boosts'|'flixsubs'|'movies'|'chats'|'banners'>('dashboard')
+  const [tab, setTab] = useState<'dashboard'|'boosts'|'flixsubs'|'movies'|'chats'|'banners'|'blackmarket'>('dashboard')
   const [movies, setMovies] = useState<Movie[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [bannerFile,setBannerFile]=useState<File | null>(null)
@@ -109,13 +109,16 @@ export default function AdminPage() {
   const [boostFilter, setBoostFilter] = useState<'pending'|'approved'|'rejected'>('pending')
   const [flixRequests, setFlixRequests] = useState<MovieSubRequest[]>([])
   const [flixFilter, setFlixFilter] = useState<'pending'|'approved'|'rejected'>('pending')
+  // <-- NEW BLACK MARKET SETTINGS
+  const [blackMarketSettings, setBlackMarketSettings] = useState<any>({ showBlackMarket: true, blackMarketTitle: "BLACK MARKET - Everything ≤ 45K", blackMarketMaxPrice: 45000, blackMarketLimit: 10 })
+  const [blackMarketSaving, setBlackMarketSaving] = useState(false)
 
   useEffect(() => {
     const q = query(collection(db, "movies"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const moviesData: Movie[] = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
-   ...docSnap.data()
+  ...docSnap.data()
       } as Movie));
       setMovies(moviesData);
     });
@@ -139,6 +142,31 @@ export default function AdminPage() {
     })
     return () => unsub()
   }, [])
+
+  // <-- NEW: LISTEN TO BLACK MARKET SETTINGS
+  useEffect(()=>{
+    const unsub = onSnapshot(doc(db, "admin_settings", "homepage"), (snap)=>{
+      if(snap.exists()){
+        setBlackMarketSettings((prev:any)=>({...prev,...snap.data()}))
+      }
+    })
+    return ()=>unsub()
+  }, [])
+
+  // <-- NEW: SAVE BLACK MARKET SETTINGS
+  const saveBlackMarket = async () => {
+    setBlackMarketSaving(true)
+    try{
+      await setDoc(doc(db, "admin_settings", "homepage"), {
+        showBlackMarket: blackMarketSettings.showBlackMarket,
+        blackMarketTitle: blackMarketSettings.blackMarketTitle,
+        blackMarketMaxPrice: Number(blackMarketSettings.blackMarketMaxPrice),
+        blackMarketLimit: Number(blackMarketSettings.blackMarketLimit),
+        updatedAt: serverTimestamp()
+      }, { merge: true })
+      alert("Black Market settings saved ✅ - homepage will update live")
+    }catch(e:any){ alert(e.message)} finally{ setBlackMarketSaving(false)}
+  }
 
   const approveBoost = async (req: BoostRequest) => {
     const days = req.durationDays || 1
@@ -322,6 +350,7 @@ export default function AdminPage() {
         <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-hide">
           {[
             {id:'dashboard', label:'Dashboard'},
+            {id:'blackmarket', label:'Black Market 45K'}, // <-- NEW TAB
             {id:'boosts', label:`Boosts ${pendingCount>0?`(${pendingCount})`:''}`},
             {id:'flixsubs', label:`SanelFlix ${flixPendingCount>0?`(${flixPendingCount})`:''}`},
             {id:'chats', label:`Chats (${sellerThreads.length})`},
@@ -341,6 +370,61 @@ export default function AdminPage() {
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">FLIX SUBS PENDING</p><p className="text-2xl font-black text-black">{flixPendingCount}</p><p className="text-xs text-black">Movies 5 days free</p></div>
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">SELLERS CHATTING</p><p className="text-2xl font-black text-black">{sellerThreads.length}</p></div>
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">TOTAL MOVIES</p><p className="text-2xl font-black text-black">{movies.length}</p></div>
+          {/* NEW: QUICK TOGGLE IN DASHBOARD */}
+          <div className="bg-black border rounded-xl p-4 shadow col-span-2">
+            <p className="text-xs text-yellow-400 font-bold">BLACK MARKET 45K</p>
+            <p className="text-sm font-black text-white mt-1">{blackMarketSettings.showBlackMarket? 'ON ✅ - showing after 2 categories' : 'OFF ❌ - hidden'}</p>
+            <button onClick={()=>{setBlackMarketSettings({...blackMarketSettings, showBlackMarket:!blackMarketSettings.showBlackMarket}); setTimeout(saveBlackMarket,100)}} className={`mt-2 px-4 py-1.5 rounded-full text-xs font-black ${blackMarketSettings.showBlackMarket? 'bg-yellow-400 text-black' : 'bg-white text-black'}`}>
+              Turn {blackMarketSettings.showBlackMarket? 'OFF' : 'ON'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* <-- NEW: BLACK MARKET TAB */}
+      {tab==='blackmarket' && (
+        <div className="bg-white border rounded-xl p-5 shadow max-w-[600px]">
+          <h2 className="font-black text-lg text-black">🔥 Black Market - Under 45K Control</h2>
+          <p className="text-xs text-gray-500 mt-1">This banner appears AFTER 2 categories on homepage. Jumia-style cards.</p>
+
+          <div className="mt-6 space-y-4">
+            <div className="flex items-center justify-between bg-black text-white p-4 rounded-xl">
+              <div>
+                <p className="font-bold text-sm">Show Banner on Homepage</p>
+                <p className="text-[10px] text-gray-400">Turn ON/OFF without deploy</p>
+              </div>
+              <button onClick={()=>setBlackMarketSettings({...blackMarketSettings, showBlackMarket:!blackMarketSettings.showBlackMarket})} className={`w-14 h-7 rounded-full p-1 transition flex ${blackMarketSettings.showBlackMarket? 'bg-green-500 justify-end' : 'bg-gray-600 justify-start'}`}>
+                <div className="w-5 h-5 bg-white rounded-full"></div>
+              </button>
+            </div>
+
+            <div>
+              <label className="font-bold text-xs text-black">Banner Title</label>
+              <input value={blackMarketSettings.blackMarketTitle} onChange={e=>setBlackMarketSettings({...blackMarketSettings, blackMarketTitle: e.target.value})} className="w-full border p-3 rounded-xl text-black mt-1" placeholder="BLACK MARKET - Everything ≤ 45K" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="font-bold text-xs text-black">Max Price (UGX)</label>
+                <input type="number" value={blackMarketSettings.blackMarketMaxPrice} onChange={e=>setBlackMarketSettings({...blackMarketSettings, blackMarketMaxPrice: e.target.value})} className="w-full border p-3 rounded-xl text-black mt-1" />
+                <p className="text-[10px] text-gray-500 mt-1">All products ≤ this price will show. Use 45000</p>
+              </div>
+              <div>
+                <label className="font-bold text-xs text-black">Cards to Show</label>
+                <input type="number" value={blackMarketSettings.blackMarketLimit} onChange={e=>setBlackMarketSettings({...blackMarketSettings, blackMarketLimit: e.target.value})} className="w-full border p-3 rounded-xl text-black mt-1" />
+              </div>
+            </div>
+
+            <button onClick={saveBlackMarket} disabled={blackMarketSaving} className="w-full bg-black text-white py-3.5 rounded-full font-black text-sm mt-2">
+              {blackMarketSaving? 'Saving...' : 'Save Changes - Updates Live ✅'}
+            </button>
+
+            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-xl mt-4">
+              <p className="text-[11px] text-black font-bold">How search works:</p>
+              <p className="text-[11px] text-black mt-1">1. Banner "View All" goes to <span className="bg-white px-1 rounded border">/search?maxPrice=45000</span></p>
+              <p className="text-[11px] text-black">2. In your search page, check URL param <b>maxPrice</b> and filter. Need code? Ask me.</p>
+            </div>
+          </div>
         </div>
       )}
 
