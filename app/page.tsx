@@ -82,15 +82,15 @@ function BlackMarketBanner({ products, adminSettings, onView, onWhatsApp, router
           {adminSettings.blackMarketTitle || `BLACK MARKET ≤ ${maxPrice.toLocaleString()}`}
           <span className="bg-yellow-400 text-black text-[8px] px-2 py-0.5 rounded-full">HOT</span>
         </h2>
-        <button onClick={()=>router.push(`/search?maxPrice=${maxPrice}`)} className="bg-yellow-400 text-black text-[10px] font-black px-3 py-1.5 rounded-full flex items-center gap-1">View All <ArrowRight size={12}/></button>
+        <Link href="/black-market" className="bg-yellow-400 text-black text-[10px] font-black px-3 py-1.5 rounded-full flex items-center gap-1">View All <ArrowRight size={12}/></Link>
       </div>
       <div className="flex gap-2.5 overflow-x-auto scrollbar-hide">
         {products.slice(0,10).map((p:any)=><BlackMarketCard key={p.id} p={p} onView={onView} onWhatsApp={onWhatsApp} />)}
-        <button onClick={()=>router.push(`/search?maxPrice=${maxPrice}`)} className="min-w-[130px] bg-gradient-to-br from-zinc-800 to-black border border-dashed border-yellow-400/50 rounded-[18px] flex flex-col items-center justify-center gap-2">
+        <Link href="/black-market" className="min-w-[130px] bg-gradient-to-br from-zinc-800 to-black border border-dashed border-yellow-400/50 rounded-[18px] flex flex-col items-center justify-center gap-2">
           <span className="w-10 h-10 bg-yellow-400 text-black rounded-full flex items-center justify-center"><ArrowRight size={16}/></span>
           <p className="font-black text-[11px] text-yellow-400">See All</p>
           <p className="text-[9px] text-white/60">{products.length} items</p>
-        </button>
+        </Link>
       </div>
     </div>
   )
