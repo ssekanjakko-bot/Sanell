@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Search, Bell, Home, Tv, Film, Play, Star, Clock, ChevronRight, X, Lock, Crown } from 'lucide-react'
 import { db, auth } from '@/lib/firebase'
 import { collection, getDocs, query, orderBy, doc, getDoc, setDoc, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
-import { onAuthStateChanged, User } from 'firebase/auth'
+import { onAuthStateChanged, User, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 
 type Movie = {
     id: string; title: string; year?: number; releaseDate?: string; genre?: string[]; description: string; videoUrl: string; posterUrl: string; category?: string; duration: string; createdAt: any
@@ -31,11 +31,11 @@ export default function MoviesPage() {
     const [heroIndex, setHeroIndex] = useState(0)
     const [user, setUser] = useState<User | null>(null)
 
-    // NEW 1 MIN LOGIC
     const [hasAccess, setHasAccess] = useState(false)
     const [showPaywall, setShowPaywall] = useState(false)
     const [selectedPackage, setSelectedPackage] = useState(MOVIE_PACKAGES[1])
     const [payLoading, setPayLoading] = useState(false)
+    const [loginLoading, setLoginLoading] = useState(false)
 
     useEffect(() => {
         const unsub = onAuthStateChanged(auth, setUser)
@@ -53,7 +53,6 @@ export default function MoviesPage() {
         fetchMovies()
     }, [])
 
-    // === NEW: ONLY CHECK SUBSCRIPTION, NO 5 DAYS ===
     useEffect(() => {
         const checkAccess = async () => {
             if(!user) { setHasAccess(false); return }
@@ -87,8 +86,21 @@ export default function MoviesPage() {
     const heroMovies = movies.slice(0,5)
     const hero = heroMovies[heroIndex]
 
+    const handleGoogleLogin = async () => {
+        setLoginLoading(true)
+        try{
+            const provider = new GoogleAuthProvider()
+            await signInWithPopup(auth, provider)
+        }catch(e:any){ alert(e.message) }
+        setLoginLoading(false)
+    }
+
     const requestSubscription = async () => {
-        if(!user) { alert('Please login first to subscribe'); window.location.href='/admin'; return }
+        if(!user) {
+            // don't go to admin anymore - just login here
+            handleGoogleLogin()
+            return
+        }
         setPayLoading(true)
         try{
             await addDoc(collection(db, 'movie_boost_requests'), {
@@ -111,7 +123,7 @@ export default function MoviesPage() {
 
     return (
         <div className="min-h-screen bg-[#0A0A0A] text-white pb-24 relative">
-            {/* PAYWALL MODAL - 1 MIN */}
+            {/* PAYWALL MODAL - 1 MIN - NO ADMIN */}
             {showPaywall && (
                 <div className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4 overflow-y-auto">
                     <div className="bg-white rounded-[24px] w-full max-w-[400px] p-6 text-black max-h-[90vh] overflow-y-auto">
@@ -122,29 +134,46 @@ export default function MoviesPage() {
                             <p className="text-xs mt-2 bg-red-100 text-red-600 font-bold py-1 px-3 rounded-full inline-block">Pay to 0767483636</p>
                         </div>
 
-                        <div className="mt-5 space-y-2">
-                            {MOVIE_PACKAGES.map(pkg=>(
-                                <button key={pkg.id} onClick={()=>setSelectedPackage(pkg)} className={`w-full text-left border-2 rounded-xl p-3 flex justify-between items-center ${selectedPackage.id===pkg.id?'border-black bg-[#FFF7ED]':'border-gray-200 bg-white'}`}>
-                                    <div>
-                                        <p className="font-black text-sm flex gap-2 items-center">{pkg.name} {pkg.popular && <span className="bg-black text-white text-[8px] px-2 py-0.5 rounded-full">POPULAR</span>}</p>
-                                        <p className="text-xs text-black/60 font-medium">{pkg.desc} • {pkg.days} days</p>
-                                    </div>
-                                    <div className="text-right"><p className="font-black">{pkg.price.toLocaleString()}</p><p className="text-[10px] font-bold">UGX</p></div>
-                                </button>
-                            ))}
-                        </div>
+                        {!user? (
+                          <div className="mt-6">
+                            <p className="text-center font-black text-sm">Login to Subscribe</p>
+                            <p className="text-center text-[11px] text-gray-500 mt-1 mb-4">This is for viewers only - not admin</p>
+                            <button onClick={handleGoogleLogin} disabled={loginLoading} className="w-full bg-black text-white py-3.5 rounded-full font-black text-sm flex items-center justify-center gap-2">
+                              {loginLoading? 'Logging in...' : (
+                                <>
+                                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-4 h-4 bg-white rounded-full" />
+                                  Continue with Google
+                                </>
+                              )}
+                            </button>
+                            <p className="text-[10px] text-center text-gray-400 mt-3">Your Google account is only for SanelFlix movies</p>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="mt-5 space-y-2">
+                                {MOVIE_PACKAGES.map(pkg=>(
+                                    <button key={pkg.id} onClick={()=>setSelectedPackage(pkg)} className={`w-full text-left border-2 rounded-xl p-3 flex justify-between items-center ${selectedPackage.id===pkg.id?'border-black bg-[#FFF7ED]':'border-gray-200 bg-white'}`}>
+                                        <div>
+                                            <p className="font-black text-sm flex gap-2 items-center">{pkg.name} {pkg.popular && <span className="bg-black text-white text-[8px] px-2 py-0.5 rounded-full">POPULAR</span>}</p>
+                                            <p className="text-xs text-black/60 font-medium">{pkg.desc} • {pkg.days} days</p>
+                                        </div>
+                                        <div className="text-right"><p className="font-black">{pkg.price.toLocaleString()}</p><p className="text-[10px] font-bold">UGX</p></div>
+                                    </button>
+                                ))}
+                            </div>
 
-                        <div className="mt-4 bg-black text-white rounded-xl p-3 text-xs font-bold">
-                            <p>How to pay:</p>
-                            <p className="mt-1 font-medium">1. Send <b>{selectedPackage.price} UGX</b> to <b>0767483636</b></p>
-                            <p className="font-medium">2. Reason: <b>MOVIE {user?.uid.slice(0,4) || 'GUEST'}</b></p>
-                        </div>
+                            <div className="mt-4 bg-black text-white rounded-xl p-3 text-xs font-bold">
+                                <p>How to pay:</p>
+                                <p className="mt-1 font-medium">1. Send <b>{selectedPackage.price} UGX</b> to <b>0767483636</b></p>
+                                <p className="font-medium">2. Reason: <b>MOVIE {user?.uid.slice(0,4)}</b></p>
+                            </div>
 
-                        <button onClick={requestSubscription} disabled={payLoading} className="w-full bg-black text-white py-3.5 rounded-full font-black mt-4">
-                            {payLoading? 'Sending...' : `I Have Paid ${selectedPackage.price} UGX`}
-                        </button>
-                        {!user && <Link href="/admin" className="block text-center text-xs font-bold mt-3 underline">Login First</Link>}
-                        <button onClick={()=>setShowPaywall(false)} className="block w-full text-center text-xs font-bold mt-2 text-gray-500">Browse movies (1 min free)</button>
+                            <button onClick={requestSubscription} disabled={payLoading} className="w-full bg-black text-white py-3.5 rounded-full font-black mt-4">
+                                {payLoading? 'Sending...' : `I Have Paid ${selectedPackage.price} UGX`}
+                            </button>
+                          </>
+                        )}
+                        <button onClick={()=>setShowPaywall(false)} className="block w-full text-center text-xs font-bold mt-3 text-gray-500">Browse movies (1 min free)</button>
                     </div>
                 </div>
             )}
@@ -169,7 +198,6 @@ export default function MoviesPage() {
                 </div>
             </header>
 
-            {/* CONTENT - NO BLUR NOW */}
             <div className="">
                 {!searchQuery && hero && (
                     <div className="relative mx-3 mt-3 rounded-[20px] overflow-hidden h-[460px]">
