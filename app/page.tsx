@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useRef, useMemo } from "react"
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, orderBy, where } from "firebase/firestore"
+import { collection, onSnapshot, query, orderBy, where, doc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Coffee, Eye, X, LayoutGrid, Film, ArrowRight, Clock, Phone, ChevronUp } from "lucide-react"
@@ -49,22 +49,63 @@ function getTimeLeft(boosted_until: any) {
   } catch { return null }
 }
 
+// --- NEW: BLACK MARKET CARD LIKE JUMIA ---
+function BlackMarketCard({ p, onView, onWhatsApp }: any){
+  const priceNum = Number(String(p.price).replace(/,/g,''))
+  return (
+    <div className="min-w-[155px] max-w-[155px] rounded-[18px] overflow-hidden bg-gradient-to-b from-[#FFB347] to-[#FF6A00] p-[2px] flex-shrink-0">
+      <div className="bg-gradient-to-b from-[#FF9E2B] to-[#FF7A00] rounded-[16px] p-2.5 flex flex-col h-full">
+        <p className="text-[9px] font-black text-white/90 tracking-widest">SANEL 45K</p>
+        <p className="text-[12px] font-black text-white leading-[13px] mt-1 line-clamp-2 h-[26px]">{p.title}</p>
+        <div className="mt-1.5 bg-white rounded-full px-2 py-[3px] w-fit flex items-center gap-1">
+          <span className="text-[9px] font-bold text-black">UGX</span>
+          <span className="text-[11px] font-black text-black">{priceNum.toLocaleString()}</span>
+        </div>
+        <div className="mt-2 bg-white rounded-[10px] overflow-hidden h-[90px] relative">
+          <img src={p.images?.[0]} className="w-full h-full object-cover" />
+          <button onClick={()=>onView(p)} className="absolute top-1 right-1 bg-black/60 text-white w-6 h-6 rounded-full flex items-center justify-center"><Eye size={10}/></button>
+        </div>
+        <button onClick={()=>onWhatsApp(p)} className="mt-2 bg-black text-white text-[10px] font-bold py-1.5 rounded-full">Shop Now →</button>
+      </div>
+    </div>
+  )
+}
+
+function BlackMarketBanner({ products, adminSettings, onView, onWhatsApp, router }: any){
+  if(!adminSettings?.showBlackMarket) return null
+  if(!products || products.length===0) return null
+  const maxPrice = adminSettings.blackMarketMaxPrice || 45000
+  return (
+    <div className="mx-3 mt-5 rounded-[20px] bg-black p-3 border border-yellow-400/20">
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="font-black text-[14px] text-yellow-400 flex items-center gap-2">
+          {adminSettings.blackMarketTitle || `BLACK MARKET ≤ ${maxPrice.toLocaleString()}`}
+          <span className="bg-yellow-400 text-black text-[8px] px-2 py-0.5 rounded-full">HOT</span>
+        </h2>
+        <button onClick={()=>router.push(`/search?maxPrice=${maxPrice}`)} className="bg-yellow-400 text-black text-[10px] font-black px-3 py-1.5 rounded-full flex items-center gap-1">View All <ArrowRight size={12}/></button>
+      </div>
+      <div className="flex gap-2.5 overflow-x-auto scrollbar-hide">
+        {products.slice(0,10).map((p:any)=><BlackMarketCard key={p.id} p={p} onView={onView} onWhatsApp={onWhatsApp} />)}
+        <button onClick={()=>router.push(`/search?maxPrice=${maxPrice}`)} className="min-w-[130px] bg-gradient-to-br from-zinc-800 to-black border border-dashed border-yellow-400/50 rounded-[18px] flex flex-col items-center justify-center gap-2">
+          <span className="w-10 h-10 bg-yellow-400 text-black rounded-full flex items-center justify-center"><ArrowRight size={16}/></span>
+          <p className="font-black text-[11px] text-yellow-400">See All</p>
+          <p className="text-[9px] text-white/60">{products.length} items</p>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function TrendingSection({ products, onView, onWhatsApp }: any) {
   const [tick, setTick] = useState(0)
   useEffect(() => { const t = setInterval(()=>setTick(x=>x+1), 60000); return ()=>clearInterval(t)}, [])
-
   const activeTrending = useMemo(() => {
     if (!products) return []
     const now = new Date()
-    return products
-   .filter((p: any) => {
+    return products.filter((p: any) => {
         if(!p.boosted_until) return false
-        try {
-          const end = p.boosted_until.toDate? p.boosted_until.toDate() : new Date(p.boosted_until)
-          return end > now
-        } catch { return false }
-      })
-   .sort((a: any, b: any) => {
+        try { const end = p.boosted_until.toDate? p.boosted_until.toDate() : new Date(p.boosted_until); return end > now } catch { return false }
+      }).sort((a: any, b: any) => {
         const durA = a.boostDurationDays || a.boost_duration_days || 1
         const durB = b.boostDurationDays || b.boost_duration_days || 1
         if(durB!== durA) return durB - durA
@@ -73,9 +114,7 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
         return bt.getTime() - at.getTime()
       })
   }, [products, tick])
-
   if (!activeTrending || activeTrending.length === 0) return null;
-
   return (
     <div className="px-3 mt-3">
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -229,6 +268,7 @@ export default function HomePage() {
   const [viewProduct, setViewProduct] = useState<any>(null)
   const [showMenu, setShowMenu] = useState(false)
   const [currentBanner, setCurrentBanner] = useState(0)
+  const [adminSettings, setAdminSettings] = useState<any>({ showBlackMarket: true, blackMarketMaxPrice: 45000, blackMarketTitle: "BLACK MARKET - Everything ≤ 45K" })
   const router = useRouter()
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -237,7 +277,24 @@ export default function HomePage() {
   useEffect(() => { const q = query(collection(db, 'products'), orderBy("createdAt", "desc")); const unsub = onSnapshot(q, (snap) => { setProducts(snap.docs.map(d => ({ id: d.id,...d.data() }))); setLoading(false) }); return () => unsub()}, [])
   useEffect(() => { const q = query(collection(db, 'products'), where("is_boosted", "==", true)); const unsub = onSnapshot(q, (snap) => { const now = new Date(); const boosted = snap.docs.map(d => ({ id: d.id,...d.data() } as any)).filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now).sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate()).slice(0, 30); setBoostedProducts(boosted)}); return () => unsub()}, [])
 
+  // ADMIN SETTINGS LISTENER
+  useEffect(()=>{
+    const unsub = onSnapshot(doc(db, "admin_settings", "homepage"), (snap)=>{
+      if(snap.exists()) setAdminSettings((prev:any)=>({...prev,...snap.data()}))
+    })
+    return ()=>unsub()
+  }, [])
+
   const filteredProducts = useMemo(() => products.filter(p => { const matchCategory = selectedCategory === 'All' || p.category === selectedCategory; const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase()); return matchCategory && matchSearch}), [products, selectedCategory, search])
+
+  const blackMarketProducts = useMemo(()=>{
+    const max = adminSettings.blackMarketMaxPrice || 45000
+    return products.filter((p:any)=>{
+      const num = Number(String(p.price).replace(/,/g,''))
+      return!isNaN(num) && num > 0 && num <= max
+    }).sort((a:any,b:any)=> Number(String(a.price).replace(/,/g,'')) - Number(String(b.price).replace(/,/g,'')))
+  }, [products, adminSettings.blackMarketMaxPrice])
+
   const getProductsByCat = (catName: string) => products.filter(p => p.category === catName && p.title?.toLowerCase().includes(search.toLowerCase()))
   const handleWhatsApp = (product: any) => { let phone = product.whatsapp || product.whatsApp || product.WhatsApp; if(!phone) return alert("Seller did not add WhatsApp number"); let cleanPhone = phone.toString().replace(/\D/g, ''); if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1); else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone; window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hello! I'm interested in ${product.title} - ${product.price} UGX`)}`, '_blank') }
 
@@ -300,7 +357,22 @@ export default function HomePage() {
 
       <div className="p-3 pb-0"><h2 className="font-black text-[18px] text-black">{selectedCategory === 'All'? 'Shop by Category' : `${selectedCategory} (${filteredProducts.length})`}{selectedCategory!== 'All' && <button onClick={() => setSelectedCategory('All')} className="ml-3 bg-black text-white text-[11px] px-3 py-1 rounded-full">Back</button>}</h2></div>
 
-      {loading? <p className="p-3">Loading...</p> : selectedCategory === 'All'? (<>{HOME_CATEGORIES.map((cat, idx) => { const catProducts = getProductsByCat(cat.name); if(catProducts.length === 0) return null; return (<div key={cat.name}><CategoryRow title={cat.name} icon={cat.icon} products={catProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} onSeeAll={() => { setSelectedCategory(cat.name); window.scrollTo({top: 0, behavior: 'smooth'}) }} /><PromoStrip catName={cat.name} catIndex={idx} setCategory={setSelectedCategory} router={router} /></div>)})}</>) : (<div className="p-3"><div className="grid grid-cols-2 gap-3">{filteredProducts.map(p => (<div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border"><div className="relative w-full h-40 bg-gray-100"><img src={p.images?.[0]} className="w-full h-40 object-cover" /><button onClick={() => setViewProduct(p)} className="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center"><Eye size={14} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">+{p.images.length} pics</span>}</div><div className="p-2"><p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p><p className="font-bold text-[14px] line-clamp-2 text-black">{p.title}</p><p className="font-black text-[15px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p><button onClick={() => handleWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-sm py-2.5 rounded-md font-bold">WhatsApp</button></div></div>))}</div></div>)}
+      {loading? <p className="p-3">Loading...</p> : selectedCategory === 'All'? (
+      <>
+        {HOME_CATEGORIES.map((cat, idx) => {
+          const catProducts = getProductsByCat(cat.name);
+          if(catProducts.length === 0) return null;
+          return (
+            <div key={cat.name}>
+              <CategoryRow title={cat.name} icon={cat.icon} products={catProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} onSeeAll={() => { setSelectedCategory(cat.name); window.scrollTo({top: 0, behavior: 'smooth'}) }} />
+              <PromoStrip catName={cat.name} catIndex={idx} setCategory={setSelectedCategory} router={router} />
+              {/* SHOW BLACK MARKET AFTER 2 CATEGORIES */}
+              {idx === 1 && <BlackMarketBanner products={blackMarketProducts} adminSettings={adminSettings} onView={setViewProduct} onWhatsApp={handleWhatsApp} router={router} />}
+            </div>
+          )
+        })}
+      </>
+      ) : (<div className="p-3"><div className="grid grid-cols-2 gap-3">{filteredProducts.map(p => (<div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border"><div className="relative w-full h-40 bg-gray-100"><img src={p.images?.[0]} className="w-full h-40 object-cover" /><button onClick={() => setViewProduct(p)} className="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center"><Eye size={14} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">+{p.images.length} pics</span>}</div><div className="p-2"><p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p><p className="font-bold text-[14px] line-clamp-2 text-black">{p.title}</p><p className="font-black text-[15px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p><button onClick={() => handleWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-sm py-2.5 rounded-md font-bold">WhatsApp</button></div></div>))}</div></div>)}
 
       {viewProduct && <ProductViewModal product={viewProduct} onClose={() => setViewProduct(null)} onWhatsApp={handleWhatsApp} />}
 
