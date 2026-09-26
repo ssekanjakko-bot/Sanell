@@ -109,7 +109,6 @@ export default function AdminPage() {
   const [boostFilter, setBoostFilter] = useState<'pending'|'approved'|'rejected'>('pending')
   const [flixRequests, setFlixRequests] = useState<MovieSubRequest[]>([])
   const [flixFilter, setFlixFilter] = useState<'pending'|'approved'|'rejected'>('pending')
-  // <-- NEW BLACK MARKET SETTINGS
   const [blackMarketSettings, setBlackMarketSettings] = useState<any>({ showBlackMarket: true, blackMarketTitle: "BLACK MARKET - Everything ≤ 45K", blackMarketMaxPrice: 45000, blackMarketLimit: 10 })
   const [blackMarketSaving, setBlackMarketSaving] = useState(false)
 
@@ -118,7 +117,7 @@ export default function AdminPage() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const moviesData: Movie[] = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
-  ...docSnap.data()
+ ...docSnap.data()
       } as Movie));
       setMovies(moviesData);
     });
@@ -143,7 +142,6 @@ export default function AdminPage() {
     return () => unsub()
   }, [])
 
-  // <-- NEW: LISTEN TO BLACK MARKET SETTINGS
   useEffect(()=>{
     const unsub = onSnapshot(doc(db, "admin_settings", "homepage"), (snap)=>{
       if(snap.exists()){
@@ -153,7 +151,6 @@ export default function AdminPage() {
     return ()=>unsub()
   }, [])
 
-  // <-- NEW: SAVE BLACK MARKET SETTINGS
   const saveBlackMarket = async () => {
     setBlackMarketSaving(true)
     try{
@@ -350,7 +347,7 @@ export default function AdminPage() {
         <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-hide">
           {[
             {id:'dashboard', label:'Dashboard'},
-            {id:'blackmarket', label:'Black Market 45K'}, // <-- NEW TAB
+            {id:'blackmarket', label:'Black Market 45K'},
             {id:'boosts', label:`Boosts ${pendingCount>0?`(${pendingCount})`:''}`},
             {id:'flixsubs', label:`SanelFlix ${flixPendingCount>0?`(${flixPendingCount})`:''}`},
             {id:'chats', label:`Chats (${sellerThreads.length})`},
@@ -367,10 +364,9 @@ export default function AdminPage() {
       {tab==='dashboard' && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">PENDING BOOSTS</p><p className="text-2xl font-black text-black">{pendingCount}</p><p className="text-xs text-black font-bold">0767483636</p></div>
-          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">FLIX SUBS PENDING</p><p className="text-2xl font-black text-black">{flixPendingCount}</p><p className="text-xs text-black">Movies 5 days free</p></div>
+          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">FLIX SUBS PENDING</p><p className="text-2xl font-black text-black">{flixPendingCount}</p><p className="text-xs text-black">1 Min Free Mode</p></div>
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">SELLERS CHATTING</p><p className="text-2xl font-black text-black">{sellerThreads.length}</p></div>
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">TOTAL MOVIES</p><p className="text-2xl font-black text-black">{movies.length}</p></div>
-          {/* NEW: QUICK TOGGLE IN DASHBOARD */}
           <div className="bg-black border rounded-xl p-4 shadow col-span-2">
             <p className="text-xs text-yellow-400 font-bold">BLACK MARKET 45K</p>
             <p className="text-sm font-black text-white mt-1">{blackMarketSettings.showBlackMarket? 'ON ✅ - showing after 2 categories' : 'OFF ❌ - hidden'}</p>
@@ -381,127 +377,36 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* <-- NEW: BLACK MARKET TAB */}
       {tab==='blackmarket' && (
         <div className="bg-white border rounded-xl p-5 shadow max-w-[600px]">
           <h2 className="font-black text-lg text-black">🔥 Black Market - Under 45K Control</h2>
           <p className="text-xs text-gray-500 mt-1">This banner appears AFTER 2 categories on homepage. Jumia-style cards.</p>
-
           <div className="mt-6 space-y-4">
             <div className="flex items-center justify-between bg-black text-white p-4 rounded-xl">
-              <div>
-                <p className="font-bold text-sm">Show Banner on Homepage</p>
-                <p className="text-[10px] text-gray-400">Turn ON/OFF without deploy</p>
-              </div>
-              <button onClick={()=>setBlackMarketSettings({...blackMarketSettings, showBlackMarket:!blackMarketSettings.showBlackMarket})} className={`w-14 h-7 rounded-full p-1 transition flex ${blackMarketSettings.showBlackMarket? 'bg-green-500 justify-end' : 'bg-gray-600 justify-start'}`}>
-                <div className="w-5 h-5 bg-white rounded-full"></div>
-              </button>
+              <div><p className="font-bold text-sm">Show Banner on Homepage</p><p className="text-[10px] text-gray-400">Turn ON/OFF without deploy</p></div>
+              <button onClick={()=>setBlackMarketSettings({...blackMarketSettings, showBlackMarket:!blackMarketSettings.showBlackMarket})} className={`w-14 h-7 rounded-full p-1 transition flex ${blackMarketSettings.showBlackMarket? 'bg-green-500 justify-end' : 'bg-gray-600 justify-start'}`}><div className="w-5 h-5 bg-white rounded-full"></div></button>
             </div>
-
-            <div>
-              <label className="font-bold text-xs text-black">Banner Title</label>
-              <input value={blackMarketSettings.blackMarketTitle} onChange={e=>setBlackMarketSettings({...blackMarketSettings, blackMarketTitle: e.target.value})} className="w-full border p-3 rounded-xl text-black mt-1" placeholder="BLACK MARKET - Everything ≤ 45K" />
-            </div>
-
+            <div><label className="font-bold text-xs text-black">Banner Title</label><input value={blackMarketSettings.blackMarketTitle} onChange={e=>setBlackMarketSettings({...blackMarketSettings, blackMarketTitle: e.target.value})} className="w-full border p-3 rounded-xl text-black mt-1" placeholder="BLACK MARKET - Everything ≤ 45K" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="font-bold text-xs text-black">Max Price (UGX)</label>
-                <input type="number" value={blackMarketSettings.blackMarketMaxPrice} onChange={e=>setBlackMarketSettings({...blackMarketSettings, blackMarketMaxPrice: e.target.value})} className="w-full border p-3 rounded-xl text-black mt-1" />
-                <p className="text-[10px] text-gray-500 mt-1">All products ≤ this price will show. Use 45000</p>
-              </div>
-              <div>
-                <label className="font-bold text-xs text-black">Cards to Show</label>
-                <input type="number" value={blackMarketSettings.blackMarketLimit} onChange={e=>setBlackMarketSettings({...blackMarketSettings, blackMarketLimit: e.target.value})} className="w-full border p-3 rounded-xl text-black mt-1" />
-              </div>
+              <div><label className="font-bold text-xs text-black">Max Price (UGX)</label><input type="number" value={blackMarketSettings.blackMarketMaxPrice} onChange={e=>setBlackMarketSettings({...blackMarketSettings, blackMarketMaxPrice: e.target.value})} className="w-full border p-3 rounded-xl text-black mt-1" /><p className="text-[10px] text-gray-500 mt-1">All products ≤ this price will show. Use 45000</p></div>
+              <div><label className="font-bold text-xs text-black">Cards to Show</label><input type="number" value={blackMarketSettings.blackMarketLimit} onChange={e=>setBlackMarketSettings({...blackMarketSettings, blackMarketLimit: e.target.value})} className="w-full border p-3 rounded-xl text-black mt-1" /></div>
             </div>
-
-            <button onClick={saveBlackMarket} disabled={blackMarketSaving} className="w-full bg-black text-white py-3.5 rounded-full font-black text-sm mt-2">
-              {blackMarketSaving? 'Saving...' : 'Save Changes - Updates Live ✅'}
-            </button>
-
-            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-xl mt-4">
-              <p className="text-[11px] text-black font-bold">How search works:</p>
-              <p className="text-[11px] text-black mt-1">1. Banner "View All" goes to <span className="bg-white px-1 rounded border">/search?maxPrice=45000</span></p>
-              <p className="text-[11px] text-black">2. In your search page, check URL param <b>maxPrice</b> and filter. Need code? Ask me.</p>
-            </div>
+            <button onClick={saveBlackMarket} disabled={blackMarketSaving} className="w-full bg-black text-white py-3.5 rounded-full font-black text-sm mt-2">{blackMarketSaving? 'Saving...' : 'Save Changes - Updates Live ✅'}</button>
           </div>
         </div>
       )}
 
       {tab==='boosts' && (
         <div className="bg-white border rounded-xl shadow overflow-hidden">
-          <div className="p-4 border-b flex justify-between items-center">
-            <h2 className="font-black text-black">🚀 Boost Requests</h2>
-            <div className="flex gap-1">
-              {['pending','approved','rejected'].map((f:any)=>(
-                <button key={f} onClick={()=>setBoostFilter(f)} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${boostFilter===f?'bg-black text-white':'bg-gray-100 text-black border'}`}>{f}</button>
-              ))}
-            </div>
-          </div>
-          <div className="p-3">
-            {filteredBoosts.length===0? <p className="text-center text-gray-400 py-10 text-sm">No {boostFilter} boosts</p> :
-              <div className="grid gap-3">
-                {filteredBoosts.map(req=>{
-                  const meta = BOOST_LABELS[req.packageId || ''] || {label: `${req.durationDays||1}D`, color: 'bg-gray-100 text-black'}
-                  return (
-                    <div key={req.id} className="border rounded-xl p-3 flex gap-3 bg-[#FFFEFB]">
-                      <img src={req.productImage} className="w-16 h-16 rounded-lg object-cover border" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex gap-2 items-center flex-wrap">
-                          <p className="font-bold text-sm truncate text-black">{req.productTitle}</p>
-                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-black ${meta.color}`}>{req.packageName || meta.label} • {req.durationDays||1}D • {req.amount} UGX</span>
-                        </div>
-                        <p className="text-[11px] text-black font-medium mt-1">Seller: {req.sellerEmail} • {req.sellerPhone}</p>
-                        <p className="text-[10px] text-gray-500">ID: {req.productId.slice(0,8)} • {req.createdAt?.toDate? req.createdAt.toDate().toLocaleString():''} • Pay to 0767483636 checked?</p>
-                      </div>
-                      <div className="flex flex-col gap-1 shrink-0">
-                        {req.status==='pending'? <>
-                          <button onClick={()=>approveBoost(req)} className="bg-black text-white px-4 py-2 rounded-full text-xs font-black">Approve {req.durationDays}d</button>
-                          <button onClick={()=>rejectBoost(req)} className="bg-white border border-black text-black px-4 py-1.5 rounded-full text-xs font-black">Reject</button>
-                        </> : <span className={`px-3 py-1 rounded-full text-[10px] font-black text-center ${req.status==='approved'?'bg-green-600 text-white':'bg-red-600 text-white'}`}>{req.status.toUpperCase()}</span>}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            }
-          </div>
+          <div className="p-4 border-b flex justify-between items-center"><h2 className="font-black text-black">🚀 Boost Requests</h2><div className="flex gap-1">{['pending','approved','rejected'].map((f:any)=>(<button key={f} onClick={()=>setBoostFilter(f)} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${boostFilter===f?'bg-black text-white':'bg-gray-100 text-black border'}`}>{f}</button>))}</div></div>
+          <div className="p-3">{filteredBoosts.length===0? <p className="text-center text-gray-400 py-10 text-sm">No {boostFilter} boosts</p> : <div className="grid gap-3">{filteredBoosts.map(req=>{const meta = BOOST_LABELS[req.packageId || ''] || {label: `${req.durationDays||1}D`, color: 'bg-gray-100 text-black'}; return (<div key={req.id} className="border rounded-xl p-3 flex gap-3 bg-[#FFFEFB]"><img src={req.productImage} className="w-16 h-16 rounded-lg object-cover border" /><div className="flex-1 min-w-0"><div className="flex gap-2 items-center flex-wrap"><p className="font-bold text-sm truncate text-black">{req.productTitle}</p><span className={`text-[9px] px-2 py-0.5 rounded-full font-black ${meta.color}`}>{req.packageName || meta.label} • {req.durationDays||1}D • {req.amount} UGX</span></div><p className="text-[11px] text-black font-medium mt-1">Seller: {req.sellerEmail} • {req.sellerPhone}</p><p className="text-[10px] text-gray-500">ID: {req.productId.slice(0,8)} • {req.createdAt?.toDate? req.createdAt.toDate().toLocaleString():''} • Pay to 0767483636 checked?</p></div><div className="flex flex-col gap-1 shrink-0">{req.status==='pending'? <><button onClick={()=>approveBoost(req)} className="bg-black text-white px-4 py-2 rounded-full text-xs font-black">Approve {req.durationDays}d</button><button onClick={()=>rejectBoost(req)} className="bg-white border border-black text-black px-4 py-1.5 rounded-full text-xs font-black">Reject</button></> : <span className={`px-3 py-1 rounded-full text-[10px] font-black text-center ${req.status==='approved'?'bg-green-600 text-white':'bg-red-600 text-white'}`}>{req.status.toUpperCase()}</span>}</div></div>)})}</div>}</div>
         </div>
       )}
 
       {tab==='flixsubs' && (
         <div className="bg-white border rounded-xl shadow overflow-hidden">
-          <div className="p-4 border-b flex justify-between items-center bg-black text-white">
-            <h2 className="font-black">🎬 SanelFlix Subscriptions - 5 Days Free then Pay</h2>
-            <div className="flex gap-1">
-              {['pending','approved','rejected'].map((f:any)=>(
-                <button key={f} onClick={()=>setFlixFilter(f)} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${flixFilter===f?'bg-white text-black':'bg-[#333] text-white border border-[#555]'}`}>{f}</button>
-              ))}
-            </div>
-          </div>
-          <div className="p-3">
-            <p className="text-xs text-black font-bold mb-3 bg-yellow-100 border border-yellow-300 p-2 rounded">Packages: Daily 1k, 3days 2.5k, 7days 5k, 15days 8k, 30days 12k, 60days 20k, 180days 50k, 365days 90k • All pay to <b>0767483636</b> Reason: MOVIE + ID</p>
-            {filteredFlix.length===0? <p className="text-center text-gray-400 py-10 text-sm">No {flixFilter} flix requests</p> :
-              <div className="grid gap-3">
-                {filteredFlix.map(req=>(
-                  <div key={req.id} className="border-2 rounded-xl p-3 flex gap-3 bg-white">
-                    <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center font-black text-xs">{req.days}D</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-black text-sm text-black">{req.packageName} • {req.amount.toLocaleString()} UGX • {req.days} Days</p>
-                      <p className="text-[11px] text-black font-medium mt-1">User: {req.email}</p>
-                      <p className="text-[10px] text-gray-500">UID: {req.userId.slice(0,8)} • {req.createdAt?.toDate? req.createdAt.toDate().toLocaleString():''}</p>
-                    </div>
-                    <div className="flex flex-col gap-1 shrink-0">
-                      {req.status==='pending'? <>
-                        <button onClick={()=>approveFlix(req)} className="bg-black text-white px-4 py-2 rounded-full text-xs font-black">Approve {req.days}D</button>
-                        <button onClick={()=>rejectFlix(req)} className="bg-white border border-black text-black px-4 py-1.5 rounded-full text-xs font-black">Reject</button>
-                      </> : <span className={`px-3 py-1 rounded-full text-[10px] font-black text-center ${req.status==='approved'?'bg-green-600 text-white':'bg-red-600 text-white'}`}>{req.status.toUpperCase()}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            }
-          </div>
+          <div className="p-4 border-b flex justify-between items-center bg-black text-white"><h2 className="font-black">🎬 SanelFlix - 1 Min Free Preview Mode</h2><div className="flex gap-1">{['pending','approved','rejected'].map((f:any)=>(<button key={f} onClick={()=>setFlixFilter(f)} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${flixFilter===f?'bg-white text-black':'bg-[#333] text-white border border-[#555]'}`}>{f}</button>))}</div></div>
+          <div className="p-3"><p className="text-xs text-black font-bold mb-3 bg-yellow-100 border border-yellow-300 p-2 rounded">Packages: Daily 1k, 3days 2.5k, 7days 5k, 15days 8k, 30days 12k, 60days 20k, 180days 50k, 365days 90k • All pay to <b>0767483636</b> Reason: MOVIE + ID - 1 MIN FREE then paywall</p>{filteredFlix.length===0? <p className="text-center text-gray-400 py-10 text-sm">No {flixFilter} flix requests - Requests from 1 min paywall will appear here</p> : <div className="grid gap-3">{filteredFlix.map(req=>(<div key={req.id} className="border-2 rounded-xl p-3 flex gap-3 bg-white"><div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center font-black text-xs">{req.days}D</div><div className="flex-1 min-w-0"><p className="font-black text-sm text-black">{req.packageName} • {req.amount.toLocaleString()} UGX • {req.days} Days</p><p className="text-[11px] text-black font-medium mt-1">User: {req.email}</p><p className="text-[10px] text-gray-500">UID: {req.userId.slice(0,8)} • {req.createdAt?.toDate? req.createdAt.toDate().toLocaleString():''}</p></div><div className="flex flex-col gap-1 shrink-0">{req.status==='pending'? <><button onClick={()=>approveFlix(req)} className="bg-black text-white px-4 py-2 rounded-full text-xs font-black">Approve {req.days}D</button><button onClick={()=>rejectFlix(req)} className="bg-white border border-black text-black px-4 py-1.5 rounded-full text-xs font-black">Reject</button></> : <span className={`px-3 py-1 rounded-full text-[10px] font-black text-center ${req.status==='approved'?'bg-green-600 text-white':'bg-red-600 text-white'}`}>{req.status.toUpperCase()}</span>}</div></div>))}</div>}</div>
         </div>
       )}
 
@@ -518,89 +423,21 @@ export default function AdminPage() {
               <input className="border p-2 w-full rounded text-black col-span-2" placeholder="YouTube URL (optional)" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} />
             </div>
             <textarea className="border p-2 w-full rounded text-black mt-2" placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
-            <div className="mt-3">
-              <label className="font-bold text-xs text-black">Genre:</label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-1">
-                {["Action", "Comedy", "Popular Movie", "C-Drama", "Sci-Fi", "Most Popular", "Anime", "DC Movies", "Marvel Movies", "Trending Now", "💖Romance", " Thriller", "Documentary", "Family", "Fantasy", " adventure", "Horror"].map(g => (
-                  <label key={g} className="flex items-center text-xs text-black"><input type="checkbox" value={g} checked={genre.includes(g)} onChange={handleGenreChange} className="mr-2" />{g}</label>
-                ))}
-              </div>
-            </div>
-            <div className="grid md:grid-cols-2 gap-3 mt-3">
-              <div><label className="font-bold text-xs text-black">Video File {editingId && "(leave empty to keep current)"}</label><input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files?.[0] || null)} className="border p-2 w-full rounded text-sm" /></div>
-              <div><label className="font-bold text-xs text-black">Poster Image {editingId && "(leave empty to keep current)"}</label><input type="file" accept="image/*" onChange={e => setPosterFile(e.target.files?.[0] || null)} className="border p-2 w-full rounded text-sm" /></div>
-            </div>
-            {isUploading && (
-              <div className="mt-4 w-full"><div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-black h-2 rounded-full" style={{ width: `${uploadProgress}%` }}></div></div><p className="text-xs text-center mt-1 text-black">{uploadStatus}</p></div>
-            )}
-            <div className="flex gap-2 mt-4">
-              <button type="submit" disabled={isUploading} className="bg-black text-white px-6 py-2 rounded-full text-sm font-black disabled:opacity-50">{isUploading? "Uploading..." : editingId? "Update Movie" : "Add Movie"}</button>
-              {editingId && <button type="button" onClick={resetForm} className="bg-white border border-black text-black px-6 py-2 rounded-full text-sm font-black">Cancel</button>}
-            </div>
+            <div className="mt-3"><label className="font-bold text-xs text-black">Genre:</label><div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-1">{["Action", "Comedy", "Popular Movie", "C-Drama", "Sci-Fi", "Most Popular", "Anime", "DC Movies", "Marvel Movies", "Trending Now", "💖Romance", " Thriller", "Documentary", "Family", "Fantasy", " adventure", "Horror"].map(g => (<label key={g} className="flex items-center text-xs text-black"><input type="checkbox" value={g} checked={genre.includes(g)} onChange={handleGenreChange} className="mr-2" />{g}</label>))}</div></div>
+            <div className="grid md:grid-cols-2 gap-3 mt-3"><div><label className="font-bold text-xs text-black">Video File {editingId && "(leave empty to keep current)"}</label><input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files?.[0] || null)} className="border p-2 w-full rounded text-sm" /></div><div><label className="font-bold text-xs text-black">Poster Image {editingId && "(leave empty to keep current)"}</label><input type="file" accept="image/*" onChange={e => setPosterFile(e.target.files?.[0] || null)} className="border p-2 w-full rounded text-sm" /></div></div>
+            {isUploading && (<div className="mt-4 w-full"><div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-black h-2 rounded-full" style={{ width: `${uploadProgress}%` }}></div></div><p className="text-xs text-center mt-1 text-black">{uploadStatus}</p></div>)}
+            <div className="flex gap-2 mt-4"><button type="submit" disabled={isUploading} className="bg-black text-white px-6 py-2 rounded-full text-sm font-black disabled:opacity-50">{isUploading? "Uploading..." : editingId? "Update Movie" : "Add Movie"}</button>{editingId && <button type="button" onClick={resetForm} className="bg-white border border-black text-black px-6 py-2 rounded-full text-sm font-black">Cancel</button>}</div>
           </form>
-
-          <div className="bg-white border rounded-xl p-3">
-            <h2 className="font-black mb-2 text-black">Posted Movies ({movies.length})</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead><tr className="bg-gray-50 text-left text-xs"><th className="border px-3 py-2">Poster</th><th className="border px-3 py-2">Title</th><th className="border px-3 py-2">Date</th><th className="border px-3 py-2">Actions</th></tr></thead>
-                <tbody>
-                  {movies.map(movie => (
-                    <tr key={movie.id} className="text-black"><td className="border px-3 py-2"><img src={movie.posterUrl} alt={movie.title} className="w-12 h-16 object-cover rounded" /></td><td className="border px-3 py-2 font-bold">{movie.title}</td><td className="border px-3 py-2 text-xs">{movie.releaseDate}</td><td className="border px-3 py-2"><button onClick={() => handleEdit(movie)} className="bg-black text-white px-3 py-1 rounded-full text-xs mr-1">Edit</button><button onClick={() => handleDelete(movie)} className="bg-red-600 text-white px-3 py-1 rounded-full text-xs">Del</button></td></tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <div className="bg-white border rounded-xl p-3"><h2 className="font-black mb-2 text-black">Posted Movies ({movies.length})</h2><div className="overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="bg-gray-50 text-left text-xs"><th className="border px-3 py-2">Poster</th><th className="border px-3 py-2">Title</th><th className="border px-3 py-2">Date</th><th className="border px-3 py-2">Actions</th></tr></thead><tbody>{movies.map(movie => (<tr key={movie.id} className="text-black"><td className="border px-3 py-2"><img src={movie.posterUrl} alt={movie.title} className="w-12 h-16 object-cover rounded" /></td><td className="border px-3 py-2 font-bold">{movie.title}</td><td className="border px-3 py-2 text-xs">{movie.releaseDate}</td><td className="border px-3 py-2"><button onClick={() => handleEdit(movie)} className="bg-black text-white px-3 py-1 rounded-full text-xs mr-1">Edit</button><button onClick={() => handleDelete(movie)} className="bg-red-600 text-white px-3 py-1 rounded-full text-xs">Del</button></td></tr>))}</tbody></table></div></div>
         </>
       )}
 
       {tab==='banners' && (
-        <div className="bg-white border rounded-xl p-5">
-          <h2 className="font-black mb-4 text-black">Homepage Banner</h2>
-          {currentBanner && <img src={currentBanner.imageUrl} className="w-full h-40 object-cover rounded-xl mb-3 border" />}
-          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setBannerFile(e.target.files?.[0] || null)} className="mb-3 text-sm text-black" />
-          <input type="text" placeholder="Banner link URL e.g. https://sanel-ug.online/promo" value={bannerLink} onChange={e => setBannerLink(e.target.value)} className="w-full border rounded-lg p-2.5 mb-3 text-black" />
-          <button onClick={handleBannerUpload} disabled={bannerLoading} className="px-6 py-2.5 bg-black text-white rounded-full font-black text-sm">{bannerLoading? 'Uploading....': 'Save Banner'}</button>
-        </div>
+        <div className="bg-white border rounded-xl p-5"><h2 className="font-black mb-4 text-black">Homepage Banner</h2>{currentBanner && <img src={currentBanner.imageUrl} className="w-full h-40 object-cover rounded-xl mb-3 border" />}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setBannerFile(e.target.files?.[0] || null)} className="mb-3 text-sm text-black" /><input type="text" placeholder="Banner link URL e.g. https://sanel-ug.online/promo" value={bannerLink} onChange={e => setBannerLink(e.target.value)} className="w-full border rounded-lg p-2.5 mb-3 text-black" /><button onClick={handleBannerUpload} disabled={bannerLoading} className="px-6 py-2.5 bg-black text-white rounded-full font-black text-sm">{bannerLoading? 'Uploading....': 'Save Banner'}</button></div>
       )}
 
       {tab==='chats' && (
-        <div className="bg-white border rounded-xl shadow overflow-hidden">
-          <div className="p-4 border-b font-black text-black">💬 Seller Chats ({sellerThreads.length})</div>
-          <div className="flex flex-col md:flex-row h-[550px]">
-            <div className="w-full md:w-1/3 border-r overflow-y-auto bg-gray-50">
-              {sellerThreads.length===0 && <p className="p-6 text-gray-400 text-sm text-center">No messages yet</p>}
-              {sellerThreads.map(s => (
-                <div key={s.sellerId} onClick={()=>setActiveSellerId(s.sellerId)} className={`p-3 border-b cursor-pointer ${activeSellerId===s.sellerId? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}>
-                  <p className="font-bold text-xs truncate">{s.sellerEmail}</p>
-                  <p className="text-xs truncate opacity-80">{s.lastMessage}</p>
-                  <p className="text-[9px] opacity-60">ID: {s.sellerId.slice(0,8)}</p>
-                </div>
-              ))}
-            </div>
-            <div className="flex-1 flex flex-col">
-              {!activeSellerId? <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Select a seller</div> : (
-                <>
-                  <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#FDF8F3]">
-                    {activeMessages.map(m=>(
-                      <div key={m.id} className={`flex ${m.sender==='admin'? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm font-medium ${m.sender==='admin'? 'bg-black text-white' : 'bg-white border text-black'}`}>
-                          {m.message}
-                          <div className="text-[9px] mt-1 opacity-60">{m.createdAt?.toDate? m.createdAt.toDate().toLocaleString() : 'just now'}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="p-3 border-t flex gap-2 bg-white">
-                    <input value={adminReply} onChange={e=>setAdminReply(e.target.value)} onKeyDown={e=> e.key==='Enter' && sendAdminReply()} placeholder={`Reply to ${sellerThreads.find(s=>s.sellerId===activeSellerId)?.sellerEmail}...`} className="flex-1 border-2 border-black p-2.5 rounded-full text-black text-sm focus:outline-none" />
-                    <button onClick={sendAdminReply} className="bg-black text-white px-6 py-2 rounded-full font-black text-sm">Send</button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+        <div className="bg-white border rounded-xl shadow overflow-hidden"><div className="p-4 border-b font-black text-black">💬 Seller Chats ({sellerThreads.length})</div><div className="flex flex-col md:flex-row h-[550px]"><div className="w-full md:w-1/3 border-r overflow-y-auto bg-gray-50">{sellerThreads.length===0 && <p className="p-6 text-gray-400 text-sm text-center">No messages yet</p>}{sellerThreads.map(s => (<div key={s.sellerId} onClick={()=>setActiveSellerId(s.sellerId)} className={`p-3 border-b cursor-pointer ${activeSellerId===s.sellerId? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}><p className="font-bold text-xs truncate">{s.sellerEmail}</p><p className="text-xs truncate opacity-80">{s.lastMessage}</p><p className="text-[9px] opacity-60">ID: {s.sellerId.slice(0,8)}</p></div>))}</div><div className="flex-1 flex flex-col">{!activeSellerId? <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Select a seller</div> : (<><div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#FDF8F3]">{activeMessages.map(m=>(<div key={m.id} className={`flex ${m.sender==='admin'? 'justify-end' : 'justify-start'}`}><div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm font-medium ${m.sender==='admin'? 'bg-black text-white' : 'bg-white border text-black'}`}>{m.message}<div className="text-[9px] mt-1 opacity-60">{m.createdAt?.toDate? m.createdAt.toDate().toLocaleString() : 'just now'}</div></div></div>))}</div><div className="p-3 border-t flex gap-2 bg-white"><input value={adminReply} onChange={e=>setAdminReply(e.target.value)} onKeyDown={e=> e.key==='Enter' && sendAdminReply()} placeholder={`Reply to ${sellerThreads.find(s=>s.sellerId===activeSellerId)?.sellerEmail}...`} className="flex-1 border-2 border-black p-2.5 rounded-full text-black text-sm focus:outline-none" /><button onClick={sendAdminReply} className="bg-black text-white px-6 py-2 rounded-full font-black text-sm">Send</button></div></>)}</div></div></div>
       )}
 
       </div>
