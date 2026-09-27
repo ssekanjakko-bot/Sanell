@@ -296,7 +296,17 @@ export default function HomePage() {
   }, [products, adminSettings.blackMarketMaxPrice])
 
   const getProductsByCat = (catName: string) => products.filter(p => p.category === catName && p.title?.toLowerCase().includes(search.toLowerCase()))
-  const handleWhatsApp = (product: any) => { let phone = product.whatsapp || product.whatsApp || product.WhatsApp; if(!phone) return alert("Seller did not add WhatsApp number"); let cleanPhone = phone.toString().replace(/\D/g, ''); if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1); else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone; window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hello! I'm interested in ${product.title} - ${product.price} UGX`)}`, '_blank') }
+
+  // FIXED WHATSAPP - ONLY SIMPLE TEXT, NO IMAGE/PRICE/CATEGORY/FROM SANEL
+  const handleWhatsApp = (product: any) => {
+    let phone = product.whatsapp || product.whatsApp || product.WhatsApp;
+    if(!phone) return alert("Seller did not add WhatsApp number");
+    let cleanPhone = phone.toString().replace(/\D/g, '');
+    if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1);
+    else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone;
+    const message = `Hello, is this still available? ${product.title}`;
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank')
+  }
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] relative">
