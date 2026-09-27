@@ -297,14 +297,28 @@ export default function HomePage() {
 
   const getProductsByCat = (catName: string) => products.filter(p => p.category === catName && p.title?.toLowerCase().includes(search.toLowerCase()))
 
-  // FIXED WHATSAPP - ONLY SIMPLE TEXT, NO IMAGE/PRICE/CATEGORY/FROM SANEL
+  // FIXED: NOW WITH IMAGE + PRICE + CATEGORY + SANEL BRANDING
   const handleWhatsApp = (product: any) => {
     let phone = product.whatsapp || product.whatsApp || product.WhatsApp;
     if(!phone) return alert("Seller did not add WhatsApp number");
     let cleanPhone = phone.toString().replace(/\D/g, '');
     if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1);
     else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone;
-    const message = `Hello, is this still available? ${product.title}`;
+
+    const imageUrl = product.images?.[0] || '';
+    const message = `Hello! 👋
+
+I'm interested in this from *SANEL* 🛒
+
+📦 *${product.title}*
+💰 Price: ${product.price} UGX
+📂 Category: ${product.category}
+🖼️ Image: ${imageUrl}
+
+Is it still available?
+
+From sanel-ug.online`;
+
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank')
   }
 
