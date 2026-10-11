@@ -7,90 +7,39 @@ import { onAuthStateChanged } from 'firebase/auth'
 const CATS = ['Phones','Electronics','Fashion','Home, Furniture & Appliances','Vehicles','Houses & Rentals','Health','Sports, Arts & Outdoor','Babies & Kids','Services','Jobs','Others']
 
 export default function CreateShop(){
-  const [user, setUser] = useState<any>(null)
-  const [name, setName] = useState('')
-  const [momo, setMomo] = useState('')
-  const [cats, setCats] = useState<string[]>([])
-  const [txId, setTxId] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [user,setUser]=useState<any>(null)
+  const [name,setName]=useState('')
+  const [momo,setMomo]=useState('')
+  const [cats,setCats]=useState<string[]>([])
+  const [txId,setTxId]=useState('')
+  const [loading,setLoading]=useState(false)
+  useEffect(()=>{const u=onAuthStateChanged(auth,setUser);return()=>u()},[])
+  const toggle=(c:string)=>{ if(cats.includes(c)) setCats(cats.filter(x=>x!==c)); else{ if(cats.length>=2) return alert("Max 2"); setCats([...cats,c]) } }
+  const submit=async(e:any)=>{ e.preventDefault(); if(!user) return alert("Login"); await addDoc(collection(db,'shop_requests'),{sellerId:user.uid,sellerEmail:user.email,shopName:name,whatsapp:momo,categories:cats,amount:15000,momoTxId:txId,status:'pending',createdAt:serverTimestamp()}); alert("Sent! Verify in 5 mins"); location.href="/sell" }
 
-  useEffect(()=>{ const unsub = onAuthStateChanged(auth, u=>setUser(u)); return ()=>unsub() },[])
-
-  const toggleCat = (c:string)=>{
-    if(cats.includes(c)) setCats(cats.filter(x=>x!==c))
-    else { if(cats.length>=2) return alert("Max 2"); setCats([...cats,c]) }
-  }
-
-  const submit = async (e:any)=>{
-    e.preventDefault()
-    if(!user) return alert("Login first")
-    if(!txId.trim()) return alert("Paste MoMo Tx ID")
-    setLoading(true)
-    await addDoc(collection(db,'shop_requests'),{
-      sellerId: user.uid,
-      sellerEmail: user.email,
-      shopName: name,
-      whatsapp: momo,
-      categories: cats,
-      amount: 15000,
-      momoTxId: txId.trim(),
-      status: 'pending',
-      createdAt: serverTimestamp()
-    })
-    setLoading(false)
-    alert("✅ Request sent. We verify 15K then activate 5-15 mins.")
-    window.location.href="/sell"
-  }
+  const inputStyle = {background:'#ffffff', border:'2px solid #000000', color:'#000000', padding:'16px', borderRadius:'16px', width:'100%', fontSize:'16px', fontWeight:'600'} as any
 
   return (
-    <div className="min-h-screen bg-white text-black">
-      <div className="max-w-[520px] mx-auto p-4">
+    <div style={{minHeight:'100vh', background:'#ffffff', color:'#000000', padding:'16px'}}>
+      <div style={{maxWidth:'500px', margin:'0 auto'}}>
+        <h1 style={{fontWeight:'900', fontSize:'24px', color:'#000'}}>Get Official Shop - 15K UGX</h1>
+        <p style={{fontSize:'13px', color:'#000', marginTop:'4px', fontWeight:'600'}}>60 days pinned • Own link • Cart + verified</p>
 
-        <div className="mt-2">
-          <h1 className="font-black text-[22px]">Get Official Shop</h1>
-          <p className="text-[13px] text-black font-bold mt-1">15,000 UGX • 60 days pinned on top • Own link + Cart + verified badge</p>
+        <div style={{marginTop:'20px', background:'#FFF9C4', border:'3px solid #FACC15', borderRadius:'20px', padding:'16px'}}>
+          <p style={{fontWeight:'900', color:'#000'}}>STEP 1: Send MoMo Now</p>
+          <p style={{color:'#000', marginTop:'8px'}}><b>To: 0767483636 - Sanel Ug</b></p>
+          <p style={{color:'#000'}}><b>Amount: 15,000 UGX</b></p>
+          <p style={{color:'#000', fontSize:'12px', marginTop:'8px', background:'white', padding:'8px', borderRadius:'10px', border:'1px dashed black'}}>Reason: SHOP {momo.slice(-4)} • Copy Transaction ID after</p>
         </div>
 
-        {/* PAY BOX - NOW WHITE WITH YELLOW BORDER, NOT BLACK */}
-        <div className="mt-5 bg-yellow-50 border-2 border-yellow-400 rounded-[20px] p-4">
-          <p className="font-black text-[13px] text-black">STEP 1: Send MoMo Now</p>
-          <p className="text-[13px] mt-2 text-black"><span className="text-gray-600 font-bold">To:</span> <b>0767483636 - Sanel Ug</b></p>
-          <p className="text-[13px] text-black"><span className="text-gray-600 font-bold">Amount:</span> <b>15,000 UGX</b></p>
-          <p className="text-[12px] mt-2 text-black">Reason: <b className="bg-black text-white px-2 py-1 rounded-full">SHOP {momo.slice(-4) || 'XXXX'}</b></p>
-          <p className="text-[11px] mt-3 bg-white border p-2.5 rounded-xl text-black">After sending, MTN gives you Transaction ID e.g 1234567890. Copy it.</p>
-        </div>
-
-        <form onSubmit={submit} className="mt-6 space-y-4">
-          <input
-            value={name}
-            onChange={e=>setName(e.target.value)}
-            placeholder="Shop Name e.g Smart Mobile Uganda"
-            className="w-full bg-white border-2 border-black p-4 rounded-2xl text-[15px] text-black placeholder:text-gray-500 outline-none"
-            required
-          />
-          <input
-            value={momo}
-            onChange={e=>setMomo(e.target.value)}
-            placeholder="Your MoMo / WhatsApp 2567xxxxxxx"
-            className="w-full bg-white border-2 border-black p-4 rounded-2xl text-[15px] text-black placeholder:text-gray-500 outline-none"
-            required
-          />
-
-          <div className="flex flex-wrap gap-2">
-            {CATS.map(c=>(
-              <button type="button" key={c} onClick={()=>toggleCat(c)} className={`text-[12px] px-4 py-2 rounded-full border-2 font-black ${cats.includes(c)?'bg-black text-white border-black':'bg-white text-black border-gray-300'}`}>{c}</button>
-            ))}
+        <form onSubmit={submit} style={{marginTop:'24px', display:'flex', flexDirection:'column', gap:'14px'}}>
+          <input style={inputStyle} value={name} onChange={e=>setName(e.target.value)} placeholder="Shop Name e.g Smart Mobile" required />
+          <input style={inputStyle} value={momo} onChange={e=>setMomo(e.target.value)} placeholder="Your MoMo 2567xxxxxxx" required />
+          <div style={{display:'flex', flexWrap:'wrap', gap:'8px'}}>
+            {CATS.map(c=><button key={c} type="button" onClick={()=>toggle(c)} style={{padding:'8px 14px', borderRadius:'999px', border:'2px solid black', background:cats.includes(c)?'black':'white', color:cats.includes(c)?'white':'black', fontWeight:'900', fontSize:'12px'}}>{c}</button>)}
           </div>
-
-          <input
-            value={txId}
-            onChange={e=>setTxId(e.target.value)}
-            placeholder="Paste MoMo Transaction ID here *"
-            className="w-full bg-white border-2 border-yellow-500 p-4 rounded-2xl text-[15px] text-black placeholder:text-gray-600 font-bold outline-none"
-            required
-          />
-
-          <button disabled={loading} className="w-full bg-black text-white py-4 rounded-full font-black text-[16px]">{loading?'Sending...':'I Have Sent 15K - Submit'}</button>
+          <input style={{...inputStyle, border:'3px solid #EAB308', background:'#FFFBEB'}} value={txId} onChange={e=>setTxId(e.target.value)} placeholder="Paste MoMo Transaction ID *" required />
+          <button style={{background:'black', color:'white', padding:'18px', borderRadius:'999px', fontWeight:'900', fontSize:'16px'}} disabled={loading}>{loading?'Sending...':'I Have Sent 15K - Submit'}</button>
         </form>
       </div>
     </div>
