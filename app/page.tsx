@@ -181,20 +181,49 @@ function CategoryRow({ title, icon, products, onView, onWhatsApp, onSeeAll, shop
   return (
     <div className="mt-5">
       <div className="px-3 flex justify-between items-center mb-2.5"><h2 className="font-black text-[15px] flex items-center gap-2 text-black"><span>{icon}</span> {title} <span className="bg-orange-100 text-orange-800 text-[10px] px-2 py-0.5 rounded-full">{products.length}</span></h2><button onClick={onSeeAll} className="text-[12px] font-bold px-3 py-1 rounded-full bg-black text-white flex items-center gap-1">See All <ArrowRight size={12}/></button></div>
+
+      {/* OFFICIAL SHOPS - NEW DESIGN ONLY CARD CHANGED, LOGIC SAME */}
       {shops && shops.length>0 && (
-        <div className="mx-3 mb-3 bg-yellow-50 border-2 border-yellow-400 rounded-xl p-2.5">
-          <p className="font-black text-[10px] text-black mb-2">🏪 OFFICIAL SHOPS IN {title.toUpperCase()} • PINNED TOP</p>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            {shops.map((shop:any)=>(
-              <Link key={shop.id} href={`/shop/${shop.id}`} className="min-w-[190px] bg-black text-white rounded-xl p-3 flex-shrink-0 border border-yellow-400">
-                <p className="font-black text-[13px]">{shop.shopName} <span className="bg-yellow-400 text-black text-[8px] px-1.5 py-0.5 rounded-full ml-1">VERIFIED ✓</span></p>
-                <p className="text-[10px] text-white/70 mt-1">{shop.categories?.join(', ')}</p>
-                <p className="text-[10px] mt-2 bg-white text-black px-2.5 py-1 rounded-full inline-block font-black">Visit Shop →</p>
-              </Link>
-            ))}
+        <div className="mx-3 mb-3 bg-white border border-[#FFD60A] rounded-[20px] p-3 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-black text-[10px] tracking-widest text-black flex items-center gap-1.5">🏪 OFFICIAL SHOPS IN {title.toUpperCase()} • PINNED TOP</p>
+            <span className="bg-[#FFD60A] text-black text-[8px] font-black px-2 py-0.5 rounded-full">{shops.length}</span>
+          </div>
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
+            {shops.map((shop:any)=>{
+              const logo = shop.logo || shop.profilePicture || shop.shopLogo || ""
+              return (
+                <Link key={shop.id} href={`/shop/${shop.id}`} className="min-w-[185px] max-w-[185px] bg-white border border-black/[0.06] rounded-[18px] p-3.5 flex-shrink-0 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:border-black/15 transition">
+                  <div className="flex gap-3 items-start">
+                    <div className="relative shrink-0">
+                      {logo? (
+                        <img src={logo} className="w-11 h-11 rounded-full object-cover border border-black/10" alt={shop.shopName} />
+                      ) : (
+                        <div className="w-11 h-11 rounded-full bg-black text-[#FFD60A] flex items-center justify-center font-black text-[13px]">{shop.shopName?.[0]?.toUpperCase()}</div>
+                      )}
+                      <span className="absolute -bottom-1 -right-1 w-[16px] h-[16px] bg-[#1D9BF0] border-2 border-white rounded-full flex items-center justify-center text-white text-[8px]">✓</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-[13px] truncate flex items-center gap-1 text-black">
+                        <span className="truncate">{shop.shopName}</span>
+                        <span className="bg-[#1D9BF0] text-white w-[14px] h-[14px] rounded-full flex items-center justify-center text-[8px] shrink-0">✓</span>
+                      </p>
+                      <span className="bg-[#FFD60A] text-black text-[7px] font-black px-1.5 py-0.5 rounded-full inline-block mt-1">VERIFIED</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1 mt-3 flex-wrap">
+                    {shop.categories?.slice(0,2).map((c:string)=>(
+                      <span key={c} className="bg-[#FFF8E1] border border-black/5 text-[9px] px-2 py-1 rounded-full font-bold text-black/70">{c.slice(0,12)}</span>
+                    ))}
+                  </div>
+                  <div className="mt-3 w-full bg-black text-white text-center py-2 rounded-full text-[11px] font-black">Visit Shop →</div>
+                </Link>
+              )
+            })}
           </div>
         </div>
       )}
+
       <div className="px-3 flex gap-3 overflow-x-auto scrollbar-hide">
         {products.slice(0,3).map((p: any) => (
           <div key={p.id} className="min-w-[160px] max-w-[160px] bg-white rounded-lg shadow-sm overflow-hidden border flex-shrink-0"><div className="relative w-full h-40 bg-gray-100"><img src={p.images?.[0]} className="w-full h-40 object-cover" /><button onClick={() => onView(p)} className="absolute top-2 right-2 bg-black/60 text-white w-7 h-7 rounded-full flex items-center justify-center"><Eye size={12} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">+{p.images.length} pics</span>}{p.is_boosted && <span className="absolute top-2 left-2 bg-yellow-400 text-black text-[8px] font-bold px-2 py-0.5 rounded-full">BOOSTED</span>}</div><div className="p-2"><p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p><p className="font-bold text-[12px] line-clamp-2 min-h-[32px] text-black">{p.title}</p><p className="font-black text-[13px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p><button onClick={() => onWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-[11px] py-2 rounded-md font-bold">WhatsApp</button></div></div>
@@ -414,17 +443,32 @@ export default function HomePage() {
         </>
         ) : (
         <>
+          {/* SELECTED CATEGORY - NEW SHOP CARD DESIGN */}
           {shopsForSelected.length>0 && (
-            <div className="mx-3 mt-3 bg-yellow-50 border-2 border-yellow-400 rounded-xl p-3">
-              <p className="font-black text-[11px] text-black mb-2">🏪 OFFICIAL SHOPS IN {selectedCategory.toUpperCase()} • VERIFIED & PINNED TOP</p>
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                {shopsForSelected.map((shop:any)=>(
-                  <Link key={shop.id} href={`/shop/${shop.id}`} className="min-w-[200px] bg-black text-white rounded-xl p-3.5 flex-shrink-0 border border-yellow-400">
-                    <p className="font-black text-[14px]">{shop.shopName} <span className="bg-yellow-400 text-black text-[8px] px-1.5 py-0.5 rounded-full ml-1">VERIFIED ✓</span></p>
-                    <p className="text-[10px] text-white/70 mt-1">{shop.categories?.join(', ')}</p>
-                    <p className="text-[10px] mt-2 bg-white text-black px-3 py-1.5 rounded-full inline-block font-black">Visit Official Shop →</p>
-                  </Link>
-                ))}
+            <div className="mx-3 mt-3 bg-white border border-[#FFD60A] rounded-[20px] p-3 shadow-sm">
+              <p className="font-black text-[11px] text-black mb-3 flex items-center gap-2">🏪 OFFICIAL SHOPS IN {selectedCategory.toUpperCase()} • VERIFIED & PINNED TOP <span className="bg-[#FFD60A] text-black text-[8px] px-2 py-0.5 rounded-full">{shopsForSelected.length}</span></p>
+              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
+                {shopsForSelected.map((shop:any)=>{
+                  const logo = shop.logo || shop.profilePicture || shop.shopLogo || ""
+                  return (
+                    <Link key={shop.id} href={`/shop/${shop.id}`} className="min-w-[185px] max-w-[185px] bg-white border border-black/[0.06] rounded-[18px] p-3.5 flex-shrink-0 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+                      <div className="flex gap-3 items-start">
+                        <div className="relative shrink-0">
+                          {logo? <img src={logo} className="w-11 h-11 rounded-full object-cover border" alt={shop.shopName} /> : <div className="w-11 h-11 rounded-full bg-black text-[#FFD60A] flex items-center justify-center font-black">{shop.shopName?.[0]?.toUpperCase()}</div>}
+                          <span className="absolute -bottom-1 -right-1 w-[16px] h-[16px] bg-[#1D9BF0] border-2 border-white rounded-full flex items-center justify-center text-white text-[8px]">✓</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-black text-[13px] truncate flex items-center gap-1">{shop.shopName}<span className="bg-[#1D9BF0] text-white w-[14px] h-[14px] rounded-full flex items-center justify-center text-[8px]">✓</span></p>
+                          <span className="bg-[#FFD60A] text-black text-[7px] font-black px-1.5 py-0.5 rounded-full">VERIFIED</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-1 mt-3">
+                        {shop.categories?.slice(0,2).map((c:string)=><span key={c} className="bg-[#FFF8E1] border text-[9px] px-2 py-1 rounded-full font-bold">{c.slice(0,12)}</span>)}
+                      </div>
+                      <div className="mt-3 w-full bg-black text-white text-center py-2 rounded-full text-[11px] font-black">Visit Official Shop →</div>
+                    </Link>
+                  )
+                })}
               </div>
             </div>
           )}
