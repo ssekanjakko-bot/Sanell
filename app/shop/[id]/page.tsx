@@ -29,36 +29,52 @@ export default function PublicShop(){
     alert(`Added to cart - from ${shop.shopName}`)
   }
 
-  if(!shop) return <div className="p-10">Loading...</div>
+  if(!shop) return <div className="p-10 text-center bg-black text-white min-h-screen">Loading shop...</div>
 
   return (
-    <div className="min-h-screen bg-[#FDF8F3]">
-      <div className="h-48 bg-black relative">
-        {shop.banner && <img src={shop.banner} className="w-full h-full object-cover" />}
-        <div className="absolute bottom-3 left-3 bg-yellow-400 px-3 py-1 rounded-full text-[10px] font-black">VERIFIED OFFICIAL SHOP</div>
+    <div className="min-h-screen bg-black text-white">
+      {/* BANNER */}
+      <div className="h-56 bg-neutral-900 relative">
+        {shop.banner? (
+          <img src={shop.banner} className="w-full h-full object-cover opacity-80" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-yellow-600" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+        <div className="absolute bottom-3 left-3 bg-[#FFD60A] text-black px-4 py-1.5 rounded-full text-[11px] font-black tracking-wide">✓ VERIFIED OFFICIAL SHOP</div>
       </div>
 
-      <div className="max-w-[500px] mx-auto p-4">
-        <h1 className="text-2xl font-black">{shop.shopName}</h1>
-        <p className="text-sm mt-1 text-gray-600">{shop.bio}</p>
-        <div className="flex gap-2 mt-3">
-          <a href={`https://wa.me/${shop.whatsapp}`} className="flex-1 bg-green-600 text-white text-center py-3 rounded-full font-black text-sm">WhatsApp Shop</a>
-          <button className="flex-1 bg-black text-white py-3 rounded-full font-black text-sm">Cart ({cart.filter(c=>c.cartShopId===shop.id).length})</button>
+      <div className="max-w-[500px] mx-auto p-4 -mt-6 relative z-10">
+        {/* SHOP CARD */}
+        <div className="bg-[#111] border border-neutral-800 rounded-[24px] p-4 shadow-xl">
+          <h1 className="text-[24px] font-black text-white leading-none">{shop.shopName}</h1>
+          <p className="text-[13px] mt-2 text-neutral-300 leading-snug">{shop.bio || 'Welcome to our official store on Sanel Ug'}</p>
+          <p className="text-[11px] mt-2 text-[#FFD60A] font-bold">Pinned in: {shop.categories?.join(', ')}</p>
+
+          <div className="flex gap-2 mt-4">
+            <a href={`https://wa.me/${shop.whatsapp}`} className="flex-1 bg-[#25D366] text-black text-center py-3.5 rounded-full font-black text-[13px]">WhatsApp Shop</a>
+            <button className="flex-1 bg-white text-black py-3.5 rounded-full font-black text-[13px]">Cart ({cart.filter((c:any)=>c.cartShopId===shop.id).length})</button>
+          </div>
         </div>
 
-        <h2 className="font-black mt-6">Shop Items</h2>
-        <div className="grid grid-cols-2 gap-3 mt-3">
-          {products.map((p:any)=>(
-            <div key={p.id} className="bg-white border-2 border-black rounded-2xl overflow-hidden">
-              <img src={p.imageUrl} className="h-32 w-full object-cover" />
-              <div className="p-2">
-                <p className="text-xs font-black">{p.title}</p>
-                <p className="text-sm font-black">{p.price} UGX</p>
-                <button onClick={()=>addToCart(p)} className="w-full mt-2 bg-black text-white py-2 rounded-full text-xs font-black">Add to Cart</button>
+        <h2 className="font-black mt-6 mb-3 text-[15px] text-white">Shop Items ({products.length})</h2>
+
+        {products.length===0? (
+          <div className="bg-[#111] border border-dashed border-neutral-700 rounded-2xl p-8 text-center text-neutral-400 text-sm">No products yet in this shop</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {products.map((p:any)=>(
+              <div key={p.id} className="bg-[#1A1A1A] border border-neutral-800 rounded-[20px] overflow-hidden">
+                <img src={p.imageUrl} className="h-36 w-full object-cover bg-neutral-900" />
+                <div className="p-3">
+                  <p className="text-[12px] font-bold text-white truncate">{p.title}</p>
+                  <p className="text-[14px] font-black text-[#FFD60A] mt-1">{p.price?.toLocaleString()} UGX</p>
+                  <button onClick={()=>addToCart(p)} className="w-full mt-2.5 bg-white text-black py-2.5 rounded-full text-[11px] font-black active:scale-95">Add to Cart</button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
