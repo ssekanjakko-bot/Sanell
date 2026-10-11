@@ -254,6 +254,7 @@ export default function AdminPage() {
       const now = new Date()
       const until = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000)
       await addDoc(collection(db, 'shops'), {
+        ownerId: req.sellerId,
         sellerId: req.sellerId,
         sellerEmail: req.sellerEmail,
         shopName: req.shopName,
@@ -262,6 +263,9 @@ export default function AdminPage() {
         amount: req.amount,
         momoTxId: req.momoTxId,
         is_active: true,
+        is_official: true,
+        bio: `Welcome to ${req.shopName} official store`,
+        banner: '',
         createdAt: serverTimestamp(),
         paid_at: Timestamp.fromDate(now),
         paid_until: Timestamp.fromDate(until),
