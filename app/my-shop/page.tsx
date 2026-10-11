@@ -41,7 +41,7 @@ export default function MyShopPage() {
   const [shopDisplayTab, setShopDisplayTab] = useState<'all'|'visible'|'hidden'>('all');
 
   const toggleShowInShop = async (product:any) => {
-    const current = product.showInShop!== false; // default true
+    const current = product.showInShop!== false;
     try {
       await updateDoc(doc(db, "products", product.id), {
         showInShop:!current,
@@ -167,10 +167,8 @@ export default function MyShopPage() {
         whatsapp: whatsapp || shop.whatsapp,
         createdAt: serverTimestamp(),
         is_boosted: false,
-        // ===== ADDED FOR SHOP PICKER - START =====
         showInShop: true,
         isFeaturedInShop: false,
-        // ===== ADDED FOR SHOP PICKER - END =====
       });
       setPTitle(""); setPPrice(""); setPDesc(""); setPImages([]);
       setShowAdd(false);
@@ -202,37 +200,35 @@ export default function MyShopPage() {
     setSaving(false);
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center font-black">Loading...</div>;
-  if (!shop) return <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center"><h1 className="font-black text-xl">No Official Shop Yet</h1><Link href="/create-shop" className="mt-4 bg-black text-white px-6 py-3 rounded-full font-black">Create for 15K</Link></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-black bg-[#FFFEFB]">Loading...</div>;
+  if (!shop) return <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-[#FFFEFB]"><h1 className="font-black text-xl text-black">No Official Shop Yet</h1><Link href="/create-shop" className="mt-4 bg-black text-[#FFD60A] px-6 py-3 rounded-full font-black">Create for 15K</Link></div>;
 
-  // ===== ADDED FOR SHOP PICKER - START =====
   const visibleProducts = products.filter(p=> p.showInShop!== false);
   const hiddenProducts = products.filter(p=> p.showInShop === false);
   const filteredProducts = shopDisplayTab === 'visible'? visibleProducts : shopDisplayTab === 'hidden'? hiddenProducts : products;
-  // ===== ADDED FOR SHOP PICKER - END =====
 
   return (
-    <div className="min-h-screen bg-[#FFFCF9] pb-28">
+    <div className="min-h-screen bg-[#FFFEFB] pb-28">
       <div className="bg-black text-white p-5 rounded-b-[28px] sticky top-0 z-10 flex justify-between">
         <div>
-          <h1 className="font-black text-[20px] flex gap-2 items-center">{shop.shopName} <span className="bg-yellow-400 text-black text-[9px] px-2 py-0.5 rounded-full">OFFICIAL ✓</span></h1>
+          <h1 className="font-black text-[20px] flex gap-2 items-center text-white">{shop.shopName} <span className="bg-yellow-400 text-black text-[9px] px-2 py-0.5 rounded-full">OFFICIAL ✓</span></h1>
           <p className="text-[11px] text-yellow-300 font-bold mt-1">{products.length} products • {visibleProducts.length} visible in shop • {shop.categories?.join(", ")}</p>
         </div>
-        <div className="text-[10px] bg-white/20 px-3 py-1 rounded-full h-fit font-black">Live 🟢</div>
+        <div className="text-[10px] bg-white/20 px-3 py-1 rounded-full h-fit font-black text-white">Live 🟢</div>
       </div>
 
       <div className="max-w-[560px] mx-auto p-4 space-y-4 -mt-2">
         {/* SHOP DESIGN */}
-        <div className="bg-white rounded-[20px] border shadow-sm p-5 space-y-5">
-          <div className="bg-[#FFF8E1] border border-yellow-400 rounded-[18px] p-4">
-            <label className="text-[10px] font-black uppercase text-gray-600">Profile Picture • Homepage + Blue Tick</label>
+        <div className="bg-white rounded-[20px] border border-black/10 shadow-sm p-5 space-y-5">
+          <div className="bg-[#FFF8D6] border-2 border-[#FFD60A] rounded-[18px] p-4">
+            <label className="text-[10px] font-black uppercase text-black">Profile Picture • Homepage + Blue Tick</label>
             <div className="flex items-center gap-4 mt-3">
               <div className="relative">
                 {logo? <img src={logo} className="w-20 h-20 rounded-full object-cover border-2 border-black" /> : <div className="w-20 h-20 rounded-full bg-black text-yellow-400 flex items-center justify-center font-black text-2xl">{name?.[0] || "M"}</div>}
                 <span className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#1D9BF0] rounded-full border-2 border-white flex items-center justify-center text-white text-[11px]">✓</span>
               </div>
               <div className="flex flex-col gap-2">
-                <label className="bg-black text-white px-5 py-2.5 rounded-full text-[12px] font-black cursor-pointer text-center">
+                <label className="bg-black text-[#FFD60A] px-5 py-2.5 rounded-full text-[12px] font-black cursor-pointer text-center">
                   {uploadingLogo? "Uploading..." : "📷 Choose from Gallery"}
                   <input type="file" accept="image/*" className="hidden" onChange={uploadLogo} />
                 </label>
@@ -241,121 +237,120 @@ export default function MyShopPage() {
             </div>
           </div>
 
-          <div className="border rounded-[18px] p-4">
-            <label className="text-[10px] font-black uppercase text-gray-600">Shop Banner • From Gallery</label>
-            {banner && <img src={banner} className="mt-3 h-36 w-full object-cover rounded-xl border" />}
+          <div className="border-2 border-black/10 rounded-[18px] p-4 bg-white">
+            <label className="text-[10px] font-black uppercase text-black">Shop Banner • From Gallery</label>
+            {banner && <img src={banner} className="mt-3 h-36 w-full object-cover rounded-xl border border-black/10" />}
             <div className="flex gap-2 mt-3">
               <label className="flex-1 bg-white border-2 border-black text-black px-4 py-2.5 rounded-full text-[12px] font-black cursor-pointer text-center">
                 {uploadingBanner? "Uploading..." : "🖼️ Upload Banner"}
                 <input type="file" accept="image/*" className="hidden" onChange={uploadBanner} />
               </label>
-              {banner && <button onClick={()=>setBanner("")} className="bg-red-50 border text-red-600 px-4 py-2.5 rounded-full text-[12px] font-black">Remove</button>}
+              {banner && <button onClick={()=>setBanner("")} className="bg-red-50 border-2 border-red-200 text-red-600 px-4 py-2.5 rounded-full text-[12px] font-black">Remove</button>}
             </div>
           </div>
 
-          <div><label className="text-[10px] font-black uppercase text-gray-500">Shop Name</label><input value={name} onChange={e=>setName(e.target.value)} className="w-full mt-1 bg-[#F6F6F6] border rounded-full px-4 py-3 font-bold text-black outline-none" /></div>
-          <div><label className="text-[10px] font-black uppercase text-gray-500">Bio</label><textarea value={bio} onChange={e=>setBio(e.target.value)} rows={2} className="w-full mt-1 bg-[#F6F6F6] border rounded-[16px] px-4 py-3 text-sm text-black outline-none" /></div>
-          <div><label className="text-[10px] font-black uppercase text-gray-500">WhatsApp</label><input value={whatsapp} onChange={e=>setWhatsapp(e.target.value)} className="w-full mt-1 bg-[#F6F6F6] border rounded-full px-4 py-3 font-bold text-black outline-none" /></div>
+          <div><label className="text-[10px] font-black uppercase text-black">Shop Name</label><input value={name} onChange={e=>setName(e.target.value)} className="w-full mt-1 bg-white border-2 border-black rounded-full px-4 py-3 font-bold text-black placeholder:text-neutral-500 outline-none focus:border-[#FFD60A]" /></div>
+          <div><label className="text-[10px] font-black uppercase text-black">Bio</label><textarea value={bio} onChange={e=>setBio(e.target.value)} rows={2} className="w-full mt-1 bg-white border-2 border-black rounded-[16px] px-4 py-3 text-sm font-bold text-black placeholder:text-neutral-500 outline-none focus:border-[#FFD60A]" placeholder="Describe your shop..." /></div>
+          <div><label className="text-[10px] font-black uppercase text-black">WhatsApp</label><input value={whatsapp} onChange={e=>setWhatsapp(e.target.value)} className="w-full mt-1 bg-white border-2 border-black rounded-full px-4 py-3 font-bold text-black placeholder:text-neutral-500 outline-none focus:border-[#FFD60A]" /></div>
 
-          <div className="border-t pt-4">
-            <h3 className="font-black text-[13px]">📍 Store Location</h3>
-            <input value={location} onChange={e=>setLocation(e.target.value)} placeholder="Shop B12, Mukwano Arcade" className="w-full mt-2 bg-[#F6F6F6] border rounded-full px-4 py-3 text-sm text-black outline-none" />
+          <div className="border-t-2 border-black/10 pt-4">
+            <h3 className="font-black text-[13px] text-black">📍 Store Location</h3>
+            <input value={location} onChange={e=>setLocation(e.target.value)} placeholder="Shop B12, Mukwano Arcade" className="w-full mt-2 bg-white border-2 border-black rounded-full px-4 py-3 text-sm font-bold text-black placeholder:text-neutral-500 outline-none focus:border-[#FFD60A]" />
             <div className="grid grid-cols-2 gap-2 mt-2">
-              <input value={lat} onChange={e=>setLat(e.target.value)} placeholder="Latitude" className="bg-[#F6F6F6] border rounded-full px-4 py-2.5 text-xs text-black outline-none" />
-              <input value={lng} onChange={e=>setLng(e.target.value)} placeholder="Longitude" className="bg-[#F6F6F6] border rounded-full px-4 py-2.5 text-xs text-black outline-none" />
+              <input value={lat} onChange={e=>setLat(e.target.value)} placeholder="Latitude" className="bg-white border-2 border-black rounded-full px-4 py-2.5 text-xs font-bold text-black placeholder:text-neutral-500 outline-none focus:border-[#FFD60A]" />
+              <input value={lng} onChange={e=>setLng(e.target.value)} placeholder="Longitude" className="bg-white border-2 border-black rounded-full px-4 py-2.5 text-xs font-bold text-black placeholder:text-neutral-500 outline-none focus:border-[#FFD60A]" />
             </div>
             <button onClick={useMyGPS} type="button" className="w-full mt-2 bg-white border-2 border-black text-black py-2.5 rounded-full font-black text-xs">📍 Use My Current GPS</button>
           </div>
 
-          <button onClick={save} disabled={saving} className="w-full bg-black text-yellow-400 py-4 rounded-full font-black text-[15px]">{saving?"Saving...":"✨ Save Shop"}</button>
+          <button onClick={save} disabled={saving} className="w-full bg-black text-[#FFD60A] py-4 rounded-full font-black text-[15px]">{saving?"Saving...":"✨ Save Shop"}</button>
         </div>
 
-        {/* ===== ADDED FOR SHOP PICKER - START - WHAT APPEARS IN SHOP ===== */}
-        <div className="bg-white rounded-[20px] border p-5">
-          <h2 className="font-black text-[14px] flex items-center justify-between">
+        {/* WHAT APPEARS IN SHOP */}
+        <div className="bg-white rounded-[20px] border border-black/10 p-5">
+          <h2 className="font-black text-[14px] flex items-center justify-between text-black">
             <span>🛍️ What Appears In My Shop</span>
             <span className="text-[10px] bg-black text-white px-2 py-1 rounded-full">{visibleProducts.length} visible / {products.length} total</span>
           </h2>
-          <p className="text-[11px] text-gray-500 mt-1">Toggle which products customers see when they visit your shop. Hidden products still live on marketplace.</p>
+          <p className="text-[11px] text-black mt-1 font-medium">Toggle which products customers see when they visit your shop. Hidden products still live on marketplace.</p>
 
           <div className="flex gap-2 mt-3">
-            <button onClick={()=>setShopDisplayTab('all')} className={`px-3 py-1.5 rounded-full text-[11px] font-black border ${shopDisplayTab==='all'?'bg-black text-white border-black':'bg-white text-black border-gray-300'}`}>All ({products.length})</button>
-            <button onClick={()=>setShopDisplayTab('visible')} className={`px-3 py-1.5 rounded-full text-[11px] font-black border flex items-center gap-1 ${shopDisplayTab==='visible'?'bg-green-600 text-white border-green-600':'bg-white text-black border-gray-300'}`}><Eye size={12}/> Visible ({visibleProducts.length})</button>
-            <button onClick={()=>setShopDisplayTab('hidden')} className={`px-3 py-1.5 rounded-full text-[11px] font-black border flex items-center gap-1 ${shopDisplayTab==='hidden'?'bg-red-600 text-white border-red-600':'bg-white text-black border-gray-300'}`}><EyeOff size={12}/> Hidden ({hiddenProducts.length})</button>
+            <button onClick={()=>setShopDisplayTab('all')} className={`px-3 py-1.5 rounded-full text-[11px] font-black border-2 ${shopDisplayTab==='all'?'bg-black text-white border-black':'bg-white text-black border-black'}`}>All ({products.length})</button>
+            <button onClick={()=>setShopDisplayTab('visible')} className={`px-3 py-1.5 rounded-full text-[11px] font-black border-2 flex items-center gap-1 ${shopDisplayTab==='visible'?'bg-green-600 text-white border-green-600':'bg-white text-black border-black'}`}><Eye size={12}/> Visible ({visibleProducts.length})</button>
+            <button onClick={()=>setShopDisplayTab('hidden')} className={`px-3 py-1.5 rounded-full text-[11px] font-black border-2 flex items-center gap-1 ${shopDisplayTab==='hidden'?'bg-red-600 text-white border-red-600':'bg-white text-black border-black'}`}><EyeOff size={12}/> Hidden ({hiddenProducts.length})</button>
           </div>
 
           <div className="space-y-2 mt-4 max-h-[400px] overflow-y-auto pr-1">
             {filteredProducts.map((p:any)=>{
               const isVisible = p.showInShop!== false;
               return (
-                <div key={p.id} className={`flex items-center gap-3 border rounded-xl p-2 ${isVisible?'bg-white':'bg-gray-50 opacity-60'}`}>
-                  <img src={p.images?.[0]||p.imageUrl} className="w-14 h-14 rounded-lg object-cover border" />
+                <div key={p.id} className={`flex items-center gap-3 border-2 rounded-xl p-2 ${isVisible?'bg-white border-black/10':'bg-neutral-100 border-black/10 opacity-80'}`}>
+                  <img src={p.images?.[0]||p.imageUrl} className="w-14 h-14 rounded-lg object-cover border border-black/10" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-bold truncate">{p.title}</p>
-                    <p className="text-[11px] font-black">{p.price} UGX</p>
+                    <p className="text-[12px] font-bold truncate text-black">{p.title}</p>
+                    <p className="text-[11px] font-black text-black">{p.price} UGX</p>
                     <div className="flex gap-1 mt-1">
                       {p.isFeaturedInShop && <span className="text-[8px] bg-yellow-400 text-black px-1.5 py-0.5 rounded-full font-black">⭐ FEATURED</span>}
-                      {!isVisible && <span className="text-[8px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-black">HIDDEN FROM SHOP</span>}
+                      {!isVisible && <span className="text-[8px] bg-red-600 text-white px-1.5 py-0.5 rounded-full font-black">HIDDEN FROM SHOP</span>}
                     </div>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <button onClick={()=>toggleShowInShop(p)} className={`w-8 h-8 rounded-full flex items-center justify-center ${isVisible?'bg-black text-white':'bg-white border-2 border-black text-black'}`}>
+                    <button onClick={()=>toggleShowInShop(p)} className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${isVisible?'bg-black text-white border-black':'bg-white border-black text-black'}`}>
                       {isVisible? <Eye size={14}/>:<EyeOff size={14}/>}
                     </button>
-                    <button onClick={()=>toggleFeatured(p)} className={`w-8 h-8 rounded-full flex items-center justify-center ${p.isFeaturedInShop?'bg-yellow-400 text-black':'bg-white border text-gray-400'}`}>
+                    <button onClick={()=>toggleFeatured(p)} className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${p.isFeaturedInShop?'bg-yellow-400 text-black border-black':'bg-white border-black text-black'}`}>
                       <Star size={14} fill={p.isFeaturedInShop? "black":"none"} />
                     </button>
                   </div>
                 </div>
               )
             })}
-            {filteredProducts.length===0 && <p className="text-[12px] text-gray-400 text-center py-8">No products in this filter</p>}
+            {filteredProducts.length===0 && <p className="text-[12px] text-black font-bold text-center py-8">No products in this filter</p>}
           </div>
         </div>
-        {/* ===== ADDED FOR SHOP PICKER - END ===== */}
 
-        {/* PRODUCTS + ADD BUTTON - KEPT SAME */}
-        <div className="bg-white rounded-[20px] border p-5">
+        {/* PRODUCTS */}
+        <div className="bg-white rounded-[20px] border border-black/10 p-5">
           <div className="flex justify-between items-center">
-            <h2 className="font-black text-[14px]">Products ({products.length})</h2>
+            <h2 className="font-black text-[14px] text-black">Products ({products.length})</h2>
             <button onClick={()=>setShowAdd(true)} className="bg-black text-white px-4 py-2 rounded-full font-black text-[12px] flex items-center gap-1"><Plus size={14}/> Add Product</button>
           </div>
           <div className="grid grid-cols-2 gap-3 mt-4">
-            {products.map((p:any)=><div key={p.id} className="border rounded-xl overflow-hidden"><img src={p.images?.[0]||p.imageUrl} className="h-28 w-full object-cover" /><div className="p-2"><p className="text-xs font-bold truncate">{p.title}</p><p className="text-[11px] font-black">{p.price} UGX</p></div></div>)}
-            {products.length===0 && <p className="text-[12px] text-gray-400 col-span-2 text-center py-6">No products yet. Click Add Product</p>}
+            {products.map((p:any)=><div key={p.id} className="border-2 border-black/10 rounded-xl overflow-hidden"><img src={p.images?.[0]||p.imageUrl} className="h-28 w-full object-cover" /><div className="p-2 bg-white"><p className="text-xs font-bold truncate text-black">{p.title}</p><p className="text-[11px] font-black text-black">{p.price} UGX</p></div></div>)}
+            {products.length===0 && <p className="text-[12px] text-black font-bold col-span-2 text-center py-6">No products yet. Click Add Product</p>}
           </div>
         </div>
       </div>
 
-      {/* ADD PRODUCT MODAL - KEPT SAME */}
+      {/* ADD PRODUCT MODAL - FIXED COLORS */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/70 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white rounded-t-[24px] sm:rounded-[24px] w-full max-w-[520px] max-h-[90vh] overflow-y-auto p-5">
+          <div className="bg-[#FFFEFB] rounded-t-[24px] sm:rounded-[24px] w-full max-w-[520px] max-h-[90vh] overflow-y-auto p-5 border-t-2 sm:border-2 border-black">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-black text-[18px]">Add Product to {shop.shopName}</h3>
+              <h3 className="font-black text-[18px] text-black">Add Product to {shop.shopName}</h3>
               <button onClick={()=>setShowAdd(false)} className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center"><X size={16}/></button>
             </div>
 
             <div className="space-y-3">
-              <div><label className="text-[10px] font-black uppercase">Images • Gallery • Max 6</label>
-                <label className="w-full mt-1 border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer bg-[#FFFCF9]">
-                  <span className="font-black text-[12px]">{uploadingProduct? "Uploading..." : "📷 Choose from Gallery"}</span>
-                  <span className="text-[10px] text-gray-400">Tap to select</span>
+              <div><label className="text-[10px] font-black uppercase text-black">Images • Gallery • Max 6</label>
+                <label className="w-full mt-1 border-2 border-dashed border-black rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer bg-white">
+                  <span className="font-black text-[12px] text-black">{uploadingProduct? "Uploading..." : "📷 Choose from Gallery"}</span>
+                  <span className="text-[10px] text-black font-bold">Tap to select</span>
                   <input type="file" accept="image/*" multiple className="hidden" onChange={uploadProductImages} />
                 </label>
-                {pImages.length>0 && <div className="grid grid-cols-3 gap-2 mt-2">{pImages.map((img,i)=><div key={i} className="relative"><img src={img} className="h-20 w-full object-cover rounded-lg border" /><button onClick={()=>setPImages(pImages.filter((_,idx)=>idx!==i))} className="absolute -top-2 -right-2 bg-red-600 text-white w-5 h-5 rounded-full text-[10px]">✕</button></div>)}</div>}
+                {pImages.length>0 && <div className="grid grid-cols-3 gap-2 mt-2">{pImages.map((img,i)=><div key={i} className="relative"><img src={img} className="h-20 w-full object-cover rounded-lg border-2 border-black" /><button onClick={()=>setPImages(pImages.filter((_,idx)=>idx!==i))} className="absolute -top-2 -right-2 bg-red-600 text-white w-5 h-5 rounded-full text-[10px] font-black">✕</button></div>)}</div>}
               </div>
 
-              <input value={pTitle} onChange={e=>setPTitle(e.target.value)} placeholder="Product Title e.g. iPhone 13" className="w-full bg-[#F6F6F6] border rounded-full px-4 py-3 text-sm font-bold outline-none" />
+              <input value={pTitle} onChange={e=>setPTitle(e.target.value)} placeholder="Product Title e.g. iPhone 13" className="w-full bg-white border-2 border-black rounded-full px-4 py-3 text-sm font-bold text-black placeholder:text-neutral-500 outline-none focus:border-[#FFD60A]" />
               <div className="grid grid-cols-2 gap-2">
-                <input value={pPrice} onChange={e=>setPPrice(e.target.value)} placeholder="Price e.g. 45000" type="number" className="bg-[#F6F6F6] border rounded-full px-4 py-3 text-sm font-bold outline-none" />
-                <select value={pCat} onChange={e=>setPCat(e.target.value)} className="bg-[#F6F6F6] border rounded-full px-4 py-3 text-sm font-bold outline-none">
-                  {CATEGORIES.map(c=><option key={c}>{c}</option>)}
+                <input value={pPrice} onChange={e=>setPPrice(e.target.value)} placeholder="Price e.g. 45000" type="number" className="bg-white border-2 border-black rounded-full px-4 py-3 text-sm font-bold text-black placeholder:text-neutral-500 outline-none focus:border-[#FFD60A]" />
+                <select value={pCat} onChange={e=>setPCat(e.target.value)} className="bg-white border-2 border-black rounded-full px-4 py-3 text-sm font-bold text-black outline-none focus:border-[#FFD60A]">
+                  {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <textarea value={pDesc} onChange={e=>setPDesc(e.target.value)} placeholder="Description" rows={3} className="w-full bg-[#F6F6F6] border rounded-[16px] px-4 py-3 text-sm outline-none" />
+              <textarea value={pDesc} onChange={e=>setPDesc(e.target.value)} placeholder="Description" rows={3} className="w-full bg-white border-2 border-black rounded-[16px] px-4 py-3 text-sm font-bold text-black placeholder:text-neutral-500 outline-none focus:border-[#FFD60A]" />
 
-              <button onClick={addProduct} disabled={adding} className="w-full bg-black text-yellow-400 py-4 rounded-full font-black text-[15px]">{adding?"Adding...":"✅ Add Product to Shop"}</button>
+              <button onClick={addProduct} disabled={adding} className="w-full bg-black text-[#FFD60A] py-4 rounded-full font-black text-[15px] border-2 border-black">{adding?"Adding...":"✅ Add Product to Shop"}</button>
             </div>
           </div>
         </div>
