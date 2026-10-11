@@ -103,6 +103,7 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
     const now = new Date()
     return products.filter((p: any) => {
         if(!p.boosted_until) return false
+        if(p.showInShop === false) return false // ===== ADDED - hide hidden products from trending =====
         try { const end = p.boosted_until.toDate? p.boosted_until.toDate() : new Date(p.boosted_until); return end > now } catch { return false }
       }).sort((a: any, b: any) => {
         const durA = a.boostDurationDays || a.boost_duration_days || 1
@@ -326,8 +327,30 @@ export default function HomePage() {
 
   useEffect(() => { const q = query(collection(db, 'banners'), orderBy("createdAt", "desc")); const unsub = onSnapshot(q, (snap) => setBanners(snap.docs.map(d => ({id: d.id,...d.data()})))); return () => unsub()}, [])
   useEffect(() => { const el = scrollRef.current; if (!el || banners.length <= 1) return; const handleScroll = () => setCurrentBanner(Math.round(el.scrollLeft / el.clientWidth)); el.addEventListener('scroll', handleScroll); let i = 0; const timer = setInterval(() => { i = (i + 1) % banners.length; if(el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" }); }, 3500); return () => { clearInterval(timer); el.removeEventListener('scroll', handleScroll); }}, [banners.length]);
-  useEffect(() => { const q = query(collection(db, 'products'), orderBy("createdAt", "desc")); const unsub = onSnapshot(q, (snap) => { setProducts(snap.docs.map(d => ({ id: d.id,...d.data() }))); setLoading(false) }); return () => unsub()}, [])
-  useEffect(() => { const q = query(collection(db, 'products'), where("is_boosted", "==", true)); const unsub = onSnapshot(q, (snap) => { const now = new Date(); const boosted = snap.docs.map(d => ({ id: d.id,...d.data() } as any)).filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now).sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate()).slice(0, 30); setBoostedProducts(boosted)}); return () => unsub()}, [])
+
+  // ===== FIXED - HIDE HIDDEN PRODUCTS FROM HOMEPAGE =====
+  useEffect(() => {
+    const q = query(collection(db, 'products'), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      const all = snap.docs.map(d => ({ id: d.id,...d.data() } as any));
+      const visibleOnly = all.filter((p:any)=> p.showInShop!== false); // seller hidden = hide both shop + homepage
+      setProducts(visibleOnly);
+      setLoading(false)
+    });
+    return () => unsub()
+  }, [])
+
+  useEffect(() => {
+    const q = query(collection(db, 'products'), where("is_boosted", "==", true));
+    const unsub = onSnapshot(q, (snap) => {
+      const now = new Date();
+      const boosted = snap.docs.map(d => ({ id: d.id,...d.data() } as any))
+       .filter((p: any) => p.showInShop!== false && p.boosted_until && p.boosted_until.toDate() > now) // ===== FIXED - also filter hidden =====
+       .sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate()).slice(0, 30);
+      setBoostedProducts(boosted)
+    });
+    return () => unsub()
+  }, [])
 
   useEffect(()=>{
     const unsub = onSnapshot(doc(db, "admin_settings", "homepage"), (snap)=>{
@@ -347,17 +370,23 @@ export default function HomePage() {
     return ()=>unsub()
   }, [])
 
-  const filteredProducts = useMemo(() => products.filter(p => { const matchCategory = selectedCategory === 'All' || p.category === selectedCategory; const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase()); return matchCategory && matchSearch}), [products, selectedCategory, search])
+  const filteredProducts = useMemo(() => products.filter(p => {
+    const matchCategory = selectedCategory === 'All' || p.category === selectedCategory;
+    const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase());
+    const isVisible = p.showInShop!== false; // ===== FIXED =====
+    return matchCategory && matchSearch && isVisible
+  }), [products, selectedCategory, search])
 
   const blackMarketProducts = useMemo(()=>{
     const max = adminSettings.blackMarketMaxPrice || 45000
     return products.filter((p:any)=>{
+      if(p.showInShop === false) return false; // ===== FIXED =====
       const num = Number(String(p.price).replace(/,/g,''))
       return!isNaN(num) && num > 0 && num <= max
     }).sort((a:any,b:any)=> Number(String(a.price).replace(/,/g,'')) - Number(String(b.price).replace(/,/g,'')))
   }, [products, adminSettings.blackMarketMaxPrice])
 
-  const getProductsByCat = (catName: string) => products.filter(p => p.category === catName && p.title?.toLowerCase().includes(search.toLowerCase()))
+  const getProductsByCat = (catName: string) => products.filter(p => p.showInShop!== false && p.category === catName && p.title?.toLowerCase().includes(search.toLowerCase()))
   const getShopsByCat = (catName: string) => shops.filter((s:any)=> s.categories?.includes(catName))
   const shopsForSelected = useMemo(()=> selectedCategory==='All'? [] : getShopsByCat(selectedCategory), [shops, selectedCategory])
 
