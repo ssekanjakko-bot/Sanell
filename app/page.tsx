@@ -103,7 +103,6 @@ function TrendingSection({ products, onView, onWhatsApp }: any) {
     const now = new Date()
     return products.filter((p: any) => {
         if(!p.boosted_until) return false
-        if(p.showInShop === false) return false // ===== ADDED - hide hidden products from trending =====
         try { const end = p.boosted_until.toDate? p.boosted_until.toDate() : new Date(p.boosted_until); return end > now } catch { return false }
       }).sort((a: any, b: any) => {
         const durA = a.boostDurationDays || a.boost_duration_days || 1
@@ -191,7 +190,6 @@ function CategoryRow({ title, icon, products, onView, onWhatsApp, onSeeAll, shop
   return (
     <div className="mt-5">
       <div className="px-3 flex justify-between items-center mb-2.5"><h2 className="font-black text-[15px] flex items-center gap-2 text-black"><span>{icon}</span> {title} <span className="bg-orange-100 text-orange-800 text-[10px] px-2 py-0.5 rounded-full">{products.length}</span></h2><button onClick={onSeeAll} className="text-[12px] font-bold px-3 py-1 rounded-full bg-black text-white flex items-center gap-1">See All <ArrowRight size={12}/></button></div>
-
       {shops && shops.length>0 && (
         <div className="mx-3 mb-3 bg-white border border-yellow-400 rounded-[20px] p-3 shadow-sm">
           <div className="flex items-center justify-between mb-3">
@@ -205,27 +203,16 @@ function CategoryRow({ title, icon, products, onView, onWhatsApp, onSeeAll, shop
                 <Link key={shop.id} href={`/shop/${shop.id}`} className="min-w-[235px] max-w-[235px] bg-white border border-black/10 rounded-[20px] p-4 flex-shrink-0 shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-md transition">
                   <div className="flex gap-3 items-start">
                     <div className="relative shrink-0">
-                      {logo? (
-                        <img src={logo} className="w-[52px] h-[52px] rounded-full object-cover border border-black/10" alt={shop.shopName} />
-                      ) : (
-                        <div className="w-[52px] h-[52px] rounded-full bg-black text-[#FFD60A] flex items-center justify-center font-black text-[20px]">{shop.shopName?.[0]?.toUpperCase()}</div>
-                      )}
-                      <span className="absolute -bottom-1 -right-1 w-[18px] h-[18px] bg-white rounded-full flex items-center justify-center border border-black/10">
-                        <span className="w-[14px] h-[14px] bg-[#1D9BF0] rounded-full flex items-center justify-center text-white text-[8px]">✓</span>
-                      </span>
+                      {logo? <img src={logo} className="w-[52px] h-[52px] rounded-full object-cover border border-black/10" alt={shop.shopName} /> : <div className="w-[52px] h-[52px] rounded-full bg-black text-[#FFD60A] flex items-center justify-center font-black text-[20px]">{shop.shopName?.[0]?.toUpperCase()}</div>}
+                      <span className="absolute -bottom-1 -right-1 w-[18px] h-[18px] bg-white rounded-full flex items-center justify-center border border-black/10"><span className="w-[14px] h-[14px] bg-[#1D9BF0] rounded-full flex items-center justify-center text-white text-[8px]">✓</span></span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-black text-[16px] text-black flex items-center gap-1 leading-tight">
-                        <span className="truncate text-black">{shop.shopName}</span>
-                        <BlueTick />
-                      </p>
+                      <p className="font-black text-[16px] text-black flex items-center gap-1 leading-tight"><span className="truncate text-black">{shop.shopName}</span><BlueTick /></p>
                       <span className="mt-1.5 inline-block bg-[#FFD60A] text-black text-[10px] font-black px-2.5 py-0.5 rounded-full">VERIFIED</span>
                     </div>
                   </div>
                   <div className="flex gap-1.5 mt-3.5">
-                    {shop.categories?.slice(0,2).map((c:string)=>(
-                      <span key={c} className="bg-[#FFF8E1] border border-black/5 text-black text-[11px] px-2.5 py-1 rounded-full font-bold">{c.slice(0,14)}</span>
-                    ))}
+                    {shop.categories?.slice(0,2).map((c:string)=>(<span key={c} className="bg-[#FFF8E1] border border-black/5 text-black text-[11px] px-2.5 py-1 rounded-full font-bold">{c.slice(0,14)}</span>))}
                   </div>
                   <div className="mt-4 w-full bg-black text-white text-center py-2.5 rounded-full text-[13px] font-black">Visit Official Shop →</div>
                 </Link>
@@ -234,7 +221,6 @@ function CategoryRow({ title, icon, products, onView, onWhatsApp, onSeeAll, shop
           </div>
         </div>
       )}
-
       <div className="px-3 flex gap-3 overflow-x-auto scrollbar-hide">
         {products.slice(0,3).map((p: any) => (
           <div key={p.id} className="min-w-[160px] max-w-[160px] bg-white rounded-lg shadow-sm overflow-hidden border flex-shrink-0"><div className="relative w-full h-40 bg-gray-100"><img src={p.images?.[0]} className="w-full h-40 object-cover" /><button onClick={() => onView(p)} className="absolute top-2 right-2 bg-black/60 text-white w-7 h-7 rounded-full flex items-center justify-center"><Eye size={12} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">+{p.images.length} pics</span>}{p.is_boosted && <span className="absolute top-2 left-2 bg-yellow-400 text-black text-[8px] font-bold px-2 py-0.5 rounded-full">BOOSTED</span>}</div><div className="p-2"><p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p><p className="font-bold text-[12px] line-clamp-2 min-h-[32px] text-black">{p.title}</p><p className="font-black text-[13px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p><button onClick={() => onWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-[11px] py-2 rounded-md font-bold">WhatsApp</button></div></div>
@@ -267,28 +253,13 @@ function PromoStrip({ catName, catIndex, setCategory, router }: any) {
 function FooterSanel() {
   return (
     <div className="mt-8 bg-[#2B2B2B] text-white">
-      <button onClick={() => window.scrollTo({top:0, behavior:'smooth'})} className="w-full bg-[#3A3A3A] py-4 flex flex-col items-center gap-1 text-[11px] font-bold tracking-widest">
-        <ChevronUp size={18}/> BACK TO TOP
-      </button>
+      <button onClick={() => window.scrollTo({top:0, behavior:'smooth'})} className="w-full bg-[#3A3A3A] py-4 flex flex-col items-center gap-1 text-[11px] font-bold tracking-widest"><ChevronUp size={18}/> BACK TO TOP</button>
       <div className="px-4 py-6">
         <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center font-bold text-[10px] tracking-widest text-gray-200 text-center">
-          <Link href="/support">HELP CENTER</Link>
-          <Link href="/support">CONTACT US</Link>
-          <Link href="/terms">TERMS & CONDITIONS</Link>
-          <Link href="/privacy">PRIVACY POLICY NOTICE</Link>
-          <Link href="/cookies">COOKIE NOTICE</Link>
+          <Link href="/support">HELP CENTER</Link><Link href="/support">CONTACT US</Link><Link href="/terms">TERMS & CONDITIONS</Link><Link href="/privacy">PRIVACY POLICY NOTICE</Link><Link href="/cookies">COOKIE NOTICE</Link>
         </div>
-        <div className="mt-6 border-t border-[#444] pt-4 text-center">
-          <p className="font-bold text-[12px]">CONTACT US</p>
-          <div className="mt-2 text-[11px] text-gray-300 leading-6">
-            <p>Sanel Ug - Campus Marketplace</p>
-            <p>Kampala, Uganda | MUBS, MUK, KYU & More</p>
-            <p className="text-white mt-1">📞 0767483636 | WhatsApp: 0706826774</p>
-          </div>
-        </div>
-        <div className="mt-5 border-t border-[#444] pt-3 text-center text-[10px] text-gray-400">
-          All Rights Reserved © {new Date().getFullYear()} Sanel Ug
-        </div>
+        <div className="mt-6 border-t border-[#444] pt-4 text-center"><p className="font-bold text-[12px]">CONTACT US</p><div className="mt-2 text-[11px] text-gray-300 leading-6"><p>Sanel Ug - Campus Marketplace</p><p>Kampala, Uganda | MUBS, MUK, KYU & More</p><p className="text-white mt-1">📞 0767483636 | WhatsApp: 0706826774</p></div></div>
+        <div className="mt-5 border-t border-[#444] pt-3 text-center text-[10px] text-gray-400">All Rights Reserved © {new Date().getFullYear()} Sanel Ug</div>
       </div>
     </div>
   )
@@ -324,197 +295,32 @@ export default function HomePage() {
   const [shops, setShops] = useState<any[]>([])
   const router = useRouter()
   const scrollRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => { const q = query(collection(db, 'banners'), orderBy("createdAt", "desc")); const unsub = onSnapshot(q, (snap) => setBanners(snap.docs.map(d => ({id: d.id,...d.data()})))); return () => unsub()}, [])
   useEffect(() => { const el = scrollRef.current; if (!el || banners.length <= 1) return; const handleScroll = () => setCurrentBanner(Math.round(el.scrollLeft / el.clientWidth)); el.addEventListener('scroll', handleScroll); let i = 0; const timer = setInterval(() => { i = (i + 1) % banners.length; if(el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" }); }, 3500); return () => { clearInterval(timer); el.removeEventListener('scroll', handleScroll); }}, [banners.length]);
-
-  // ===== FIXED - HIDE HIDDEN PRODUCTS FROM HOMEPAGE =====
-  useEffect(() => {
-    const q = query(collection(db, 'products'), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(q, (snap) => {
-      const all = snap.docs.map(d => ({ id: d.id,...d.data() } as any));
-      const visibleOnly = all.filter((p:any)=> p.showInShop!== false); // seller hidden = hide both shop + homepage
-      setProducts(visibleOnly);
-      setLoading(false)
-    });
-    return () => unsub()
-  }, [])
-
-  useEffect(() => {
-    const q = query(collection(db, 'products'), where("is_boosted", "==", true));
-    const unsub = onSnapshot(q, (snap) => {
-      const now = new Date();
-      const boosted = snap.docs.map(d => ({ id: d.id,...d.data() } as any))
-       .filter((p: any) => p.showInShop!== false && p.boosted_until && p.boosted_until.toDate() > now) // ===== FIXED - also filter hidden =====
-       .sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate()).slice(0, 30);
-      setBoostedProducts(boosted)
-    });
-    return () => unsub()
-  }, [])
-
-  useEffect(()=>{
-    const unsub = onSnapshot(doc(db, "admin_settings", "homepage"), (snap)=>{
-      if(snap.exists()) setAdminSettings((prev:any)=>({...prev,...snap.data()}))
-    })
-    return ()=>unsub()
-  }, [])
-
-  useEffect(()=>{
-    const q = query(collection(db, 'shops'), where('is_active','==',true))
-    const unsub = onSnapshot(q, (snap)=>{
-      const now = Timestamp.now()
-      const all = snap.docs.map(d=>({id:d.id,...d.data()} as any))
-      const valid = all.filter((s:any)=>!s.paid_until || s.paid_until.seconds > now.seconds)
-      setShops(valid)
-    })
-    return ()=>unsub()
-  }, [])
-
-  const filteredProducts = useMemo(() => products.filter(p => {
-    const matchCategory = selectedCategory === 'All' || p.category === selectedCategory;
-    const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase());
-    const isVisible = p.showInShop!== false; // ===== FIXED =====
-    return matchCategory && matchSearch && isVisible
-  }), [products, selectedCategory, search])
-
-  const blackMarketProducts = useMemo(()=>{
-    const max = adminSettings.blackMarketMaxPrice || 45000
-    return products.filter((p:any)=>{
-      if(p.showInShop === false) return false; // ===== FIXED =====
-      const num = Number(String(p.price).replace(/,/g,''))
-      return!isNaN(num) && num > 0 && num <= max
-    }).sort((a:any,b:any)=> Number(String(a.price).replace(/,/g,'')) - Number(String(b.price).replace(/,/g,'')))
-  }, [products, adminSettings.blackMarketMaxPrice])
-
-  const getProductsByCat = (catName: string) => products.filter(p => p.showInShop!== false && p.category === catName && p.title?.toLowerCase().includes(search.toLowerCase()))
+  useEffect(() => { const q = query(collection(db, 'products'), orderBy("createdAt", "desc")); const unsub = onSnapshot(q, (snap) => { setProducts(snap.docs.map(d => ({ id: d.id,...d.data() }))); setLoading(false) }); return () => unsub()}, [])
+  useEffect(() => { const q = query(collection(db, 'products'), where("is_boosted", "==", true)); const unsub = onSnapshot(q, (snap) => { const now = new Date(); const boosted = snap.docs.map(d => ({ id: d.id,...d.data() } as any)).filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now).sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate()).slice(0, 30); setBoostedProducts(boosted)}); return () => unsub()}, [])
+  useEffect(()=>{ const unsub = onSnapshot(doc(db, "admin_settings", "homepage"), (snap)=>{ if(snap.exists()) setAdminSettings((prev:any)=>({...prev,...snap.data()})) }); return ()=>unsub() }, [])
+  useEffect(()=>{ const q = query(collection(db, 'shops'), where('is_active','==',true)); const unsub = onSnapshot(q, (snap)=>{ const now = Timestamp.now(); const all = snap.docs.map(d=>({id:d.id,...d.data()} as any)); const valid = all.filter((s:any)=>!s.paid_until || s.paid_until.seconds > now.seconds); setShops(valid) }); return ()=>unsub() }, [])
+  const filteredProducts = useMemo(() => products.filter(p => { const matchCategory = selectedCategory === 'All' || p.category === selectedCategory; const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase()); return matchCategory && matchSearch}), [products, selectedCategory, search])
+  const blackMarketProducts = useMemo(()=>{ const max = adminSettings.blackMarketMaxPrice || 45000; return products.filter((p:any)=>{ const num = Number(String(p.price).replace(/,/g,'')); return!isNaN(num) && num > 0 && num <= max }).sort((a:any,b:any)=> Number(String(a.price).replace(/,/g,'')) - Number(String(b.price).replace(/,/g,''))) }, [products, adminSettings.blackMarketMaxPrice])
+  const getProductsByCat = (catName: string) => products.filter(p => p.category === catName && p.title?.toLowerCase().includes(search.toLowerCase()))
   const getShopsByCat = (catName: string) => shops.filter((s:any)=> s.categories?.includes(catName))
   const shopsForSelected = useMemo(()=> selectedCategory==='All'? [] : getShopsByCat(selectedCategory), [shops, selectedCategory])
-
-  const handleWhatsApp = (product: any) => {
-    let phone = product.whatsapp || product.whatsApp || product.WhatsApp;
-    if(!phone) return alert("Seller did not add WhatsApp number");
-    let cleanPhone = phone.toString().replace(/\D/g, '');
-    if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1);
-    else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone;
-    const imageUrl = product.images?.[0] || '';
-    const message = `Hello! 👋\n\nI'm interested in this from *SANEL* 🛒\n\n📦 *${product.title}*\n💰 Price: ${product.price} UGX\n📂 Category: ${product.category}\n🖼️ Image: ${imageUrl}\n\nIs it still available?\n\nFrom sanel-ug.online`;
-    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank')
-  }
-
+  const handleWhatsApp = (product: any) => { let phone = product.whatsapp || product.whatsApp || product.WhatsApp; if(!phone) return alert("Seller did not add WhatsApp number"); let cleanPhone = phone.toString().replace(/\D/g, ''); if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1); else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone; const imageUrl = product.images?.[0] || ''; const message = `Hello! 👋\n\nI'm interested in this from *SANEL* 🛒\n\n📦 *${product.title}*\n💰 Price: ${product.price} UGX\n📂 Category: ${product.category}\n🖼️ Image: ${imageUrl}\n\nIs it still available?\n\nFrom sanel-ug.online`; window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank') }
   return (
     <div className="min-h-screen bg-[#FDF8F3] relative">
-      <div className="bg-white sticky top-0 z-20 shadow-sm">
-        <div className="max-w-[1280px] mx-auto w-full">
-          <div className="p-3 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <button onClick={() => setShowMenu(true)} className="bg-black text-white w-9 h-9 rounded-full flex items-center justify-center shadow-md"><LayoutGrid size={18} /></button>
-              <span className="font-bold text-lg" style={{color: '#8B4513'}}>Sanel Ug</span>
-              <Link href="/about" className="text-xs text-gray-500 ml-1">About</Link>
-            </div>
-            <div className="flex gap-1.5 text-xs items-center">
-              {selectedCategory!=='All' && <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-[10px] font-bold">{selectedCategory}</span>}
-              <Link href="/support" className="bg-black text-white px-2 py-1 rounded-md">Support</Link>
-              <select className="bg-black text-white px-2 py-1 rounded-md"><option>MUBS</option></select>
-            </div>
-          </div>
-          <div className="px-3 pb-3"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products" className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 text-sm placeholder:text-gray-400" /></div>
-        </div>
-      </div>
-
+      <div className="bg-white sticky top-0 z-20 shadow-sm"><div className="max-w-[1280px] mx-auto w-full"><div className="p-3 flex justify-between items-center"><div className="flex items-center gap-2"><button onClick={() => setShowMenu(true)} className="bg-black text-white w-9 h-9 rounded-full flex items-center justify-center shadow-md"><LayoutGrid size={18} /></button><span className="font-bold text-lg" style={{color: '#8B4513'}}>Sanel Ug</span><Link href="/about" className="text-xs text-gray-500 ml-1">About</Link></div><div className="flex gap-1.5 text-xs items-center">{selectedCategory!=='All' && <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-[10px] font-bold">{selectedCategory}</span>}<Link href="/support" className="bg-black text-white px-2 py-1 rounded-md">Support</Link><select className="bg-black text-white px-2 py-1 rounded-md"><option>MUBS</option></select></div></div><div className="px-3 pb-3"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products" className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 text-sm placeholder:text-gray-400" /></div></div></div>
       <div className="max-w-[1280px] mx-auto w-full">
-        {showMenu && (
-          <div className="fixed inset-0 bg-black/60 z-[999] flex">
-            <div className="bg-white w-[85%] max-w-[330px] h-full overflow-y-auto">
-              <div className="p-4 flex justify-between items-center border-b sticky top-0 bg-white z-10">
-                <span className="font-black text-[16px]">Sanel Menu</span>
-                <button onClick={() => setShowMenu(false)} className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center"><X size={16}/></button>
-              </div>
-              <div className="p-3">
-                <p className="text-[10px] font-bold text-gray-400 tracking-widest mb-2">NAVIGATION</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {BOTTOM_NAV.map(n => (
-                    <button key={n.name} onClick={() => { router.push(n.href); setShowMenu(false) }} className="bg-[#FDF8F3] border rounded-xl p-3 flex items-center gap-2 font-bold text-[12px] text-black">
-                      <span className="text-[18px]">{n.icon}</span>{n.name}
-                    </button>
-                  ))}
-                  <Link href="/sell" onClick={() => setShowMenu(false)} className="bg-black text-white rounded-xl p-3 flex items-center gap-2 font-bold text-[12px]"><span>💰</span>Sell</Link>
-                  <Link href="/movies" onClick={() => setShowMenu(false)} className="bg-gray-900 text-white rounded-xl p-3 flex items-center gap-2 font-bold text-[12px]"><span>🎬</span>Movies</Link>
-                </div>
-              </div>
-              <div className="p-3 border-t mt-2">
-                <p className="text-[10px] font-bold text-gray-400 tracking-widest mb-2">ALL CATEGORIES</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {CATEGORIES.map(cat => (
-                    <button key={cat.name} onClick={() => { setSelectedCategory(cat.name); setShowMenu(false) }} className={`flex flex-col items-center gap-1 p-3 rounded-xl text-xs font-bold ${selectedCategory===cat.name?'bg-orange-600 text-white':'bg-white border shadow-sm text-gray-700'}`}>
-                      <span className="text-xl">{cat.icon}</span><span className="text-[10px] text-center leading-tight">{cat.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="flex-1" onClick={() => setShowMenu(false)}></div>
-          </div>
-        )}
-
+        {showMenu && (<div className="fixed inset-0 bg-black/60 z-[999] flex"><div className="bg-white w-[85%] max-w-[330px] h-full overflow-y-auto"><div className="p-4 flex justify-between items-center border-b sticky top-0 bg-white z-10"><span className="font-black text-[16px]">Sanel Menu</span><button onClick={() => setShowMenu(false)} className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center"><X size={16}/></button></div><div className="p-3"><p className="text-[10px] font-bold text-gray-400 tracking-widest mb-2">NAVIGATION</p><div className="grid grid-cols-2 gap-2">{BOTTOM_NAV.map(n => (<button key={n.name} onClick={() => { router.push(n.href); setShowMenu(false) }} className="bg-[#FDF8F3] border rounded-xl p-3 flex items-center gap-2 font-bold text-[12px] text-black"><span className="text-[18px]">{n.icon}</span>{n.name}</button>))}<Link href="/sell" onClick={() => setShowMenu(false)} className="bg-black text-white rounded-xl p-3 flex items-center gap-2 font-bold text-[12px]"><span>💰</span>Sell</Link><Link href="/movies" onClick={() => setShowMenu(false)} className="bg-gray-900 text-white rounded-xl p-3 flex items-center gap-2 font-bold text-[12px]"><span>🎬</span>Movies</Link></div></div><div className="p-3 border-t mt-2"><p className="text-[10px] font-bold text-gray-400 tracking-widest mb-2">ALL CATEGORIES</p><div className="grid grid-cols-3 gap-2">{CATEGORIES.map(cat => (<button key={cat.name} onClick={() => { setSelectedCategory(cat.name); setShowMenu(false) }} className={`flex flex-col items-center gap-1 p-3 rounded-xl text-xs font-bold ${selectedCategory===cat.name?'bg-orange-600 text-white':'bg-white border shadow-sm text-gray-700'}`}><span className="text-xl">{cat.icon}</span><span className="text-[10px] text-center leading-tight">{cat.name}</span></button>))}</div></div></div><div className="flex-1" onClick={() => setShowMenu(false)}></div></div>)}
         <div className="px-3 pt-2">{banners.length > 0 && <><div ref={scrollRef} className="flex overflow-x-auto scroll-smooth rounded-2xl snap-x snap-mandatory scrollbar-hide">{banners.map((b) => (<Link key={b.id} href={b.link || "/"} className="w-full flex-shrink-0 snap-center"><img src={b.imageUrl} alt="banner" className="w-full h-44 object-cover rounded-2xl"/></Link>))}</div><div className="flex justify-center gap-1.5 mt-2">{banners.map((_, idx) => (<button key={idx} onClick={() => { setCurrentBanner(idx); scrollRef.current?.scrollTo({ left: idx * scrollRef.current.clientWidth, behavior: "smooth" }); }} className={`h-1.5 rounded-full ${currentBanner === idx? 'bg-orange-600 w-6' : 'bg-gray-300 w-1.5'}`} />))}</div></>}</div>
-
         <TrendingSection products={boostedProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} />
         <SanelBestPicksSection />
-
         <div className="p-3 pb-0"><h2 className="font-black text-[18px] text-black">{selectedCategory === 'All'? 'Shop by Category' : `${selectedCategory} (${filteredProducts.length})`}{selectedCategory!== 'All' && <button onClick={() => setSelectedCategory('All')} className="ml-3 bg-black text-white text-[11px] px-3 py-1 rounded-full">Back</button>}</h2></div>
-
-        {loading? <p className="p-3">Loading...</p> : selectedCategory === 'All'? (
-        <>
-          {HOME_CATEGORIES.map((cat, idx) => {
-            const catProducts = getProductsByCat(cat.name);
-            if(catProducts.length === 0) return null;
-            const catShops = getShopsByCat(cat.name);
-            return (
-              <div key={cat.name}>
-                <CategoryRow title={cat.name} icon={cat.icon} products={catProducts} shops={catShops} onView={setViewProduct} onWhatsApp={handleWhatsApp} onSeeAll={() => { setSelectedCategory(cat.name); window.scrollTo({top: 0, behavior: 'smooth'}) }} />
-                <PromoStrip catName={cat.name} catIndex={idx} setCategory={setSelectedCategory} router={router} />
-                {idx === 1 && <BlackMarketBanner products={blackMarketProducts} adminSettings={adminSettings} onView={setViewProduct} onWhatsApp={handleWhatsApp} router={router} />}
-              </div>
-            )
-          })}
-        </>
-        ) : (
-        <>
-          {shopsForSelected.length>0 && (
-            <div className="mx-3 mt-3 bg-white border border-yellow-400 rounded-[20px] p-3 shadow-sm">
-              <p className="font-black text-[11px] text-black mb-3 flex items-center gap-2">🏪 OFFICIAL SHOPS IN {selectedCategory.toUpperCase()} • VERIFIED & PINNED TOP <span className="bg-[#FFD60A] text-black text-[8px] px-2 py-0.5 rounded-full">{shopsForSelected.length}</span></p>
-              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
-                {shopsForSelected.map((shop:any)=>{
-                  const logo = shop.logo || shop.profilePicture || shop.shopLogo || ""
-                  return (
-                    <Link key={shop.id} href={`/shop/${shop.id}`} className="min-w-[235px] bg-white border border-black/10 rounded-[20px] p-4 flex-shrink-0 shadow-[0_4px_20px_rgba(0,0,0,0.06)]">
-                      <div className="flex gap-3 items-center">
-                        {logo? <img src={logo} className="w-[52px] h-[52px] rounded-full object-cover border" /> : <div className="w-[52px] h-[52px] rounded-full bg-black text-[#FFD60A] flex items-center justify-center font-black text-[20px]">{shop.shopName?.[0]?.toUpperCase()}</div>}
-                        <div>
-                          <p className="font-black text-[16px] text-black flex items-center gap-1">{shop.shopName}<BlueTick/></p>
-                          <span className="bg-[#FFD60A] text-black text-[10px] font-black px-2 py-0.5 rounded-full">VERIFIED</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-1.5 mt-3.5">
-                        {shop.categories?.slice(0,2).map((c:string)=><span key={c} className="bg-[#FFF8E1] border text-black text-[11px] px-2.5 py-1 rounded-full font-bold">{c.slice(0,14)}</span>)}
-                      </div>
-                      <div className="mt-4 w-full bg-black text-white text-center py-2.5 rounded-full text-[13px] font-black">Visit Official Shop →</div>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-          <div className="p-3"><div className="grid grid-cols-2 gap-3">{filteredProducts.map(p => (<div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border"><div className="relative w-full h-40 bg-gray-100"><img src={p.images?.[0]} className="w-full h-40 object-cover" /><button onClick={() => setViewProduct(p)} className="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center"><Eye size={14} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">+{p.images.length} pics</span>}</div><div className="p-2"><p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p><p className="font-bold text-[14px] line-clamp-2 text-black">{p.title}</p><p className="font-black text-[15px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p><button onClick={() => handleWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-sm py-2.5 rounded-md font-bold">WhatsApp</button></div></div>))}</div></div>
-        </>
-        )}
-
+        {loading? <p className="p-3">Loading...</p> : selectedCategory === 'All'? (<>{HOME_CATEGORIES.map((cat, idx) => { const catProducts = getProductsByCat(cat.name); if(catProducts.length === 0) return null; const catShops = getShopsByCat(cat.name); return (<div key={cat.name}><CategoryRow title={cat.name} icon={cat.icon} products={catProducts} shops={catShops} onView={setViewProduct} onWhatsApp={handleWhatsApp} onSeeAll={() => { setSelectedCategory(cat.name); window.scrollTo({top: 0, behavior: 'smooth'}) }} /><PromoStrip catName={cat.name} catIndex={idx} setCategory={setSelectedCategory} router={router} />{idx === 1 && <BlackMarketBanner products={blackMarketProducts} adminSettings={adminSettings} onView={setViewProduct} onWhatsApp={handleWhatsApp} router={router} />}</div>)})}</>) : (<><div className="p-3"><div className="grid grid-cols-2 gap-3">{filteredProducts.map(p => (<div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border"><div className="relative w-full h-40 bg-gray-100"><img src={p.images?.[0]} className="w-full h-40 object-cover" /><button onClick={() => setViewProduct(p)} className="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center"><Eye size={14} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">+{p.images.length} pics</span>}</div><div className="p-2"><p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p><p className="font-bold text-[14px] line-clamp-2 text-black">{p.title}</p><p className="font-black text-[15px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p><button onClick={() => handleWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-sm py-2.5 rounded-md font-bold">WhatsApp</button></div></div>))}</div></div></>)}
         {viewProduct && <ProductViewModal product={viewProduct} onClose={() => setViewProduct(null)} onWhatsApp={handleWhatsApp} />}
       </div>
-
       <Link href="/movies" className="fixed bottom-6 left-4 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40 border-2 border-white"><Film size={18} /></Link>
       <button onClick={() => router.push('/sell')} className="fixed bottom-6 right-4 bg-amber-800 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40"><Coffee size={20} /></button>
-
       <FooterSanel />
     </div>
   )
