@@ -126,13 +126,15 @@ export default function AdminPage() {
   const [blackMarketSaving, setBlackMarketSaving] = useState(false)
   const [shopRequests, setShopRequests] = useState<ShopRequest[]>([])
   const [shopFilter, setShopFilter] = useState<'pending'|'approved'|'rejected'>('pending')
+  const [allShops, setAllShops] = useState<any[]>([])
+  const [shopSearch, setShopSearch] = useState('')
 
   useEffect(() => {
     const q = query(collection(db, "movies"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const moviesData: Movie[] = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
-...docSnap.data()
+       ...docSnap.data()
       } as Movie));
       setMovies(moviesData);
     });
@@ -164,6 +166,16 @@ export default function AdminPage() {
       setShopRequests(data)
     })
     return () => unsub()
+  }, [])
+
+  // ===== NEW: FETCH ALL SHOPS FOR REMOVAL =====
+  useEffect(()=>{
+    const q = query(collection(db, "shops"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap)=>{
+      const data = snap.docs.map(d=>({id:d.id,...d.data()} as any))
+      setAllShops(data)
+    })
+    return ()=>unsub()
   }, [])
 
   useEffect(()=>{
@@ -279,6 +291,15 @@ export default function AdminPage() {
   const rejectShop = async (req: ShopRequest) => {
     if(!confirm(`Reject shop ${req.shopName}?`)) return
     await updateDoc(doc(db, 'shop_requests', req.id), { status:'rejected', rejectedAt: serverTimestamp() })
+  }
+
+  // ===== NEW: REMOVE ANY SHOP =====
+  const removeShop = async (shop: any) => {
+    if(!confirm(`DELETE SHOP "${shop.shopName}"?\n\nThis will remove the official shop page /shop/${shop.id}\nProducts will stay on marketplace as normal.\n\nAre you sure?`)) return
+    try{
+      await deleteDoc(doc(db, 'shops', shop.id))
+      alert(`Shop ${shop.shopName} removed ✅`)
+    }catch(e:any){ alert("Failed: "+e.message) }
   }
 
   useEffect(() => {
@@ -399,6 +420,12 @@ export default function AdminPage() {
   const filteredShops = shopRequests.filter(b => b.status === shopFilter)
   const shopsPendingCount = shopRequests.filter(b => b.status === 'pending').length
 
+  const filteredAllShops = allShops.filter((s:any)=> {
+    if(!shopSearch) return true
+    const q = shopSearch.toLowerCase()
+    return s.shopName?.toLowerCase().includes(q) || s.sellerEmail?.toLowerCase().includes(q) || s.whatsapp?.includes(q)
+  })
+
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
       <div className="bg-black text-white p-4 sticky top-0 z-20">
@@ -409,7 +436,7 @@ export default function AdminPage() {
             {id:'blackmarket', label:'Black Market 45K'},
             {id:'boosts', label:`Boosts ${pendingCount>0?`(${pendingCount})`:''}`},
             {id:'flixsubs', label:`SanelFlix ${flixPendingCount>0?`(${flixPendingCount})`:''}`},
-            {id:'shops', label:`Shops ${shopsPendingCount>0?`(${shopsPendingCount})`:''}`},
+            {id:'shops', label:`Shops ${shopsPendingCount>0?`(${shopsPendingCount})`:''} • ${allShops.length} active`},
             {id:'chats', label:`Chats (${sellerThreads.length})`},
             {id:'movies', label:'Movies'},
             {id:'banners', label:'Banners'},
@@ -428,6 +455,7 @@ export default function AdminPage() {
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">PENDING SHOPS 15K</p><p className="text-2xl font-black text-black">{shopsPendingCount}</p><p className="text-xs text-black font-bold">0767483636</p></div>
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">SELLERS CHATTING</p><p className="text-2xl font-black text-black">{sellerThreads.length}</p></div>
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">TOTAL MOVIES</p><p className="text-2xl font-black text-black">{movies.length}</p></div>
+          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">ACTIVE SHOPS</p><p className="text-2xl font-black text-black">{allShops.length}</p><p className="text-xs text-black">Can delete any</p></div>
           <div className="bg-black border rounded-xl p-4 shadow col-span-2">
             <p className="text-xs text-yellow-400 font-bold">BLACK MARKET 45K</p>
             <p className="text-sm font-black text-white mt-1">{blackMarketSettings.showBlackMarket? 'ON ✅ - showing after 2 categories' : 'OFF ❌ - hidden'}</p>
@@ -465,9 +493,40 @@ export default function AdminPage() {
       )}
 
       {tab==='shops' && (
-        <div className="bg-white border rounded-xl shadow overflow-hidden">
-          <div className="p-4 border-b flex justify-between items-center bg-yellow-400"><h2 className="font-black text-black">🏪 Official Shops - 15K • 60 Days • 0767483636</h2><div className="flex gap-1">{['pending','approved','rejected'].map((f:any)=>(<button key={f} onClick={()=>setShopFilter(f)} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${shopFilter===f?'bg-black text-white':'bg-white text-black border'}`}>{f}</button>))}</div></div>
-          <div className="p-3"><p className="text-xs text-black font-bold mb-3 bg-yellow-100 border border-yellow-300 p-2 rounded">Verify 15K on MTN MoMo 0767483636 before approving. Check TxID. Reason: SHOP + phone last digits. Approve = 60 days pinned on top + own link sanel-ug.online/shop/ID</p>{filteredShops.length===0? <p className="text-center text-gray-400 py-10 text-sm">No {shopFilter} shops - Sellers pay 15K to 0767483636 first</p> : <div className="grid gap-3">{filteredShops.map(req=>(<div key={req.id} className="border-2 rounded-xl p-3 flex gap-3 bg-white"><div className="w-12 h-12 bg-black text-yellow-400 rounded-full flex items-center justify-center font-black text-[10px]">15K</div><div className="flex-1 min-w-0"><p className="font-black text-sm text-black">{req.shopName} • {req.momoTxId} • {req.amount} UGX</p><p className="text-[11px] text-black font-medium mt-1">Seller: {req.sellerEmail} • {req.whatsapp}</p><p className="text-[11px] text-black">Categories: {req.categories?.join(', ')}</p><p className="text-[10px] text-gray-500">UID: {req.sellerId.slice(0,8)} • {req.createdAt?.toDate? req.createdAt.toDate().toLocaleString():''}</p></div><div className="flex flex-col gap-1 shrink-0">{req.status==='pending'? <><button onClick={()=>approveShop(req)} className="bg-black text-yellow-400 px-4 py-2 rounded-full text-xs font-black">Approve 60D</button><button onClick={()=>rejectShop(req)} className="bg-white border border-black text-black px-4 py-1.5 rounded-full text-xs font-black">Reject</button></> : <span className={`px-3 py-1 rounded-full text-[10px] font-black text-center ${req.status==='approved'?'bg-green-600 text-white':'bg-red-600 text-white'}`}>{req.status.toUpperCase()}</span>}</div></div>))}</div>}</div>
+        <div className="space-y-4">
+          <div className="bg-white border rounded-xl shadow overflow-hidden">
+            <div className="p-4 border-b flex justify-between items-center bg-yellow-400"><h2 className="font-black text-black">🏪 Official Shops Requests - 15K • 60 Days • 0767483636</h2><div className="flex gap-1">{['pending','approved','rejected'].map((f:any)=>(<button key={f} onClick={()=>setShopFilter(f)} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${shopFilter===f?'bg-black text-white':'bg-white text-black border'}`}>{f}</button>))}</div></div>
+            <div className="p-3"><p className="text-xs text-black font-bold mb-3 bg-yellow-100 border border-yellow-300 p-2 rounded">Verify 15K on MTN MoMo 0767483636 before approving. Check TxID. Reason: SHOP + phone last digits. Approve = 60 days pinned on top + own link sanel-ug.online/shop/ID</p>{filteredShops.length===0? <p className="text-center text-gray-400 py-6 text-sm">No {shopFilter} shops</p> : <div className="grid gap-3">{filteredShops.map(req=>(<div key={req.id} className="border-2 rounded-xl p-3 flex gap-3 bg-white"><div className="w-12 h-12 bg-black text-yellow-400 rounded-full flex items-center justify-center font-black text-[10px]">15K</div><div className="flex-1 min-w-0"><p className="font-black text-sm text-black">{req.shopName} • {req.momoTxId} • {req.amount} UGX</p><p className="text-[11px] text-black font-medium mt-1">Seller: {req.sellerEmail} • {req.whatsapp}</p><p className="text-[11px] text-black">Categories: {req.categories?.join(', ')}</p><p className="text-[10px] text-gray-500">UID: {req.sellerId.slice(0,8)} • {req.createdAt?.toDate? req.createdAt.toDate().toLocaleString():''}</p></div><div className="flex flex-col gap-1 shrink-0">{req.status==='pending'? <><button onClick={()=>approveShop(req)} className="bg-black text-yellow-400 px-4 py-2 rounded-full text-xs font-black">Approve 60D</button><button onClick={()=>rejectShop(req)} className="bg-white border border-black text-black px-4 py-1.5 rounded-full text-xs font-black">Reject</button></> : <span className={`px-3 py-1 rounded-full text-[10px] font-black text-center ${req.status==='approved'?'bg-green-600 text-white':'bg-red-600 text-white'}`}>{req.status.toUpperCase()}</span>}</div></div>))}</div>}</div>
+          </div>
+
+          {/* ===== NEW ACTIVE SHOPS WITH DELETE ===== */}
+          <div className="bg-white border-2 border-black rounded-xl shadow overflow-hidden">
+            <div className="p-4 border-b bg-black text-white flex justify-between items-center">
+              <h2 className="font-black text-sm">🗑️ ACTIVE SHOPS - ADMIN CAN REMOVE ANY SHOP ({allShops.length})</h2>
+              <input value={shopSearch} onChange={e=>setShopSearch(e.target.value)} placeholder="Search shop name or email" className="bg-[#222] border border-[#444] text-white px-3 py-1.5 rounded-full text-xs w-[180px]" />
+            </div>
+            <div className="p-3">
+              {filteredAllShops.length===0? <p className="text-center text-gray-400 py-10 text-sm">No shops found</p> : (
+                <div className="grid gap-3">
+                  {filteredAllShops.map((shop:any)=>(
+                    <div key={shop.id} className="border rounded-xl p-3 flex gap-3 items-center bg-[#FFFEFB]">
+                      <div className="w-12 h-12 rounded-full bg-black text-[#FFD60A] flex items-center justify-center font-black text-lg shrink-0">{shop.shopName?.[0]?.toUpperCase()}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-sm text-black truncate">{shop.shopName} {shop.is_active? <span className="bg-green-100 text-green-700 text-[9px] px-2 py-0.5 rounded-full ml-1">ACTIVE</span> : <span className="bg-red-100 text-red-700 text-[9px] px-2 py-0.5 rounded-full ml-1">INACTIVE</span>}</p>
+                        <p className="text-[11px] text-black truncate">{shop.sellerEmail} • WA: {shop.whatsapp}</p>
+                        <p className="text-[10px] text-gray-500 truncate">ID: {shop.id} • Views: {shop.views||0} • Paid until: {shop.paid_until?.toDate? shop.paid_until.toDate().toLocaleDateString() : 'N/A'}</p>
+                        <div className="flex gap-1 mt-1 flex-wrap">{shop.categories?.slice(0,3).map((c:string)=><span key={c} className="bg-yellow-100 text-black text-[9px] px-2 py-0.5 rounded-full font-bold">{c}</span>)}</div>
+                      </div>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <a href={`/shop/${shop.id}`} target="_blank" className="bg-white border border-black text-black px-4 py-1.5 rounded-full text-[11px] font-black text-center">View Shop</a>
+                        <button onClick={()=>removeShop(shop)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-full text-[11px] font-black">🗑️ Remove</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
