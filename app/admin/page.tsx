@@ -72,6 +72,19 @@ type MovieSubRequest = {
   createdAt: Timestamp
 }
 
+type ShopRequest = {
+  id: string
+  sellerId: string
+  sellerEmail: string
+  shopName: string
+  whatsapp: string
+  categories: string[]
+  amount: number
+  momoTxId: string
+  status: 'pending' | 'approved' | 'rejected'
+  createdAt: Timestamp
+}
+
 const BOOST_LABELS: any = {
   quick: { label: '24H', color: 'bg-gray-200 text-black' },
   standard: { label: '3D POPULAR', color: 'bg-yellow-300 text-black' },
@@ -81,7 +94,7 @@ const BOOST_LABELS: any = {
 
 export default function AdminPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<'dashboard'|'boosts'|'flixsubs'|'movies'|'chats'|'banners'|'blackmarket'>('dashboard')
+  const [tab, setTab] = useState<'dashboard'|'boosts'|'flixsubs'|'movies'|'chats'|'banners'|'blackmarket'|'shops'>('dashboard')
   const [movies, setMovies] = useState<Movie[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [bannerFile,setBannerFile]=useState<File | null>(null)
@@ -111,13 +124,15 @@ export default function AdminPage() {
   const [flixFilter, setFlixFilter] = useState<'pending'|'approved'|'rejected'>('pending')
   const [blackMarketSettings, setBlackMarketSettings] = useState<any>({ showBlackMarket: true, blackMarketTitle: "BLACK MARKET - Everything ≤ 45K", blackMarketMaxPrice: 45000, blackMarketLimit: 10 })
   const [blackMarketSaving, setBlackMarketSaving] = useState(false)
+  const [shopRequests, setShopRequests] = useState<ShopRequest[]>([])
+  const [shopFilter, setShopFilter] = useState<'pending'|'approved'|'rejected'>('pending')
 
   useEffect(() => {
     const q = query(collection(db, "movies"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const moviesData: Movie[] = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
- ...docSnap.data()
+...docSnap.data()
       } as Movie));
       setMovies(moviesData);
     });
@@ -138,6 +153,15 @@ export default function AdminPage() {
     const unsub = onSnapshot(q, (snap) => {
       const data = snap.docs.map(d => ({ id: d.id,...d.data() } as MovieSubRequest))
       setFlixRequests(data)
+    })
+    return () => unsub()
+  }, [])
+
+  useEffect(()=>{
+    const q = query(collection(db, "shop_requests"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id,...d.data() } as ShopRequest))
+      setShopRequests(data)
     })
     return () => unsub()
   }, [])
@@ -222,6 +246,35 @@ export default function AdminPage() {
   const rejectFlix = async (req: MovieSubRequest) => {
     if(!confirm(`Reject ${req.packageName} for ${req.email}?`)) return
     await updateDoc(doc(db, 'movie_boost_requests', req.id), { status:'rejected', rejectedAt: serverTimestamp() })
+  }
+
+  const approveShop = async (req: ShopRequest) => {
+    if (!confirm(`Approve SHOP "${req.shopName}"? Did you verify 15K to 0767483636 with TxID ${req.momoTxId}?`)) return
+    try {
+      const now = new Date()
+      const until = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000)
+      await addDoc(collection(db, 'shops'), {
+        sellerId: req.sellerId,
+        sellerEmail: req.sellerEmail,
+        shopName: req.shopName,
+        whatsapp: req.whatsapp,
+        categories: req.categories,
+        amount: req.amount,
+        momoTxId: req.momoTxId,
+        is_active: true,
+        createdAt: serverTimestamp(),
+        paid_at: Timestamp.fromDate(now),
+        paid_until: Timestamp.fromDate(until),
+        views: 0
+      })
+      await updateDoc(doc(db, 'shop_requests', req.id), { status: 'approved', approvedAt: serverTimestamp(), paid_until: Timestamp.fromDate(until) })
+      alert(`Shop ${req.shopName} approved 60 days ✅`)
+    } catch(e:any){ alert("Failed: "+e.message) }
+  }
+
+  const rejectShop = async (req: ShopRequest) => {
+    if(!confirm(`Reject shop ${req.shopName}?`)) return
+    await updateDoc(doc(db, 'shop_requests', req.id), { status:'rejected', rejectedAt: serverTimestamp() })
   }
 
   useEffect(() => {
@@ -339,6 +392,8 @@ export default function AdminPage() {
   const pendingCount = boostRequests.filter(b => b.status === 'pending').length
   const filteredFlix = flixRequests.filter(b => b.status === flixFilter)
   const flixPendingCount = flixRequests.filter(b => b.status === 'pending').length
+  const filteredShops = shopRequests.filter(b => b.status === shopFilter)
+  const shopsPendingCount = shopRequests.filter(b => b.status === 'pending').length
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
@@ -350,6 +405,7 @@ export default function AdminPage() {
             {id:'blackmarket', label:'Black Market 45K'},
             {id:'boosts', label:`Boosts ${pendingCount>0?`(${pendingCount})`:''}`},
             {id:'flixsubs', label:`SanelFlix ${flixPendingCount>0?`(${flixPendingCount})`:''}`},
+            {id:'shops', label:`Shops ${shopsPendingCount>0?`(${shopsPendingCount})`:''}`},
             {id:'chats', label:`Chats (${sellerThreads.length})`},
             {id:'movies', label:'Movies'},
             {id:'banners', label:'Banners'},
@@ -365,6 +421,7 @@ export default function AdminPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">PENDING BOOSTS</p><p className="text-2xl font-black text-black">{pendingCount}</p><p className="text-xs text-black font-bold">0767483636</p></div>
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">FLIX SUBS PENDING</p><p className="text-2xl font-black text-black">{flixPendingCount}</p><p className="text-xs text-black">1 Min Free Mode</p></div>
+          <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">PENDING SHOPS 15K</p><p className="text-2xl font-black text-black">{shopsPendingCount}</p><p className="text-xs text-black font-bold">0767483636</p></div>
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">SELLERS CHATTING</p><p className="text-2xl font-black text-black">{sellerThreads.length}</p></div>
           <div className="bg-white border rounded-xl p-4 shadow"><p className="text-xs text-gray-500 font-bold">TOTAL MOVIES</p><p className="text-2xl font-black text-black">{movies.length}</p></div>
           <div className="bg-black border rounded-xl p-4 shadow col-span-2">
@@ -400,6 +457,13 @@ export default function AdminPage() {
         <div className="bg-white border rounded-xl shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center"><h2 className="font-black text-black">🚀 Boost Requests</h2><div className="flex gap-1">{['pending','approved','rejected'].map((f:any)=>(<button key={f} onClick={()=>setBoostFilter(f)} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${boostFilter===f?'bg-black text-white':'bg-gray-100 text-black border'}`}>{f}</button>))}</div></div>
           <div className="p-3">{filteredBoosts.length===0? <p className="text-center text-gray-400 py-10 text-sm">No {boostFilter} boosts</p> : <div className="grid gap-3">{filteredBoosts.map(req=>{const meta = BOOST_LABELS[req.packageId || ''] || {label: `${req.durationDays||1}D`, color: 'bg-gray-100 text-black'}; return (<div key={req.id} className="border rounded-xl p-3 flex gap-3 bg-[#FFFEFB]"><img src={req.productImage} className="w-16 h-16 rounded-lg object-cover border" /><div className="flex-1 min-w-0"><div className="flex gap-2 items-center flex-wrap"><p className="font-bold text-sm truncate text-black">{req.productTitle}</p><span className={`text-[9px] px-2 py-0.5 rounded-full font-black ${meta.color}`}>{req.packageName || meta.label} • {req.durationDays||1}D • {req.amount} UGX</span></div><p className="text-[11px] text-black font-medium mt-1">Seller: {req.sellerEmail} • {req.sellerPhone}</p><p className="text-[10px] text-gray-500">ID: {req.productId.slice(0,8)} • {req.createdAt?.toDate? req.createdAt.toDate().toLocaleString():''} • Pay to 0767483636 checked?</p></div><div className="flex flex-col gap-1 shrink-0">{req.status==='pending'? <><button onClick={()=>approveBoost(req)} className="bg-black text-white px-4 py-2 rounded-full text-xs font-black">Approve {req.durationDays}d</button><button onClick={()=>rejectBoost(req)} className="bg-white border border-black text-black px-4 py-1.5 rounded-full text-xs font-black">Reject</button></> : <span className={`px-3 py-1 rounded-full text-[10px] font-black text-center ${req.status==='approved'?'bg-green-600 text-white':'bg-red-600 text-white'}`}>{req.status.toUpperCase()}</span>}</div></div>)})}</div>}</div>
+        </div>
+      )}
+
+      {tab==='shops' && (
+        <div className="bg-white border rounded-xl shadow overflow-hidden">
+          <div className="p-4 border-b flex justify-between items-center bg-yellow-400"><h2 className="font-black text-black">🏪 Official Shops - 15K • 60 Days • 0767483636</h2><div className="flex gap-1">{['pending','approved','rejected'].map((f:any)=>(<button key={f} onClick={()=>setShopFilter(f)} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${shopFilter===f?'bg-black text-white':'bg-white text-black border'}`}>{f}</button>))}</div></div>
+          <div className="p-3"><p className="text-xs text-black font-bold mb-3 bg-yellow-100 border border-yellow-300 p-2 rounded">Verify 15K on MTN MoMo 0767483636 before approving. Check TxID. Reason: SHOP + phone last digits. Approve = 60 days pinned on top + own link sanel-ug.online/shop/ID</p>{filteredShops.length===0? <p className="text-center text-gray-400 py-10 text-sm">No {shopFilter} shops - Sellers pay 15K to 0767483636 first</p> : <div className="grid gap-3">{filteredShops.map(req=>(<div key={req.id} className="border-2 rounded-xl p-3 flex gap-3 bg-white"><div className="w-12 h-12 bg-black text-yellow-400 rounded-full flex items-center justify-center font-black text-[10px]">15K</div><div className="flex-1 min-w-0"><p className="font-black text-sm text-black">{req.shopName} • {req.momoTxId} • {req.amount} UGX</p><p className="text-[11px] text-black font-medium mt-1">Seller: {req.sellerEmail} • {req.whatsapp}</p><p className="text-[11px] text-black">Categories: {req.categories?.join(', ')}</p><p className="text-[10px] text-gray-500">UID: {req.sellerId.slice(0,8)} • {req.createdAt?.toDate? req.createdAt.toDate().toLocaleString():''}</p></div><div className="flex flex-col gap-1 shrink-0">{req.status==='pending'? <><button onClick={()=>approveShop(req)} className="bg-black text-yellow-400 px-4 py-2 rounded-full text-xs font-black">Approve 60D</button><button onClick={()=>rejectShop(req)} className="bg-white border border-black text-black px-4 py-1.5 rounded-full text-xs font-black">Reject</button></> : <span className={`px-3 py-1 rounded-full text-[10px] font-black text-center ${req.status==='approved'?'bg-green-600 text-white':'bg-red-600 text-white'}`}>{req.status.toUpperCase()}</span>}</div></div>))}</div>}</div>
         </div>
       )}
 
