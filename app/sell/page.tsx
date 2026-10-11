@@ -9,7 +9,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { onAuthStateChanged, User } from 'firebase/auth'
 import Link from 'next/link'
-import { Rocket, MessageCircle, Truck, Trash2, Pencil, Check, X, Zap, Crown, Flame } from 'lucide-react'
+import { Rocket, MessageCircle, Truck, Trash2, Pencil, Check, X, Zap, Crown, Flame, Store } from 'lucide-react'
 
 const CATEGORIES = [
   'Vehicles','Phones','Houses & Rentals','Electronics','Home, Furniture & Appliances','Health','Fashion','Sports, Arts & Outdoor','Babies & Kids','Animals & Pets','Agriculture & Food','Commercial Equipment & Tools','Repair & Construction','Stationery','Services','Jobs'
@@ -70,6 +70,9 @@ export default function SellPage() {
   const [selectedProductToBoost, setSelectedProductToBoost] = useState<Product | null>(null)
   const [selectedPackage, setSelectedPackage] = useState<any>(BOOST_PACKAGES[1])
 
+  // SHOP STATE - ADDED
+  const [myShop, setMyShop] = useState<any>(null)
+
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       setUser(u)
@@ -88,14 +91,34 @@ export default function SellPage() {
           },
           (err) => { console.error("CHAT ERROR:", err) }
         )
-        return () => { unsubProducts(); unsubChat(); }
+        // SHOP FETCH - ADDED
+        const shopQ = query(collection(db, 'shops'), where('sellerId','==', u.uid))
+        const unsubShop = onSnapshot(shopQ, (snap)=>{
+          if(!snap.empty) setMyShop({id:snap.docs[0].id,...snap.docs[0].data()})
+          else setMyShop(null)
+        })
+        return () => { unsubProducts(); unsubChat(); unsubShop(); }
       } else {
         setProducts([])
         setChatMessages([])
+        setMyShop(null)
       }
     })
     return () => unsubAuth()
   }, [])
+
+  const getShopDaysLeft = ()=>{
+    if(!myShop?.paid_until) return 0
+    try{
+      const end = myShop.paid_until.toDate? myShop.paid_until.toDate() : new Date(myShop.paid_until)
+      return Math.max(0, Math.ceil((end.getTime()-Date.now())/(1000*60*60*24)))
+    }catch{return 0}
+  }
+  const isShopActive = ()=>{
+    if(!myShop) return false
+    if(myShop.is_active===false) return false
+    return getShopDaysLeft()>0
+  }
 
   const openBoostModal = (product: Product) => {
     if (!user) return alert("Login required")
@@ -249,7 +272,6 @@ export default function SellPage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] text-black">
-      {/* MODERN HEADER */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b">
         <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -264,7 +286,39 @@ export default function SellPage() {
       </div>
 
       <div className="max-w-5xl mx-auto p-4 md:p-6">
-        {/* BOOST MODAL - MODERN */}
+        {/* ===== SHOP UPGRADE CARD - NEW ADDED ===== */}
+        {!myShop? (
+          <div className="bg-[#111] rounded-[20px] p-4 flex justify-between items-center mb-6 border border-yellow-500/30">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center"><Store size={18} className="text-black"/></div>
+              <div>
+                <p className="font-black text-white text-[13px]">Upgrade to Official Shop 🏪</p>
+                <p className="text-[11px] text-white/60">Stay on top of 2 categories for 60 days • Cart + Verified badge</p>
+              </div>
+            </div>
+            <Link href="/create-shop" className="bg-yellow-400 text-black px-5 py-2.5 rounded-full font-black text-[11px]">15K UGX →</Link>
+          </div>
+        ) : (
+          <div className={`rounded-[20px] p-4 mb-6 border ${isShopActive()? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isShopActive()?'bg-black text-white':'bg-red-600 text-white'}`}><Store size={18}/></div>
+                <div>
+                  <p className="font-black text-[14px]">{myShop.shopName} {isShopActive()? '✅' : '❌ Expired'}</p>
+                  <p className="text-[11px] text-gray-600">sanel-ug.online/shop/{myShop.id} • {isShopActive()? `${getShopDaysLeft()} days left` : 'Renew needed'} • {myShop.categories?.join(", ")}</p>
+                </div>
+              </div>
+              <span className={`text-[9px] px-2 py-1 rounded-full font-black ${isShopActive()?'bg-black text-white':'bg-red-600 text-white'}`}>{isShopActive()?'ACTIVE':'EXPIRED'}</span>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <Link href={`/shop/${myShop.id}`} className="flex-1 bg-white border text-center py-2.5 rounded-full font-bold text-[11px]">View Shop</Link>
+              <Link href={`/shop/${myShop.id}`} className="flex-1 bg-white border text-center py-2.5 rounded-full font-bold text-[11px]">Copy Link</Link>
+              <Link href="/create-shop" className="flex-1 bg-black text-white text-center py-2.5 rounded-full font-black text-[11px]">Renew 15K</Link>
+            </div>
+          </div>
+        )}
+
+        {/* BOOST MODAL */}
         {showBoostModal && selectedProductToBoost && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
             <div className="bg-white rounded-[24px] w-full max-w-[420px] p-5 shadow-2xl">
@@ -329,7 +383,6 @@ export default function SellPage() {
           </form>
         </div>
 
-        {/* DELIVERY CARD */}
         <div className="mt-6 bg-black rounded-[24px] p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex gap-3 items-center">
             <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center"><Truck size={20}/></div>
@@ -341,7 +394,6 @@ export default function SellPage() {
           </div>
         </div>
 
-        {/* CHAT */}
         <div className="mt-6 bg-white rounded-[24px] border shadow-sm overflow-hidden">
           <button onClick={()=>setChatOpen(!chatOpen)} className="w-full p-4 flex justify-between items-center font-black text-[14px]">
             <span className="flex items-center gap-2"><MessageCircle size={16}/> Talk to Admin {chatMessages.length>0 && <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">{chatMessages.length}</span>}</span>
@@ -368,7 +420,6 @@ export default function SellPage() {
           )}
         </div>
 
-        {/* PRODUCTS */}
         <h2 className="text-[18px] font-black mt-8 mb-3">My Products <span className="bg-black text-white text-[11px] px-2.5 py-1 rounded-full ml-2">{products.length}</span></h2>
         {products.length === 0? (
           <div className="bg-white rounded-[24px] border p-10 text-center"><p className="text-3xl">📦</p><p className="font-bold mt-2">No products yet</p><p className="text-[12px] text-gray-500">Post your first product above</p></div>
