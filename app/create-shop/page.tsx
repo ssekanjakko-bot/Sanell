@@ -110,7 +110,7 @@ export default function CreateShop(){
         <button disabled={loading} className="w-full bg-black text-[#FFD60A] py-4 rounded-full font-black text-[14px] tracking-wide disabled:opacity-50 mt-2 shadow-[0_6px_0_#FFD60A] active:translate-y-[2px] active:shadow-[0_2px_0_#FFD60A]">
           {loading? 'Sending...' : `Submit For Verification - 15K ( ${user.email} )`}
         </button>
-        <p className="text-center text-[10px] text-neutral-500 font-bold">Verified in 10 mins • Pay to 0767483636 / 0757463636</p>
+        <p className="text-center text-[10px] text-neutral-500 font-bold">Verified in 10 mins • Pay to 0767483636 </p>
       </form>
     </div>
   )
