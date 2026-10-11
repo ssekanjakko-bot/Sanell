@@ -25,7 +25,13 @@ export default function PublicShop(){
           let snap = await getDocs(query(collection(db,'products'), where('shopId','==', id as string)))
           if(snap.empty && data.ownerId) snap = await getDocs(query(collection(db,'products'), where('sellerId','==', data.ownerId)))
           if(snap.empty && data.sellerId) snap = await getDocs(query(collection(db,'products'), where('sellerId','==', data.sellerId)))
-          setProducts(snap.docs.map(d=>({id:d.id,...d.data()})))
+
+          // ===== ADDED FOR SHOP PICKER - START =====
+          const all = snap.docs.map(d=>({id:d.id,...d.data()})) as any[]
+          // Only show products seller picked to appear in shop (old products default to visible)
+          const visibleOnly = all.filter((p:any)=> p.showInShop!== false)
+          setProducts(visibleOnly)
+          // ===== ADDED FOR SHOP PICKER - END =====
         }
       }catch(e){ console.error(e) }
       setCart(JSON.parse(localStorage.getItem('sanel_cart')||'[]'))
@@ -49,6 +55,12 @@ export default function PublicShop(){
   const lat = shop.storeLocation?.lat || shop.lat || ""
   const lng = shop.storeLocation?.lng || shop.lng || ""
   const hasLocation =!!(address || (lat && lng))
+
+  // ===== ADDED FOR SHOP PICKER - START =====
+  const featured = products.filter((p:any)=>p.isFeaturedInShop)
+  const normal = products.filter((p:any)=>!p.isFeaturedInShop)
+  const sortedProducts = [...featured,...normal]
+  // ===== ADDED FOR SHOP PICKER - END =====
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
@@ -104,34 +116,65 @@ export default function PublicShop(){
           <span className="text-[10px] bg-white/10 px-2.5 py-1 rounded-full font-bold border border-white/10">{shop.shopName}</span>
         </div>
 
-        {products.length===0? (
+        {sortedProducts.length===0? (
           <div className="bg-[#141414] border border-dashed border-white/10 rounded-2xl p-10 text-center">
             <p className="text-3xl">🛍️</p>
-            <p className="font-black mt-2">No products yet</p>
-            <p className="text-xs text-neutral-500 mt-1">Seller is adding items</p>
+            <p className="font-black mt-2">No products selected for shop</p>
+            <p className="text-xs text-neutral-500 mt-1">Seller is choosing what appears here</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {products.map((p:any)=>{
-              const img = p.imageUrl || p.images?.[0] || p.image || 'https://via.placeholder.com/300'
-              return (
-                <div key={p.id} className="group bg-[#161616] border border-white/[0.06] hover:border-white/15 rounded-[20px] overflow-hidden transition">
-                  <Link href={`/product/${p.id}`}>
-                    <div className="h-[148px] bg-neutral-900 overflow-hidden relative">
-                      <img src={img} className="h-full w-full object-cover group-hover:scale-105 transition duration-500" alt={p.title} />
-                    </div>
-                    <div className="p-3">
-                      <p className="text-[12px] font-bold truncate text-white">{p.title}</p>
-                      <p className="text-[14px] font-black text-[#FFD60A] mt-0.5">{Number(p.price).toLocaleString()} UGX</p>
-                    </div>
-                  </Link>
-                  <div className="px-3 pb-3">
-                    <button onClick={()=>addToCart(p)} className="w-full bg-white text-black py-2.5 rounded-full text-[11px] font-black active:scale-[0.97]">Add to Cart</button>
-                  </div>
+          <>
+            {/* ===== ADDED FOR SHOP PICKER - FEATURED SECTION ===== */}
+            {featured.length>0 && (
+              <div className="space-y-2">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-[#FFD60A]">⭐ Featured by {shop.shopName}</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {featured.map((p:any)=>{
+                    const img = p.imageUrl || p.images?.[0] || p.image || 'https://via.placeholder.com/300'
+                    return (
+                      <div key={p.id} className="group bg-[#161616] border border-[#FFD60A]/30 rounded-[20px] overflow-hidden transition relative">
+                        <div className="absolute top-2 left-2 bg-[#FFD60A] text-black text-[8px] font-black px-2 py-1 rounded-full z-10">⭐ FEATURED</div>
+                        <Link href={`/product/${p.id}`}>
+                          <div className="h-[148px] bg-neutral-900 overflow-hidden relative">
+                            <img src={img} className="h-full w-full object-cover group-hover:scale-105 transition duration-500" alt={p.title} />
+                          </div>
+                          <div className="p-3">
+                            <p className="text-[12px] font-bold truncate text-white">{p.title}</p>
+                            <p className="text-[14px] font-black text-[#FFD60A] mt-0.5">{Number(p.price).toLocaleString()} UGX</p>
+                          </div>
+                        </Link>
+                        <div className="px-3 pb-3">
+                          <button onClick={()=>addToCart(p)} className="w-full bg-[#FFD60A] text-black py-2.5 rounded-full text-[11px] font-black active:scale-[0.97]">Add to Cart</button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-              )
-            })}
-          </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              {(featured.length>0? normal : sortedProducts).map((p:any)=>{
+                const img = p.imageUrl || p.images?.[0] || p.image || 'https://via.placeholder.com/300'
+                return (
+                  <div key={p.id} className="group bg-[#161616] border border-white/[0.06] hover:border-white/15 rounded-[20px] overflow-hidden transition">
+                    <Link href={`/product/${p.id}`}>
+                      <div className="h-[148px] bg-neutral-900 overflow-hidden relative">
+                        <img src={img} className="h-full w-full object-cover group-hover:scale-105 transition duration-500" alt={p.title} />
+                      </div>
+                      <div className="p-3">
+                        <p className="text-[12px] font-bold truncate text-white">{p.title}</p>
+                        <p className="text-[14px] font-black text-[#FFD60A] mt-0.5">{Number(p.price).toLocaleString()} UGX</p>
+                      </div>
+                    </Link>
+                    <div className="px-3 pb-3">
+                      <button onClick={()=>addToCart(p)} className="w-full bg-white text-black py-2.5 rounded-full text-[11px] font-black active:scale-[0.97]">Add to Cart</button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>
