@@ -5,7 +5,7 @@ import { db, auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Eye, EyeOff, Star } from "lucide-react";
 
 const CATEGORIES = ['Phones','Vehicles','Hostels','Electronics','Home, Furniture & Appliances','Health','Fashion','Sports, Arts & Outdoor','Babies & Kids','Animals & Pets','Agriculture & Food','Commercial Equipment & Tools','Repair & Construction','Stationery','Services','Jobs']
 
@@ -36,6 +36,29 @@ export default function MyShopPage() {
   const [pImages, setPImages] = useState<string[]>([]);
   const [uploadingProduct, setUploadingProduct] = useState(false);
   const [adding, setAdding] = useState(false);
+
+  // ===== ADDED FOR SHOP PICKER - START =====
+  const [shopDisplayTab, setShopDisplayTab] = useState<'all'|'visible'|'hidden'>('all');
+
+  const toggleShowInShop = async (product:any) => {
+    const current = product.showInShop!== false; // default true
+    try {
+      await updateDoc(doc(db, "products", product.id), {
+        showInShop:!current,
+        updatedAt: serverTimestamp(),
+      });
+    } catch(e:any){ alert(e.message) }
+  }
+
+  const toggleFeatured = async (product:any) => {
+    try {
+      await updateDoc(doc(db, "products", product.id), {
+        isFeaturedInShop:!product.isFeaturedInShop,
+        updatedAt: serverTimestamp(),
+      });
+    } catch(e:any){ alert(e.message) }
+  }
+  // ===== ADDED FOR SHOP PICKER - END =====
 
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => setUid(u?.uid || null));
@@ -144,6 +167,10 @@ export default function MyShopPage() {
         whatsapp: whatsapp || shop.whatsapp,
         createdAt: serverTimestamp(),
         is_boosted: false,
+        // ===== ADDED FOR SHOP PICKER - START =====
+        showInShop: true,
+        isFeaturedInShop: false,
+        // ===== ADDED FOR SHOP PICKER - END =====
       });
       setPTitle(""); setPPrice(""); setPDesc(""); setPImages([]);
       setShowAdd(false);
@@ -178,12 +205,18 @@ export default function MyShopPage() {
   if (loading) return <div className="min-h-screen flex items-center justify-center font-black">Loading...</div>;
   if (!shop) return <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center"><h1 className="font-black text-xl">No Official Shop Yet</h1><Link href="/create-shop" className="mt-4 bg-black text-white px-6 py-3 rounded-full font-black">Create for 15K</Link></div>;
 
+  // ===== ADDED FOR SHOP PICKER - START =====
+  const visibleProducts = products.filter(p=> p.showInShop!== false);
+  const hiddenProducts = products.filter(p=> p.showInShop === false);
+  const filteredProducts = shopDisplayTab === 'visible'? visibleProducts : shopDisplayTab === 'hidden'? hiddenProducts : products;
+  // ===== ADDED FOR SHOP PICKER - END =====
+
   return (
     <div className="min-h-screen bg-[#FFFCF9] pb-28">
       <div className="bg-black text-white p-5 rounded-b-[28px] sticky top-0 z-10 flex justify-between">
         <div>
           <h1 className="font-black text-[20px] flex gap-2 items-center">{shop.shopName} <span className="bg-yellow-400 text-black text-[9px] px-2 py-0.5 rounded-full">OFFICIAL ✓</span></h1>
-          <p className="text-[11px] text-yellow-300 font-bold mt-1">{products.length} products • {shop.categories?.join(", ")}</p>
+          <p className="text-[11px] text-yellow-300 font-bold mt-1">{products.length} products • {visibleProducts.length} visible in shop • {shop.categories?.join(", ")}</p>
         </div>
         <div className="text-[10px] bg-white/20 px-3 py-1 rounded-full h-fit font-black">Live 🟢</div>
       </div>
@@ -237,7 +270,51 @@ export default function MyShopPage() {
           <button onClick={save} disabled={saving} className="w-full bg-black text-yellow-400 py-4 rounded-full font-black text-[15px]">{saving?"Saving...":"✨ Save Shop"}</button>
         </div>
 
-        {/* PRODUCTS + ADD BUTTON */}
+        {/* ===== ADDED FOR SHOP PICKER - START - WHAT APPEARS IN SHOP ===== */}
+        <div className="bg-white rounded-[20px] border p-5">
+          <h2 className="font-black text-[14px] flex items-center justify-between">
+            <span>🛍️ What Appears In My Shop</span>
+            <span className="text-[10px] bg-black text-white px-2 py-1 rounded-full">{visibleProducts.length} visible / {products.length} total</span>
+          </h2>
+          <p className="text-[11px] text-gray-500 mt-1">Toggle which products customers see when they visit your shop. Hidden products still live on marketplace.</p>
+
+          <div className="flex gap-2 mt-3">
+            <button onClick={()=>setShopDisplayTab('all')} className={`px-3 py-1.5 rounded-full text-[11px] font-black border ${shopDisplayTab==='all'?'bg-black text-white border-black':'bg-white text-black border-gray-300'}`}>All ({products.length})</button>
+            <button onClick={()=>setShopDisplayTab('visible')} className={`px-3 py-1.5 rounded-full text-[11px] font-black border flex items-center gap-1 ${shopDisplayTab==='visible'?'bg-green-600 text-white border-green-600':'bg-white text-black border-gray-300'}`}><Eye size={12}/> Visible ({visibleProducts.length})</button>
+            <button onClick={()=>setShopDisplayTab('hidden')} className={`px-3 py-1.5 rounded-full text-[11px] font-black border flex items-center gap-1 ${shopDisplayTab==='hidden'?'bg-red-600 text-white border-red-600':'bg-white text-black border-gray-300'}`}><EyeOff size={12}/> Hidden ({hiddenProducts.length})</button>
+          </div>
+
+          <div className="space-y-2 mt-4 max-h-[400px] overflow-y-auto pr-1">
+            {filteredProducts.map((p:any)=>{
+              const isVisible = p.showInShop!== false;
+              return (
+                <div key={p.id} className={`flex items-center gap-3 border rounded-xl p-2 ${isVisible?'bg-white':'bg-gray-50 opacity-60'}`}>
+                  <img src={p.images?.[0]||p.imageUrl} className="w-14 h-14 rounded-lg object-cover border" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-bold truncate">{p.title}</p>
+                    <p className="text-[11px] font-black">{p.price} UGX</p>
+                    <div className="flex gap-1 mt-1">
+                      {p.isFeaturedInShop && <span className="text-[8px] bg-yellow-400 text-black px-1.5 py-0.5 rounded-full font-black">⭐ FEATURED</span>}
+                      {!isVisible && <span className="text-[8px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-black">HIDDEN FROM SHOP</span>}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <button onClick={()=>toggleShowInShop(p)} className={`w-8 h-8 rounded-full flex items-center justify-center ${isVisible?'bg-black text-white':'bg-white border-2 border-black text-black'}`}>
+                      {isVisible? <Eye size={14}/>:<EyeOff size={14}/>}
+                    </button>
+                    <button onClick={()=>toggleFeatured(p)} className={`w-8 h-8 rounded-full flex items-center justify-center ${p.isFeaturedInShop?'bg-yellow-400 text-black':'bg-white border text-gray-400'}`}>
+                      <Star size={14} fill={p.isFeaturedInShop? "black":"none"} />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+            {filteredProducts.length===0 && <p className="text-[12px] text-gray-400 text-center py-8">No products in this filter</p>}
+          </div>
+        </div>
+        {/* ===== ADDED FOR SHOP PICKER - END ===== */}
+
+        {/* PRODUCTS + ADD BUTTON - KEPT SAME */}
         <div className="bg-white rounded-[20px] border p-5">
           <div className="flex justify-between items-center">
             <h2 className="font-black text-[14px]">Products ({products.length})</h2>
@@ -250,7 +327,7 @@ export default function MyShopPage() {
         </div>
       </div>
 
-      {/* ADD PRODUCT MODAL */}
+      {/* ADD PRODUCT MODAL - KEPT SAME */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/70 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-white rounded-t-[24px] sm:rounded-[24px] w-full max-w-[520px] max-h-[90vh] overflow-y-auto p-5">
