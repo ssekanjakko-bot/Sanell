@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useRef, useMemo } from "react"
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, query, orderBy, where, doc } from "firebase/firestore"
+import { collection, onSnapshot, query, orderBy, where, doc, Timestamp } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Coffee, Eye, X, LayoutGrid, Film, ArrowRight, Clock, Phone, ChevronUp } from "lucide-react"
@@ -176,11 +176,25 @@ function SanelBestPicksSection() {
   )
 }
 
-function CategoryRow({ title, icon, products, onView, onWhatsApp, onSeeAll }: any) {
+function CategoryRow({ title, icon, products, onView, onWhatsApp, onSeeAll, shops }: any) {
   if (!products || products.length === 0) return null
   return (
     <div className="mt-5">
       <div className="px-3 flex justify-between items-center mb-2.5"><h2 className="font-black text-[15px] flex items-center gap-2 text-black"><span>{icon}</span> {title} <span className="bg-orange-100 text-orange-800 text-[10px] px-2 py-0.5 rounded-full">{products.length}</span></h2><button onClick={onSeeAll} className="text-[12px] font-bold px-3 py-1 rounded-full bg-black text-white flex items-center gap-1">See All <ArrowRight size={12}/></button></div>
+      {shops && shops.length>0 && (
+        <div className="mx-3 mb-3 bg-yellow-50 border-2 border-yellow-400 rounded-xl p-2.5">
+          <p className="font-black text-[10px] text-black mb-2">🏪 OFFICIAL SHOPS IN {title.toUpperCase()} • PINNED TOP</p>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {shops.map((shop:any)=>(
+              <Link key={shop.id} href={`/shop/${shop.id}`} className="min-w-[190px] bg-black text-white rounded-xl p-3 flex-shrink-0 border border-yellow-400">
+                <p className="font-black text-[13px]">{shop.shopName} <span className="bg-yellow-400 text-black text-[8px] px-1.5 py-0.5 rounded-full ml-1">VERIFIED ✓</span></p>
+                <p className="text-[10px] text-white/70 mt-1">{shop.categories?.join(', ')}</p>
+                <p className="text-[10px] mt-2 bg-white text-black px-2.5 py-1 rounded-full inline-block font-black">Visit Shop →</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="px-3 flex gap-3 overflow-x-auto scrollbar-hide">
         {products.slice(0,3).map((p: any) => (
           <div key={p.id} className="min-w-[160px] max-w-[160px] bg-white rounded-lg shadow-sm overflow-hidden border flex-shrink-0"><div className="relative w-full h-40 bg-gray-100"><img src={p.images?.[0]} className="w-full h-40 object-cover" /><button onClick={() => onView(p)} className="absolute top-2 right-2 bg-black/60 text-white w-7 h-7 rounded-full flex items-center justify-center"><Eye size={12} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">+{p.images.length} pics</span>}{p.is_boosted && <span className="absolute top-2 left-2 bg-yellow-400 text-black text-[8px] font-bold px-2 py-0.5 rounded-full">BOOSTED</span>}</div><div className="p-2"><p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p><p className="font-bold text-[12px] line-clamp-2 min-h-[32px] text-black">{p.title}</p><p className="font-black text-[13px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p><button onClick={() => onWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-[11px] py-2 rounded-md font-bold">WhatsApp</button></div></div>
@@ -217,7 +231,7 @@ function FooterSanel() {
         <ChevronUp size={18}/> BACK TO TOP
       </button>
       <div className="px-4 py-6">
-        <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center font-bold text-[10px] tracking-wide text-gray-200 text-center">
+        <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center font-bold text-[10px] tracking-widest text-gray-200 text-center">
           <Link href="/support">HELP CENTER</Link>
           <Link href="/support">CONTACT US</Link>
           <Link href="/terms">TERMS & CONDITIONS</Link>
@@ -268,6 +282,7 @@ export default function HomePage() {
   const [showMenu, setShowMenu] = useState(false)
   const [currentBanner, setCurrentBanner] = useState(0)
   const [adminSettings, setAdminSettings] = useState<any>({ showBlackMarket: true, blackMarketMaxPrice: 45000, blackMarketTitle: "BLACK MARKET - Everything ≤ 45K" })
+  const [shops, setShops] = useState<any[]>([])
   const router = useRouter()
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -283,6 +298,17 @@ export default function HomePage() {
     return ()=>unsub()
   }, [])
 
+  useEffect(()=>{
+    const q = query(collection(db, 'shops'), where('is_active','==',true))
+    const unsub = onSnapshot(q, (snap)=>{
+      const now = Timestamp.now()
+      const all = snap.docs.map(d=>({id:d.id,...d.data()} as any))
+      const valid = all.filter((s:any)=>!s.paid_until || s.paid_until.seconds > now.seconds)
+      setShops(valid)
+    })
+    return ()=>unsub()
+  }, [])
+
   const filteredProducts = useMemo(() => products.filter(p => { const matchCategory = selectedCategory === 'All' || p.category === selectedCategory; const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase()); return matchCategory && matchSearch}), [products, selectedCategory, search])
 
   const blackMarketProducts = useMemo(()=>{
@@ -294,6 +320,8 @@ export default function HomePage() {
   }, [products, adminSettings.blackMarketMaxPrice])
 
   const getProductsByCat = (catName: string) => products.filter(p => p.category === catName && p.title?.toLowerCase().includes(search.toLowerCase()))
+  const getShopsByCat = (catName: string) => shops.filter((s:any)=> s.categories?.includes(catName))
+  const shopsForSelected = useMemo(()=> selectedCategory==='All'? [] : getShopsByCat(selectedCategory), [shops, selectedCategory])
 
   const handleWhatsApp = (product: any) => {
     let phone = product.whatsapp || product.whatsApp || product.WhatsApp;
@@ -308,7 +336,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] relative">
-      {/* STICKY HEADER - full bg white, inner content centered */}
       <div className="bg-white sticky top-0 z-20 shadow-sm">
         <div className="max-w-[1280px] mx-auto w-full">
           <div className="p-3 flex justify-between items-center">
@@ -327,7 +354,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* MAIN CONTENT WRAPPER - FIXES STRETCHED ON PC */}
       <div className="max-w-[1280px] mx-auto w-full">
 
         {showMenu && (
@@ -376,16 +402,35 @@ export default function HomePage() {
           {HOME_CATEGORIES.map((cat, idx) => {
             const catProducts = getProductsByCat(cat.name);
             if(catProducts.length === 0) return null;
+            const catShops = getShopsByCat(cat.name);
             return (
               <div key={cat.name}>
-                <CategoryRow title={cat.name} icon={cat.icon} products={catProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} onSeeAll={() => { setSelectedCategory(cat.name); window.scrollTo({top: 0, behavior: 'smooth'}) }} />
+                <CategoryRow title={cat.name} icon={cat.icon} products={catProducts} shops={catShops} onView={setViewProduct} onWhatsApp={handleWhatsApp} onSeeAll={() => { setSelectedCategory(cat.name); window.scrollTo({top: 0, behavior: 'smooth'}) }} />
                 <PromoStrip catName={cat.name} catIndex={idx} setCategory={setSelectedCategory} router={router} />
                 {idx === 1 && <BlackMarketBanner products={blackMarketProducts} adminSettings={adminSettings} onView={setViewProduct} onWhatsApp={handleWhatsApp} router={router} />}
               </div>
             )
           })}
         </>
-        ) : (<div className="p-3"><div className="grid grid-cols-2 gap-3">{filteredProducts.map(p => (<div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border"><div className="relative w-full h-40 bg-gray-100"><img src={p.images?.[0]} className="w-full h-40 object-cover" /><button onClick={() => setViewProduct(p)} className="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center"><Eye size={14} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">+{p.images.length} pics</span>}</div><div className="p-2"><p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p><p className="font-bold text-[14px] line-clamp-2 text-black">{p.title}</p><p className="font-black text-[15px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p><button onClick={() => handleWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-sm py-2.5 rounded-md font-bold">WhatsApp</button></div></div>))}</div></div>)}
+        ) : (
+        <>
+          {shopsForSelected.length>0 && (
+            <div className="mx-3 mt-3 bg-yellow-50 border-2 border-yellow-400 rounded-xl p-3">
+              <p className="font-black text-[11px] text-black mb-2">🏪 OFFICIAL SHOPS IN {selectedCategory.toUpperCase()} • VERIFIED & PINNED TOP</p>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                {shopsForSelected.map((shop:any)=>(
+                  <Link key={shop.id} href={`/shop/${shop.id}`} className="min-w-[200px] bg-black text-white rounded-xl p-3.5 flex-shrink-0 border border-yellow-400">
+                    <p className="font-black text-[14px]">{shop.shopName} <span className="bg-yellow-400 text-black text-[8px] px-1.5 py-0.5 rounded-full ml-1">VERIFIED ✓</span></p>
+                    <p className="text-[10px] text-white/70 mt-1">{shop.categories?.join(', ')}</p>
+                    <p className="text-[10px] mt-2 bg-white text-black px-3 py-1.5 rounded-full inline-block font-black">Visit Official Shop →</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="p-3"><div className="grid grid-cols-2 gap-3">{filteredProducts.map(p => (<div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border"><div className="relative w-full h-40 bg-gray-100"><img src={p.images?.[0]} className="w-full h-40 object-cover" /><button onClick={() => setViewProduct(p)} className="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center"><Eye size={14} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">+{p.images.length} pics</span>}</div><div className="p-2"><p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p><p className="font-bold text-[14px] line-clamp-2 text-black">{p.title}</p><p className="font-black text-[15px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p><button onClick={() => handleWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-sm py-2.5 rounded-md font-bold">WhatsApp</button></div></div>))}</div></div>
+        </>
+        )}
 
         {viewProduct && <ProductViewModal product={viewProduct} onClose={() => setViewProduct(null)} onWhatsApp={handleWhatsApp} />}
 
