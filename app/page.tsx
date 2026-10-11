@@ -176,47 +176,57 @@ function SanelBestPicksSection() {
   )
 }
 
+function BlueTick(){
+  return (
+    <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] shrink-0">
+      <path fill="#1D9BF0" d="M12 0C10.7 0 9.7.8 9.1 1.9 8 1.5 6.6 1.9 5.7 2.8 4.8 3.7 4.4 5.1 4.8 6.2 3.7 6.8 3 8.1 3 9.5c0 1.4.7 2.7 1.8 3.3-.4 1.1 0 2.5.9 3.4.9.9 2.3 1.3 3.4.9.6 1.1 1.9 1.8 3.3 1.8s2.7-.7 3.3-1.8c1.1.4 2.5 0 3.4-.9.9-.9 1.3-2.3.9-3.4 1.1-.6 1.8-1.9 1.8-3.3s-.7-2.7-1.8-3.3c.4-1.1 0-2.5-.9-3.4-.9-.9-2.3-1.3-3.4-.9C14.3.8 13.3 0 12 0z"/>
+      <path fill="white" d="M10.6 15.5l-3.2-3.2 1.4-1.4 1.8 1.8 4.2-4.2 1.4 1.4-5.6 5.6z"/>
+    </svg>
+  )
+}
+
 function CategoryRow({ title, icon, products, onView, onWhatsApp, onSeeAll, shops }: any) {
   if (!products || products.length === 0) return null
   return (
     <div className="mt-5">
       <div className="px-3 flex justify-between items-center mb-2.5"><h2 className="font-black text-[15px] flex items-center gap-2 text-black"><span>{icon}</span> {title} <span className="bg-orange-100 text-orange-800 text-[10px] px-2 py-0.5 rounded-full">{products.length}</span></h2><button onClick={onSeeAll} className="text-[12px] font-bold px-3 py-1 rounded-full bg-black text-white flex items-center gap-1">See All <ArrowRight size={12}/></button></div>
 
-      {/* OFFICIAL SHOPS - NEW DESIGN ONLY CARD CHANGED, LOGIC SAME */}
       {shops && shops.length>0 && (
-        <div className="mx-3 mb-3 bg-white border border-[#FFD60A] rounded-[20px] p-3 shadow-sm">
+        <div className="mx-3 mb-3 bg-white border border-yellow-400 rounded-[20px] p-3 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <p className="font-black text-[10px] tracking-widest text-black flex items-center gap-1.5">🏪 OFFICIAL SHOPS IN {title.toUpperCase()} • PINNED TOP</p>
-            <span className="bg-[#FFD60A] text-black text-[8px] font-black px-2 py-0.5 rounded-full">{shops.length}</span>
+            <p className="font-black text-[11px] tracking-widest text-black flex items-center gap-1.5">🏪 OFFICIAL SHOPS IN {title.toUpperCase()} • VERIFIED & PINNED TOP</p>
+            <span className="bg-[#FFD60A] text-black text-[10px] font-black px-2.5 py-0.5 rounded-full">{shops.length}</span>
           </div>
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
             {shops.map((shop:any)=>{
               const logo = shop.logo || shop.profilePicture || shop.shopLogo || ""
               return (
-                <Link key={shop.id} href={`/shop/${shop.id}`} className="min-w-[185px] max-w-[185px] bg-white border border-black/[0.06] rounded-[18px] p-3.5 flex-shrink-0 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:border-black/15 transition">
+                <Link key={shop.id} href={`/shop/${shop.id}`} className="min-w-[235px] max-w-[235px] bg-white border border-black/10 rounded-[20px] p-4 flex-shrink-0 shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-md transition">
                   <div className="flex gap-3 items-start">
                     <div className="relative shrink-0">
                       {logo? (
-                        <img src={logo} className="w-11 h-11 rounded-full object-cover border border-black/10" alt={shop.shopName} />
+                        <img src={logo} className="w-[52px] h-[52px] rounded-full object-cover border border-black/10" alt={shop.shopName} />
                       ) : (
-                        <div className="w-11 h-11 rounded-full bg-black text-[#FFD60A] flex items-center justify-center font-black text-[13px]">{shop.shopName?.[0]?.toUpperCase()}</div>
+                        <div className="w-[52px] h-[52px] rounded-full bg-black text-[#FFD60A] flex items-center justify-center font-black text-[20px]">{shop.shopName?.[0]?.toUpperCase()}</div>
                       )}
-                      <span className="absolute -bottom-1 -right-1 w-[16px] h-[16px] bg-[#1D9BF0] border-2 border-white rounded-full flex items-center justify-center text-white text-[8px]">✓</span>
+                      <span className="absolute -bottom-1 -right-1 w-[18px] h-[18px] bg-white rounded-full flex items-center justify-center border border-black/10">
+                        <span className="w-[14px] h-[14px] bg-[#1D9BF0] rounded-full flex items-center justify-center text-white text-[8px]">✓</span>
+                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-black text-[13px] truncate flex items-center gap-1 text-black">
-                        <span className="truncate">{shop.shopName}</span>
-                        <span className="bg-[#1D9BF0] text-white w-[14px] h-[14px] rounded-full flex items-center justify-center text-[8px] shrink-0">✓</span>
+                      <p className="font-black text-[16px] text-black flex items-center gap-1 leading-tight">
+                        <span className="truncate text-black">{shop.shopName}</span>
+                        <BlueTick />
                       </p>
-                      <span className="bg-[#FFD60A] text-black text-[7px] font-black px-1.5 py-0.5 rounded-full inline-block mt-1">VERIFIED</span>
+                      <span className="mt-1.5 inline-block bg-[#FFD60A] text-black text-[10px] font-black px-2.5 py-0.5 rounded-full">VERIFIED</span>
                     </div>
                   </div>
-                  <div className="flex gap-1 mt-3 flex-wrap">
+                  <div className="flex gap-1.5 mt-3.5">
                     {shop.categories?.slice(0,2).map((c:string)=>(
-                      <span key={c} className="bg-[#FFF8E1] border border-black/5 text-[9px] px-2 py-1 rounded-full font-bold text-black/70">{c.slice(0,12)}</span>
+                      <span key={c} className="bg-[#FFF8E1] border border-black/5 text-black text-[11px] px-2.5 py-1 rounded-full font-bold">{c.slice(0,14)}</span>
                     ))}
                   </div>
-                  <div className="mt-3 w-full bg-black text-white text-center py-2 rounded-full text-[11px] font-black">Visit Shop →</div>
+                  <div className="mt-4 w-full bg-black text-white text-center py-2.5 rounded-full text-[13px] font-black">Visit Official Shop →</div>
                 </Link>
               )
             })}
@@ -273,7 +283,6 @@ function FooterSanel() {
             <p>Sanel Ug - Campus Marketplace</p>
             <p>Kampala, Uganda | MUBS, MUK, KYU & More</p>
             <p className="text-white mt-1">📞 0767483636 | WhatsApp: 0706826774</p>
-            <p className="text-[10px] text-gray-400 mt-2 italic">Sole proprietor - Business registration in progress</p>
           </div>
         </div>
         <div className="mt-5 border-t border-[#444] pt-3 text-center text-[10px] text-gray-400">
@@ -384,7 +393,6 @@ export default function HomePage() {
       </div>
 
       <div className="max-w-[1280px] mx-auto w-full">
-
         {showMenu && (
           <div className="fixed inset-0 bg-black/60 z-[999] flex">
             <div className="bg-white w-[85%] max-w-[330px] h-full overflow-y-auto">
@@ -443,29 +451,25 @@ export default function HomePage() {
         </>
         ) : (
         <>
-          {/* SELECTED CATEGORY - NEW SHOP CARD DESIGN */}
           {shopsForSelected.length>0 && (
-            <div className="mx-3 mt-3 bg-white border border-[#FFD60A] rounded-[20px] p-3 shadow-sm">
+            <div className="mx-3 mt-3 bg-white border border-yellow-400 rounded-[20px] p-3 shadow-sm">
               <p className="font-black text-[11px] text-black mb-3 flex items-center gap-2">🏪 OFFICIAL SHOPS IN {selectedCategory.toUpperCase()} • VERIFIED & PINNED TOP <span className="bg-[#FFD60A] text-black text-[8px] px-2 py-0.5 rounded-full">{shopsForSelected.length}</span></p>
               <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
                 {shopsForSelected.map((shop:any)=>{
                   const logo = shop.logo || shop.profilePicture || shop.shopLogo || ""
                   return (
-                    <Link key={shop.id} href={`/shop/${shop.id}`} className="min-w-[185px] max-w-[185px] bg-white border border-black/[0.06] rounded-[18px] p-3.5 flex-shrink-0 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-                      <div className="flex gap-3 items-start">
-                        <div className="relative shrink-0">
-                          {logo? <img src={logo} className="w-11 h-11 rounded-full object-cover border" alt={shop.shopName} /> : <div className="w-11 h-11 rounded-full bg-black text-[#FFD60A] flex items-center justify-center font-black">{shop.shopName?.[0]?.toUpperCase()}</div>}
-                          <span className="absolute -bottom-1 -right-1 w-[16px] h-[16px] bg-[#1D9BF0] border-2 border-white rounded-full flex items-center justify-center text-white text-[8px]">✓</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-black text-[13px] truncate flex items-center gap-1">{shop.shopName}<span className="bg-[#1D9BF0] text-white w-[14px] h-[14px] rounded-full flex items-center justify-center text-[8px]">✓</span></p>
-                          <span className="bg-[#FFD60A] text-black text-[7px] font-black px-1.5 py-0.5 rounded-full">VERIFIED</span>
+                    <Link key={shop.id} href={`/shop/${shop.id}`} className="min-w-[235px] bg-white border border-black/10 rounded-[20px] p-4 flex-shrink-0 shadow-[0_4px_20px_rgba(0,0,0,0.06)]">
+                      <div className="flex gap-3 items-center">
+                        {logo? <img src={logo} className="w-[52px] h-[52px] rounded-full object-cover border" /> : <div className="w-[52px] h-[52px] rounded-full bg-black text-[#FFD60A] flex items-center justify-center font-black text-[20px]">{shop.shopName?.[0]?.toUpperCase()}</div>}
+                        <div>
+                          <p className="font-black text-[16px] text-black flex items-center gap-1">{shop.shopName}<BlueTick/></p>
+                          <span className="bg-[#FFD60A] text-black text-[10px] font-black px-2 py-0.5 rounded-full">VERIFIED</span>
                         </div>
                       </div>
-                      <div className="flex gap-1 mt-3">
-                        {shop.categories?.slice(0,2).map((c:string)=><span key={c} className="bg-[#FFF8E1] border text-[9px] px-2 py-1 rounded-full font-bold">{c.slice(0,12)}</span>)}
+                      <div className="flex gap-1.5 mt-3.5">
+                        {shop.categories?.slice(0,2).map((c:string)=><span key={c} className="bg-[#FFF8E1] border text-black text-[11px] px-2.5 py-1 rounded-full font-bold">{c.slice(0,14)}</span>)}
                       </div>
-                      <div className="mt-3 w-full bg-black text-white text-center py-2 rounded-full text-[11px] font-black">Visit Official Shop →</div>
+                      <div className="mt-4 w-full bg-black text-white text-center py-2.5 rounded-full text-[13px] font-black">Visit Official Shop →</div>
                     </Link>
                   )
                 })}
@@ -477,7 +481,6 @@ export default function HomePage() {
         )}
 
         {viewProduct && <ProductViewModal product={viewProduct} onClose={() => setViewProduct(null)} onWhatsApp={handleWhatsApp} />}
-
       </div>
 
       <Link href="/movies" className="fixed bottom-6 left-4 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40 border-2 border-white"><Film size={18} /></Link>
