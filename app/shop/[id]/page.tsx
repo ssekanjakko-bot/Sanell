@@ -26,12 +26,9 @@ export default function PublicShop(){
           if(snap.empty && data.ownerId) snap = await getDocs(query(collection(db,'products'), where('sellerId','==', data.ownerId)))
           if(snap.empty && data.sellerId) snap = await getDocs(query(collection(db,'products'), where('sellerId','==', data.sellerId)))
 
-          // ===== ADDED FOR SHOP PICKER - START =====
           const all = snap.docs.map(d=>({id:d.id,...d.data()})) as any[]
-          // Only show products seller picked to appear in shop (old products default to visible)
           const visibleOnly = all.filter((p:any)=> p.showInShop!== false)
           setProducts(visibleOnly)
-          // ===== ADDED FOR SHOP PICKER - END =====
         }
       }catch(e){ console.error(e) }
       setCart(JSON.parse(localStorage.getItem('sanel_cart')||'[]'))
@@ -56,11 +53,9 @@ export default function PublicShop(){
   const lng = shop.storeLocation?.lng || shop.lng || ""
   const hasLocation =!!(address || (lat && lng))
 
-  // ===== ADDED FOR SHOP PICKER - START =====
   const featured = products.filter((p:any)=>p.isFeaturedInShop)
   const normal = products.filter((p:any)=>!p.isFeaturedInShop)
   const sortedProducts = [...featured,...normal]
-  // ===== ADDED FOR SHOP PICKER - END =====
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
@@ -76,7 +71,7 @@ export default function PublicShop(){
       </div>
 
       <div className="max-w-[520px] mx-auto px-4 -mt-8 relative z-10 pb-28 space-y-4">
-        <div className="bg-[#141414] border border-white/10 rounded-[24px] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
+        <div className="bg-[#141414] border border-white/10 rounded-[24px] p-5">
           <div className="flex gap-3">
             <div className="w-12 h-12 rounded-full bg-[#FFD60A] text-black flex items-center justify-center font-black text-lg shrink-0">{shop.shopName?.[0]?.toUpperCase()}</div>
             <div className="flex-1 min-w-0">
@@ -86,28 +81,16 @@ export default function PublicShop(){
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 mt-5">
-            <a href={`https://wa.me/${shop.whatsapp}?text=Hi%20${encodeURIComponent(shop.shopName)}`} target="_blank" className="bg-[#25D366] text-black text-center py-3.5 rounded-full font-black text-[13px] active:scale-[0.98]">WhatsApp Shop</a>
+            <a href={`https://wa.me/${shop.whatsapp}?text=Hi%20${encodeURIComponent(shop.shopName)}`} target="_blank" className="bg-[#25D366] text-black text-center py-3.5 rounded-full font-black text-[13px]">WhatsApp Shop</a>
             <Link href="/cart" className="bg-white text-black text-center py-3.5 rounded-full font-black text-[13px]">Cart ({shopCartCount})</Link>
           </div>
         </div>
 
         {hasLocation && (
           <div className="bg-[#141414] border border-white/10 rounded-[24px] p-4">
-            <h3 className="font-black text-[13px] flex items-center gap-2">📍 Store Location</h3>
+            <h3 className="font-black text-[13px]">📍 Store Location</h3>
             {address && <p className="text-[12px] text-neutral-200 mt-2 bg-white/[0.06] border border-white/10 rounded-full px-3.5 py-2.5">{address}</p>}
-            {lat && lng? (
-              <>
-                <div className="mt-3 rounded-[16px] overflow-hidden border border-white/10 h-[180px] bg-neutral-900">
-                  <iframe width="100%" height="100%" frameBorder="0" loading="lazy" allowFullScreen src={`https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`} />
-                </div>
-                <div className="grid grid-cols-2 gap-2 mt-3">
-                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`} target="_blank" className="bg-[#FFD60A] text-black text-center py-3 rounded-full font-black text-[12px]">🧭 Get Directions</a>
-                  <a href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`} target="_blank" className="bg-white/10 border border-white/20 text-white text-center py-3 rounded-full font-black text-[12px]">Open in Maps</a>
-                </div>
-              </>
-            ) : (
-              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`} target="_blank" className="mt-3 block bg-[#FFD60A] text-black text-center py-3 rounded-full font-black text-[12px]">🧭 Search on Maps</a>
-            )}
+            {lat && lng? (<><div className="mt-3 rounded-[16px] overflow-hidden border border-white/10 h-[180px] bg-neutral-900"><iframe width="100%" height="100%" frameBorder="0" loading="lazy" allowFullScreen src={`https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`} /></div><div className="grid grid-cols-2 gap-2 mt-3"><a href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`} target="_blank" className="bg-[#FFD60A] text-black text-center py-3 rounded-full font-black text-[12px]">🧭 Get Directions</a><a href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`} target="_blank" className="bg-white/10 border border-white/20 text-white text-center py-3 rounded-full font-black text-[12px]">Open in Maps</a></div></>) : (<a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`} target="_blank" className="mt-3 block bg-[#FFD60A] text-black text-center py-3 rounded-full font-black text-[12px]">🧭 Search on Maps</a>)}
           </div>
         )}
 
@@ -118,58 +101,34 @@ export default function PublicShop(){
 
         {sortedProducts.length===0? (
           <div className="bg-[#141414] border border-dashed border-white/10 rounded-2xl p-10 text-center">
-            <p className="text-3xl">🛍️</p>
-            <p className="font-black mt-2">No products selected for shop</p>
-            <p className="text-xs text-neutral-500 mt-1">Seller is choosing what appears here</p>
+            <p className="text-3xl">🛍️</p><p className="font-black mt-2">No products selected for shop</p><p className="text-xs text-neutral-500 mt-1">Seller is choosing what appears here</p>
           </div>
         ) : (
           <>
-            {/* ===== ADDED FOR SHOP PICKER - FEATURED SECTION ===== */}
             {featured.length>0 && (
               <div className="space-y-2">
-                <h3 className="text-[11px] font-black uppercase tracking-widest text-[#FFD60A]">⭐ Featured by {shop.shopName}</h3>
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-[#FFD60A]">⭐ Featured</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {featured.map((p:any)=>{
                     const img = p.imageUrl || p.images?.[0] || p.image || 'https://via.placeholder.com/300'
                     return (
-                      <div key={p.id} className="group bg-[#161616] border border-[#FFD60A]/30 rounded-[20px] overflow-hidden transition relative">
+                      <div key={p.id} className="group bg-[#161616] border border-[#FFD60A]/30 rounded-[20px] overflow-hidden relative">
                         <div className="absolute top-2 left-2 bg-[#FFD60A] text-black text-[8px] font-black px-2 py-1 rounded-full z-10">⭐ FEATURED</div>
-                        <Link href={`/product/${p.id}`}>
-                          <div className="h-[148px] bg-neutral-900 overflow-hidden relative">
-                            <img src={img} className="h-full w-full object-cover group-hover:scale-105 transition duration-500" alt={p.title} />
-                          </div>
-                          <div className="p-3">
-                            <p className="text-[12px] font-bold truncate text-white">{p.title}</p>
-                            <p className="text-[14px] font-black text-[#FFD60A] mt-0.5">{Number(p.price).toLocaleString()} UGX</p>
-                          </div>
-                        </Link>
-                        <div className="px-3 pb-3">
-                          <button onClick={()=>addToCart(p)} className="w-full bg-[#FFD60A] text-black py-2.5 rounded-full text-[11px] font-black active:scale-[0.97]">Add to Cart</button>
-                        </div>
+                        <Link href={`/product/${p.id}`}><div className="h-[148px] bg-neutral-900 overflow-hidden"><img src={img} className="h-full w-full object-cover" alt={p.title} /></div><div className="p-3"><p className="text-[12px] font-bold truncate">{p.title}</p><p className="text-[14px] font-black text-[#FFD60A] mt-0.5">{Number(p.price).toLocaleString()} UGX</p></div></Link>
+                        <div className="px-3 pb-3"><button onClick={()=>addToCart(p)} className="w-full bg-[#FFD60A] text-black py-2.5 rounded-full text-[11px] font-black">Add to Cart</button></div>
                       </div>
                     )
                   })}
                 </div>
               </div>
             )}
-
             <div className="grid grid-cols-2 gap-3">
               {(featured.length>0? normal : sortedProducts).map((p:any)=>{
                 const img = p.imageUrl || p.images?.[0] || p.image || 'https://via.placeholder.com/300'
                 return (
-                  <div key={p.id} className="group bg-[#161616] border border-white/[0.06] hover:border-white/15 rounded-[20px] overflow-hidden transition">
-                    <Link href={`/product/${p.id}`}>
-                      <div className="h-[148px] bg-neutral-900 overflow-hidden relative">
-                        <img src={img} className="h-full w-full object-cover group-hover:scale-105 transition duration-500" alt={p.title} />
-                      </div>
-                      <div className="p-3">
-                        <p className="text-[12px] font-bold truncate text-white">{p.title}</p>
-                        <p className="text-[14px] font-black text-[#FFD60A] mt-0.5">{Number(p.price).toLocaleString()} UGX</p>
-                      </div>
-                    </Link>
-                    <div className="px-3 pb-3">
-                      <button onClick={()=>addToCart(p)} className="w-full bg-white text-black py-2.5 rounded-full text-[11px] font-black active:scale-[0.97]">Add to Cart</button>
-                    </div>
+                  <div key={p.id} className="group bg-[#161616] border border-white/[0.06] rounded-[20px] overflow-hidden">
+                    <Link href={`/product/${p.id}`}><div className="h-[148px] bg-neutral-900 overflow-hidden"><img src={img} className="h-full w-full object-cover" alt={p.title} /></div><div className="p-3"><p className="text-[12px] font-bold truncate">{p.title}</p><p className="text-[14px] font-black text-[#FFD60A] mt-0.5">{Number(p.price).toLocaleString()} UGX</p></div></Link>
+                    <div className="px-3 pb-3"><button onClick={()=>addToCart(p)} className="w-full bg-white text-black py-2.5 rounded-full text-[11px] font-black">Add to Cart</button></div>
                   </div>
                 )
               })}
