@@ -9,7 +9,8 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { onAuthStateChanged, User } from 'firebase/auth'
 import Link from 'next/link'
-import { Rocket, MessageCircle, Truck, Trash2, Pencil, Check, X, Zap, Crown, Flame, Store } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Rocket, MessageCircle, Truck, Trash2, Pencil, Check, X, Zap, Crown, Flame, Store, ExternalLink } from 'lucide-react'
 
 const CATEGORIES = [
   'Vehicles','Phones','Houses & Rentals','Electronics','Home, Furniture & Appliances','Health','Fashion','Sports, Arts & Outdoor','Babies & Kids','Animals & Pets','Agriculture & Food','Commercial Equipment & Tools','Repair & Construction','Stationery','Services','Jobs'
@@ -40,6 +41,8 @@ type Product = {
   boost_pending?: boolean
   boostDurationDays?: number
   boostPackageId?: string
+  shopId?: string
+  shopName?: string
 }
 type ChatMsg = {
   id: string
@@ -51,6 +54,7 @@ type ChatMsg = {
 }
 
 export default function SellPage() {
+  const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [editing, setEditing] = useState<Product | null>(null)
@@ -69,8 +73,6 @@ export default function SellPage() {
   const [showBoostModal, setShowBoostModal] = useState(false)
   const [selectedProductToBoost, setSelectedProductToBoost] = useState<Product | null>(null)
   const [selectedPackage, setSelectedPackage] = useState<any>(BOOST_PACKAGES[1])
-
-  // SHOP STATE - ADDED
   const [myShop, setMyShop] = useState<any>(null)
 
   useEffect(() => {
@@ -91,13 +93,15 @@ export default function SellPage() {
           },
           (err) => { console.error("CHAT ERROR:", err) }
         )
-        // SHOP FETCH - ADDED
-        const shopQ = query(collection(db, 'shops'), where('sellerId','==', u.uid))
-        const unsubShop = onSnapshot(shopQ, (snap)=>{
+        // SHOP FETCH - supports both ownerId and sellerId fields
+        const fetchShop = async()=>{
+          let snap = await getDocs(query(collection(db, 'shops'), where('ownerId','==', u.uid)))
+          if(snap.empty) snap = await getDocs(query(collection(db, 'shops'), where('sellerId','==', u.uid)))
           if(!snap.empty) setMyShop({id:snap.docs[0].id,...snap.docs[0].data()})
           else setMyShop(null)
-        })
-        return () => { unsubProducts(); unsubChat(); unsubShop(); }
+        }
+        fetchShop()
+        return () => { unsubProducts(); unsubChat(); }
       } else {
         setProducts([])
         setChatMessages([])
@@ -227,7 +231,11 @@ export default function SellPage() {
           title, description, price: Number(price), category, whatsapp,
           images: imageUrls, videoUrl, sellerId: user.uid,
           sellerEmail: user.email, createdAt: serverTimestamp(),
-          is_boosted: false, boost_pending: false
+          is_boosted: false, boost_pending: false,
+          // AUTO TAG SHOP - THIS CONNECTS SELL TO MY-SHOP
+          shopId: isShopActive()? myShop.id : null,
+          shopName: isShopActive()? myShop.shopName : null,
+          ownerId: user.uid
         })
       }
       resetForm()
@@ -286,7 +294,7 @@ export default function SellPage() {
       </div>
 
       <div className="max-w-5xl mx-auto p-4 md:p-6">
-        {/* ===== SHOP UPGRADE CARD - NEW ADDED ===== */}
+        {/* ===== SHOP CARD - EDITED TO LINK TO MY-SHOP ===== */}
         {!myShop? (
           <div className="bg-[#111] rounded-[20px] p-4 flex justify-between items-center mb-6 border border-yellow-500/30">
             <div className="flex items-center gap-3">
@@ -311,14 +319,15 @@ export default function SellPage() {
               <span className={`text-[9px] px-2 py-1 rounded-full font-black ${isShopActive()?'bg-black text-white':'bg-red-600 text-white'}`}>{isShopActive()?'ACTIVE':'EXPIRED'}</span>
             </div>
             <div className="flex gap-2 mt-3">
-              <Link href={`/shop/${myShop.id}`} className="flex-1 bg-white border text-center py-2.5 rounded-full font-bold text-[11px]">View Shop</Link>
-              <Link href={`/shop/${myShop.id}`} className="flex-1 bg-white border text-center py-2.5 rounded-full font-bold text-[11px]">Copy Link</Link>
-              <Link href="/create-shop" className="flex-1 bg-black text-white text-center py-2.5 rounded-full font-black text-[11px]">Renew 15K</Link>
+              {/* THIS IS THE FIX - VIEW NOW GOES TO EDIT PAGE */}
+              <button onClick={()=>router.push('/my-shop')} className="flex-1 bg-black text-white text-center py-2.5 rounded-full font-black text-[11px] flex items-center justify-center gap-1"><Pencil size={12}/> Edit Shop</button>
+              <Link href={`/shop/${myShop.id}`} className="flex-1 bg-white border text-center py-2.5 rounded-full font-bold text-[11px] flex items-center justify-center gap-1"><ExternalLink size={12}/> Public View</Link>
+              <button onClick={()=>{navigator.clipboard.writeText(`https://sanel-ug.online/shop/${myShop.id}`); alert('Link copied!')}} className="flex-1 bg-white border text-center py-2.5 rounded-full font-bold text-[11px]">Copy Link</button>
             </div>
           </div>
         )}
 
-        {/* BOOST MODAL */}
+        {/* BOOST MODAL - same */}
         {showBoostModal && selectedProductToBoost && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
             <div className="bg-white rounded-[24px] w-full max-w-[420px] p-5 shadow-2xl">
@@ -361,10 +370,10 @@ export default function SellPage() {
           </div>
         )}
 
-        {/* FORM CARD */}
+        {/* FORM CARD - same */}
         <div className="bg-white rounded-[24px] shadow-sm border p-5 md:p-6">
           <div className="flex justify-between items-center mb-5">
-            <h1 className="text-[20px] font-black">{editing? 'Edit Product' : 'Post New Product'} <span className="ml-2 text-[11px] bg-black text-white px-2.5 py-1 rounded-full">{editing? 'EDITING' : 'NEW'}</span></h1>
+            <h1 className="text-[20px] font-black">{editing? 'Edit Product' : 'Post New Product'} {isShopActive() && <span className="ml-2 text-[10px] bg-yellow-400 text-black px-2.5 py-1 rounded-full">+ SHOP {myShop.shopName}</span>}</h1>
             {editing && <button onClick={resetForm} className="text-[12px] font-bold bg-gray-100 px-3 py-1.5 rounded-full">Cancel Edit</button>}
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -379,52 +388,12 @@ export default function SellPage() {
               <div className="bg-[#FDF8F3] rounded-2xl p-3 border border-dashed"><label className="text-[11px] font-black tracking-widest text-gray-500">PHOTOS {editing && '(leave empty to keep)'}</label><input type="file" multiple accept="image/*" onChange={(e: ChangeEvent<HTMLInputElement>) => setImageFiles(Array.from(e.target.files || []))} required={!editing} className="w-full mt-2 text-[12px]" /></div>
               <div className="bg-[#FDF8F3] rounded-2xl p-3 border border-dashed"><label className="text-[11px] font-black tracking-widest text-gray-500">VIDEO (optional)</label><input type="file" accept="video/*" onChange={(e: ChangeEvent<HTMLInputElement>) => setVideoFile(e.target.files?.[0] || null)} className="w-full mt-2 text-[12px]" /></div>
             </div>
-            <button disabled={loading} className="w-full bg-black text-white py-4 rounded-full font-black text-[14px] disabled:opacity-50 flex items-center justify-center gap-2">{loading? 'Saving...' : editing? <><Pencil size={16}/> Update Product</> : <><Zap size={16}/> Post Product</>}</button>
+            <button disabled={loading} className="w-full bg-black text-white py-4 rounded-full font-black text-[14px] disabled:opacity-50 flex items-center justify-center gap-2">{loading? 'Saving...' : editing? <><Pencil size={16}/> Update Product</> : <><Zap size={16}/> {isShopActive()? `Post to ${myShop.shopName}` : 'Post Product'}</>}</button>
           </form>
         </div>
 
-        <div className="mt-6 bg-black rounded-[24px] p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex gap-3 items-center">
-            <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center"><Truck size={20}/></div>
-            <div><h3 className="font-black text-[14px]">Need Delivery?</h3><p className="text-[12px] text-white/60">Affordable campus delivery</p></div>
-          </div>
-          <div className="flex gap-2">
-            <a href="https://wa.me/256775760430?text=Hi%20Sanel%20Delivery,%20I%20need%20delivery" target="_blank" className="flex-1 md:flex-none bg-white text-black px-5 py-3 rounded-full font-black text-[12px] text-center">WhatsApp</a>
-            <a href="tel:+256775760430" className="flex-1 md:flex-none bg-white/10 border border-white/20 px-5 py-3 rounded-full font-black text-[12px] text-center">Call Us</a>
-          </div>
-        </div>
-
-        <div className="mt-6 bg-white rounded-[24px] border shadow-sm overflow-hidden">
-          <button onClick={()=>setChatOpen(!chatOpen)} className="w-full p-4 flex justify-between items-center font-black text-[14px]">
-            <span className="flex items-center gap-2"><MessageCircle size={16}/> Talk to Admin {chatMessages.length>0 && <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">{chatMessages.length}</span>}</span>
-            <span className={`w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center transition ${chatOpen?'rotate-180':''}`}>▼</span>
-          </button>
-          {chatOpen && (
-            <div className="border-t">
-              <div className="h-72 overflow-y-auto bg-[#FDF8F3] p-3 space-y-2">
-                {chatMessages.length===0 && <p className="text-center text-[12px] text-gray-400 mt-10">No messages yet. Ask admin anything.</p>}
-                {chatMessages.map(m=>(
-                  <div key={m.id} className={`flex ${m.sender==='seller'? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[78%] px-3.5 py-2.5 rounded-[16px] text-[12px] font-medium ${m.sender==='seller'? 'bg-black text-white rounded-br-[4px]' : 'bg-white border text-black rounded-bl-[4px]'}`}>
-                      {m.message}
-                      <div className="text-[9px] opacity-60 mt-1">{m.createdAt?.toDate? m.createdAt.toDate().toLocaleTimeString() : '...'}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="p-3 flex gap-2 bg-white">
-                <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=> e.key==='Enter' && sendChat()} placeholder="Message admin..." className="flex-1 bg-[#FDF8F3] rounded-full px-4 py-3 text-[13px] outline-none focus:bg-white focus:ring-2 focus:ring-black" />
-                <button onClick={sendChat} className="bg-black text-white w-12 h-12 rounded-full font-black flex items-center justify-center">↑</button>
-              </div>
-            </div>
-          )}
-        </div>
-
         <h2 className="text-[18px] font-black mt-8 mb-3">My Products <span className="bg-black text-white text-[11px] px-2.5 py-1 rounded-full ml-2">{products.length}</span></h2>
-        {products.length === 0? (
-          <div className="bg-white rounded-[24px] border p-10 text-center"><p className="text-3xl">📦</p><p className="font-bold mt-2">No products yet</p><p className="text-[12px] text-gray-500">Post your first product above</p></div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {products.map(p => {
               const boostStatus = getBoostStatus(p)
               return (
@@ -433,12 +402,12 @@ export default function SellPage() {
                     {p.images[0] && (<img src={p.images[0]} className="w-full h-48 object-cover" alt={p.title} />)}
                     <div className="absolute top-2 left-2 flex gap-1.5">
                       <span className="bg-black/80 backdrop-blur text-white text-[10px] px-2.5 py-1 rounded-full font-bold">{p.category}</span>
+                      {p.shopId && <span className="bg-yellow-400 text-black text-[9px] px-2 py-1 rounded-full font-black">SHOP</span>}
                       {boostStatus && <span className={`text-[9px] px-2.5 py-1 rounded-full font-black flex items-center gap-1 ${boostStatus.color}`}><Flame size={10}/>{boostStatus.label}</span>}
                     </div>
                   </div>
                   <div className="p-3.5 flex-1 flex flex-col">
                     <h3 className="font-black text-[13px] line-clamp-2 min-h-[32px]">{p.title}</h3>
-                    <p className="text-[11px] text-gray-500 line-clamp-2 mt-1">{p.description}</p>
                     <p className="font-black text-[16px] mt-2">{p.price.toLocaleString()} <span className="text-[11px] font-bold text-gray-400">UGX</span></p>
                     <div className="mt-3 space-y-2">
                       {!boostStatus?.active && (
@@ -455,8 +424,7 @@ export default function SellPage() {
                 </div>
               )
             })}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )
