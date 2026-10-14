@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { db } from "@/lib/firebase"
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, increment } from "firebase/firestore"
 import { useParams } from "next/navigation"
@@ -12,6 +12,30 @@ export default function PublicShop(){
   const [products,setProducts]=useState<any[]>([])
   const [cart,setCart]=useState<any[]>([])
   const [loading,setLoading]=useState(true)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+
+  const playSound = () => {
+    try{
+      if(typeof window=== 'undefined') return
+      if(!audioCtxRef.current){
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+      }
+      const ctx = audioCtxRef.current
+      if(ctx.state === 'suspended') ctx.resume()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(800, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(1500, ctx.currentTime + 0.08)
+      gain.gain.setValueAtTime(0.3, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.18)
+      if(typeof navigator!== 'undefined' && navigator.vibrate) navigator.vibrate(30)
+    }catch{}
+  }
 
   useEffect(()=>{
     const load = async()=>{
@@ -23,8 +47,6 @@ export default function PublicShop(){
         if(s.exists()){
           const data = {id:s.id,...s.data()} as any
           setShop(data)
-
-          // fix views count spam
           if(typeof window!== 'undefined'){
             const key = `viewed_${data.id}`
             if(!sessionStorage.getItem(key)){
@@ -32,11 +54,8 @@ export default function PublicShop(){
               sessionStorage.setItem(key, "1")
             }
           }
-
-          // FIX FOR YOUR BUG: get products by shopId + sellerId and merge
           const byShopSnap = await getDocs(query(collection(db,'products'), where('shopId','==', id)))
           let allDocs = [...byShopSnap.docs]
-
           if(data.ownerId){
             const byOwnerSnap = await getDocs(query(collection(db,'products'), where('sellerId','==', data.ownerId)))
             allDocs = [...allDocs,...byOwnerSnap.docs]
@@ -45,14 +64,11 @@ export default function PublicShop(){
             const bySellerSnap = await getDocs(query(collection(db,'products'), where('sellerId','==', data.sellerId)))
             allDocs = [...allDocs,...bySellerSnap.docs]
           }
-
-          // deduplicate
           const map = new Map<string, any>()
           allDocs.forEach(d => {
             map.set(d.id, {id: d.id,...d.data()})
           })
           const all = Array.from(map.values())
-
           const visibleOnly = all.filter((p:any)=> p.showInShop!== false && p.hidden!== true && p.isHidden!== true)
           setProducts(visibleOnly)
         }
@@ -68,6 +84,7 @@ export default function PublicShop(){
   },[id])
 
   const addToCart = (p:any)=>{
+    playSound()
     setCart(prev => {
       const idx = prev.findIndex((c:any)=> c.id === p.id && c.cartShopId === shop.id)
       let newCart: any[]
@@ -81,7 +98,6 @@ export default function PublicShop(){
       }
       return newCart
     })
-    if(typeof navigator!== 'undefined' && navigator.vibrate) navigator.vibrate(30)
   }
 
   if(loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-black">Loading shop...</div>
@@ -155,7 +171,7 @@ export default function PublicShop(){
                       <div key={p.id} className="group bg-[#161616] border border-[#FFD60A]/30 rounded-[20px] overflow-hidden relative">
                         <div className="absolute top-2 left-2 bg-[#FFD60A] text-black text-[8px] font-black px-2 py-1 rounded-full z-10">⭐ FEATURED</div>
                         <Link href={`/product/${p.id}`}><div className="h-[148px] bg-neutral-900 overflow-hidden"><img src={img} className="h-full w-full object-cover" alt={p.title} /></div><div className="p-3"><p className="text-[12px] font-bold truncate">{p.title}</p><p className="text-[14px] font-black text-[#FFD60A] mt-0.5">{Number(p.price).toLocaleString()} UGX</p></div></Link>
-                        <div className="px-3 pb-3"><button onClick={()=>addToCart(p)} className="w-full bg-[#FFD60A] text-black py-2.5 rounded-full text-[11px] font-black">Add to Cart</button></div>
+                        <div className="px-3 pb-3"><button onClick={()=>addToCart(p)} className="w-full bg-[#FFD60A] text-black py-2.5 rounded-full text-[11px] font-black active:scale-95">Add to Cart</button></div>
                       </div>
                     )
                   })}
@@ -168,7 +184,7 @@ export default function PublicShop(){
                 return (
                   <div key={p.id} className="group bg-[#161616] border border-white/[0.06] rounded-[20px] overflow-hidden">
                     <Link href={`/product/${p.id}`}><div className="h-[148px] bg-neutral-900 overflow-hidden"><img src={img} className="h-full w-full object-cover" alt={p.title} /></div><div className="p-3"><p className="text-[12px] font-bold truncate">{p.title}</p><p className="text-[14px] font-black text-[#FFD60A] mt-0.5">{Number(p.price).toLocaleString()} UGX</p></div></Link>
-                    <div className="px-3 pb-3"><button onClick={()=>addToCart(p)} className="w-full bg-white text-black py-2.5 rounded-full text-[11px] font-black">Add to Cart</button></div>
+                    <div className="px-3 pb-3"><button onClick={()=>addToCart(p)} className="w-full bg-white text-black py-2.5 rounded-full text-[11px] font-black active:scale-95">Add to Cart</button></div>
                   </div>
                 )
               })}
