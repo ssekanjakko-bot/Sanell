@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
 
 type CartItem = {
@@ -17,10 +17,34 @@ type CartItem = {
 
 export default function CartPage(){
   const [cart,setCart]=useState<CartItem[]>([])
+  const audioCtxRef = useRef<AudioContext | null>(null)
 
   useEffect(()=>{
     setCart(JSON.parse(localStorage.getItem('sanel_cart')||'[]'))
   },[])
+
+  const playSound = () => {
+    try{
+      if(typeof window=== 'undefined') return
+      if(!audioCtxRef.current){
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+      }
+      const ctx = audioCtxRef.current
+      if(ctx.state === 'suspended') ctx.resume()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(900, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.08)
+      gain.gain.setValueAtTime(0.25, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.15)
+      if(navigator.vibrate) navigator.vibrate(30)
+    }catch{}
+  }
 
   const updateCart = (newCart: CartItem[])=>{
     setCart(newCart)
@@ -28,18 +52,21 @@ export default function CartPage(){
   }
 
   const remove = (idx:number)=>{
+    playSound()
     const n = [...cart]
     n.splice(idx,1)
     updateCart(n)
   }
 
   const incQty = (idx:number)=>{
+    playSound()
     const n = [...cart]
     n[idx].qty = (n[idx].qty||1)+1
     updateCart(n)
   }
 
   const decQty = (idx:number)=>{
+    playSound()
     const n = [...cart]
     if((n[idx].qty||1)>1) n[idx].qty!--
     else n.splice(idx,1)
@@ -48,6 +75,7 @@ export default function CartPage(){
 
   const clear = ()=>{
     if(!confirm("Clear cart?")) return
+    playSound()
     updateCart([])
   }
 
@@ -62,6 +90,7 @@ export default function CartPage(){
   const total = cart.reduce((s,i)=> s + (Number(i.price)||0)*(i.qty||1), 0)
 
   const checkoutShop = (shopGroup:any)=>{
+    playSound()
     const lines = shopGroup.items.map(({item}:any)=>`• ${item.title} x${item.qty||1} - ${Number(item.price).toLocaleString()} UGX`).join('%0A')
     const subtotal = shopGroup.items.reduce((s:number,{item}:any)=> s+Number(item.price)*(item.qty||1),0)
     const text = `Hello ${shopGroup.shopName}%0A%0AI want to order from Sanel Ug:%0A${lines}%0A%0ATotal for your shop: ${subtotal.toLocaleString()} UGX%0A%0AShop link: https://sanel-ug.online/shop/${shopGroup.shopId}`
@@ -135,11 +164,11 @@ export default function CartPage(){
         </div>
       </div>
 
-      {/* Sticky Checkout Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-white/10 p-3 z-30">
         <div className="max-w-[540px] mx-auto grid grid-cols-2 gap-2">
           <Link href="/" className="bg-white/10 border border-white/20 text-white text-center py-3.5 rounded-full font-black text-[13px]">Continue Shopping</Link>
           <button onClick={()=>{
+            playSound()
             const all = Object.values(grouped).map((g:any)=>`${g.shopName}: ${g.items.reduce((s:number,{item}:any)=>s+Number(item.price)*(item.qty||1),0).toLocaleString()} UGX`).join('%0A')
             const text = `Hello Sanel Ug%0A%0AI have ${cart.length} items in cart from ${Object.keys(grouped).length} shops:%0A${all}%0A%0AGrand Total: ${total.toLocaleString()} UGX%0A%0ALink: https://sanel-ug.online/cart`
             window.open(`https://wa.me/256767483636?text=${text}`,'_blank')
