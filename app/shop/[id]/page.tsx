@@ -6,7 +6,8 @@ import { useParams } from "next/navigation"
 import Link from "next/link"
 
 export default function PublicShop(){
-  const {id}=useParams()
+  const params = useParams()
+  const id = (params?.id as string) || ""
   const [shop,setShop]=useState<any>(null)
   const [products,setProducts]=useState<any[]>([])
   const [cart,setCart]=useState<any[]>([])
@@ -14,47 +15,86 @@ export default function PublicShop(){
 
   useEffect(()=>{
     const load = async()=>{
+      if(!id) return
       setLoading(true)
       try{
-        const s = await getDoc(doc(db,'shops', id as string))
+        const sRef = doc(db,'shops', id)
+        const s = await getDoc(sRef)
         if(s.exists()){
           const data = {id:s.id,...s.data()} as any
           setShop(data)
-          updateDoc(doc(db,'shops', data.id), { views: increment(1) }).catch(()=>{})
 
-          let snap = await getDocs(query(collection(db,'products'), where('shopId','==', id as string)))
-          if(snap.empty && data.ownerId) snap = await getDocs(query(collection(db,'products'), where('sellerId','==', data.ownerId)))
-          if(snap.empty && data.sellerId) snap = await getDocs(query(collection(db,'products'), where('sellerId','==', data.sellerId)))
+          // fix views count spam
+          if(typeof window!== 'undefined'){
+            const key = `viewed_${data.id}`
+            if(!sessionStorage.getItem(key)){
+              updateDoc(sRef, { views: increment(1) }).catch(()=>{})
+              sessionStorage.setItem(key, "1")
+            }
+          }
 
-          const all = snap.docs.map(d=>({id:d.id,...d.data()})) as any[]
-          const visibleOnly = all.filter((p:any)=> p.showInShop!== false)
+          // FIX FOR YOUR BUG: get products by shopId + sellerId and merge
+          const byShopSnap = await getDocs(query(collection(db,'products'), where('shopId','==', id)))
+          let allDocs = [...byShopSnap.docs]
+
+          if(data.ownerId){
+            const byOwnerSnap = await getDocs(query(collection(db,'products'), where('sellerId','==', data.ownerId)))
+            allDocs = [...allDocs,...byOwnerSnap.docs]
+          }
+          if(data.sellerId && data.sellerId!== data.ownerId){
+            const bySellerSnap = await getDocs(query(collection(db,'products'), where('sellerId','==', data.sellerId)))
+            allDocs = [...allDocs,...bySellerSnap.docs]
+          }
+
+          // deduplicate
+          const map = new Map<string, any>()
+          allDocs.forEach(d => {
+            map.set(d.id, {id: d.id,...d.data()})
+          })
+          const all = Array.from(map.values())
+
+          const visibleOnly = all.filter((p:any)=> p.showInShop!== false && p.hidden!== true && p.isHidden!== true)
           setProducts(visibleOnly)
         }
       }catch(e){ console.error(e) }
-      setCart(JSON.parse(localStorage.getItem('sanel_cart')||'[]'))
+      try{
+        if(typeof window!== 'undefined'){
+          setCart(JSON.parse(localStorage.getItem('sanel_cart')||'[]'))
+        }
+      }catch{}
       setLoading(false)
     }
-    if(id) load()
+    load()
   },[id])
 
   const addToCart = (p:any)=>{
-    const newCart = [...cart, {...p, shopId: shop.id, shopName: shop.shopName, cartShopId: shop.id, qty:1 }]
-    localStorage.setItem('sanel_cart', JSON.stringify(newCart))
-    setCart(newCart)
-    if(navigator.vibrate) navigator.vibrate(30)
+    setCart(prev => {
+      const idx = prev.findIndex((c:any)=> c.id === p.id && c.cartShopId === shop.id)
+      let newCart: any[]
+      if(idx > -1){
+        newCart = prev.map((c:any,i:number)=> i===idx? {...c, qty: (c.qty||1)+1} : c)
+      }else{
+        newCart = [...prev, {...p, shopId: shop.id, shopName: shop.shopName, cartShopId: shop.id, qty:1 }]
+      }
+      if(typeof window!== 'undefined'){
+        localStorage.setItem('sanel_cart', JSON.stringify(newCart))
+      }
+      return newCart
+    })
+    if(typeof navigator!== 'undefined' && navigator.vibrate) navigator.vibrate(30)
   }
 
   if(loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-black">Loading shop...</div>
   if(!shop) return <div className="min-h-screen bg-black flex items-center justify-center text-white p-6 text-center"><div><h1 className="font-black">Shop not found</h1><p className="text-xs text-neutral-500 mt-2">{id}</p><Link href="/" className="mt-4 inline-block bg-white text-black px-5 py-2 rounded-full font-black text-xs">Go Home</Link></div></div>
 
-  const shopCartCount = cart.filter((c:any)=>c.cartShopId===shop.id).length
+  const shopCartCount = cart.filter((c:any)=>c.cartShopId===shop.id).reduce((a:number,b:any)=>a+(b.qty||1),0)
   const address = shop.storeLocation?.address || shop.location || ""
   const lat = shop.storeLocation?.lat || shop.lat || ""
   const lng = shop.storeLocation?.lng || shop.lng || ""
   const hasLocation =!!(address || (lat && lng))
 
-  const featured = products.filter((p:any)=>p.isFeaturedInShop)
-  const normal = products.filter((p:any)=>!p.isFeaturedInShop)
+  const featured = products.filter((p:any)=>p.isFeaturedInShop === true)
+  const normal = products.filter((p:any)=>p.isFeaturedInShop!== true)
   const sortedProducts = [...featured,...normal]
 
   return (
