@@ -320,7 +320,26 @@ export default function HomePage() {
         {viewProduct && <ProductViewModal product={viewProduct} onClose={() => setViewProduct(null)} onWhatsApp={handleWhatsApp} />}
       </div>
       <Link href="/movies" className="fixed bottom-6 left-4 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40 border-2 border-white"><Film size={18} /></Link>
-      <button onClick={() => router.push('/sell')} className="fixed bottom-6 right-4 bg-amber-800 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40"><Coffee size={20} /></button>
+
+      {/* SANEL S BAG BUTTON - REPLACED */}
+      <div className="fixed bottom-6 right-4 z-40 flex items-center gap-2">
+        <div className="bg-black text-white text-[11px] font-bold px-3 py-2 rounded-full shadow-lg whitespace-nowrap animate-pulse">
+          Start ur online shop with us
+        </div>
+        <button onClick={() => router.push('/sell')} className="bg-[#5C2E14] w-14 h-14 rounded-full flex items-center justify-center shadow-2xl animate-[sanelRotate_3s_ease-in-out_infinite]">
+          <img src="/icon.png" alt="S" className="w-9 h-9 object-contain" />
+        </button>
+      </div>
+      <style>{`
+        @keyframes sanelRotate {
+          0% { transform: rotate(0deg); }
+          10% { transform: rotate(-15deg); }
+          20% { transform: rotate(15deg); }
+          30% { transform: rotate(0deg); }
+          100% { transform: rotate(0deg); }
+        }
+      `}</style>
+
       <FooterSanel />
     </div>
   )
