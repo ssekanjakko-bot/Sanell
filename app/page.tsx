@@ -321,30 +321,23 @@ export default function HomePage() {
       </div>
       <Link href="/movies" className="fixed bottom-6 left-4 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40 border-2 border-white"><Film size={18} /></Link>
 
-      {/* FIXED: GUINNESS STYLE ROTATING CIRCLE TEXT */}
-      <div className="fixed bottom-6 right-4 z-40 w-[90px] h-[90px] pointer-events-none">
-        <div className="relative w-full h-full pointer-events-auto">
-          {/* The rotating text - exactly like your Guinness video */}
-          <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full animate-[spin_5s_linear_infinite]">
-            <defs>
-              <path id="sanelCirclePath" d="M 50,50 m -37,0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0" />
-            </defs>
-            <text fill="black" fontSize="8.2" fontWeight="900" letterSpacing="0.8">
-              <textPath href="#sanelCirclePath">
-                Start ur online shop with us • Start ur online shop with us •
-              </textPath>
-            </text>
-          </svg>
-
-          {/* Center S Bag Button - your logo */}
-          <button
-            onClick={() => router.push('/sell')}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#5C2E14] w-[54px] h-[54px] rounded-full flex items-center justify-center shadow-2xl border-[3px] border-white"
-          >
-            <img src="/icon.png" alt="Sanel" className="w-8 h-8 object-contain" />
-          </button>
-        </div>
-      </div>
+      {/* FINAL WHITE BUTTON - TEXT INSIDE - ROTATING ITSELF */}
+      <button
+        onClick={() => router.push('/sell')}
+        className="fixed bottom-6 right-4 z-40 w-[88px] h-[88px] bg-white rounded-full shadow-2xl border-[2px] border-black flex items-center justify-center overflow-hidden animate-[spin_8s_linear_infinite]"
+      >
+        <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
+          <defs>
+            <path id="sanelFinalPath" d="M 50,50 m -30,0 a 30,30 0 1,1 60,0 a 30,30 0 1,1 -60,0" />
+          </defs>
+          <text fill="black" fontSize="8" fontWeight="900" letterSpacing="0.6">
+            <textPath href="#sanelFinalPath">
+              Start ur online shop with us • Start ur •
+            </textPath>
+          </text>
+        </svg>
+        <img src="/icon.png" alt="S" className="w-7 h-7 object-contain relative z-10" />
+      </button>
 
       <FooterSanel />
     </div>
