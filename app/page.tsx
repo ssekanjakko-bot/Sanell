@@ -321,24 +321,30 @@ export default function HomePage() {
       </div>
       <Link href="/movies" className="fixed bottom-6 left-4 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-40 border-2 border-white"><Film size={18} /></Link>
 
-      {/* SANEL S BAG BUTTON - REPLACED */}
-      <div className="fixed bottom-6 right-4 z-40 flex items-center gap-2">
-        <div className="bg-black text-white text-[11px] font-bold px-3 py-2 rounded-full shadow-lg whitespace-nowrap animate-pulse">
-          Start ur online shop with us
+      {/* FIXED: GUINNESS STYLE ROTATING CIRCLE TEXT */}
+      <div className="fixed bottom-6 right-4 z-40 w-[90px] h-[90px] pointer-events-none">
+        <div className="relative w-full h-full pointer-events-auto">
+          {/* The rotating text - exactly like your Guinness video */}
+          <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full animate-[spin_5s_linear_infinite]">
+            <defs>
+              <path id="sanelCirclePath" d="M 50,50 m -37,0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0" />
+            </defs>
+            <text fill="black" fontSize="8.2" fontWeight="900" letterSpacing="0.8">
+              <textPath href="#sanelCirclePath">
+                Start ur online shop with us • Start ur online shop with us •
+              </textPath>
+            </text>
+          </svg>
+
+          {/* Center S Bag Button - your logo */}
+          <button
+            onClick={() => router.push('/sell')}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#5C2E14] w-[54px] h-[54px] rounded-full flex items-center justify-center shadow-2xl border-[3px] border-white"
+          >
+            <img src="/icon.png" alt="Sanel" className="w-8 h-8 object-contain" />
+          </button>
         </div>
-        <button onClick={() => router.push('/sell')} className="bg-[#5C2E14] w-14 h-14 rounded-full flex items-center justify-center shadow-2xl animate-[sanelRotate_3s_ease-in-out_infinite]">
-          <img src="/icon.png" alt="S" className="w-9 h-9 object-contain" />
-        </button>
       </div>
-      <style>{`
-        @keyframes sanelRotate {
-          0% { transform: rotate(0deg); }
-          10% { transform: rotate(-15deg); }
-          20% { transform: rotate(15deg); }
-          30% { transform: rotate(0deg); }
-          100% { transform: rotate(0deg); }
-        }
-      `}</style>
 
       <FooterSanel />
     </div>
