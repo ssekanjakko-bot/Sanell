@@ -4,7 +4,7 @@ export async function POST(req: NextRequest) {
   try {
     const { phone, amount, orderId } = await req.json()
 
-    const res = await fetch('https://payments.relworx.com/api/mobile-money/request', {
+    const relworxRes = await fetch('https://payments.relworx.com/api/mobile-money/request', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -14,17 +14,18 @@ export async function POST(req: NextRequest) {
         account_no: '0575c73fc4e07e',
         reference: orderId,
         msisdn: phone,
-        amount: amount,
+        amount: Number(amount),
         currency: 'UGX',
       }),
     })
 
-    const data = await res.json()
+    const text = await relworxRes.text()
+    let data: any
+    try { data = JSON.parse(text) } catch { return NextResponse.json({ message: `Relworx error: ${text.slice(0,200)}` }, { status: 400 }) }
 
-    if (!res.ok) {
+    if (!relworxRes.ok) {
       return NextResponse.json({ message: data.message || 'Momo failed' }, { status: 400 })
     }
-
     return NextResponse.json(data)
   } catch (e: any) {
     return NextResponse.json({ message: e.message }, { status: 500 })
