@@ -265,17 +265,110 @@ function FooterSanel() {
   )
 }
 
+// FIXED ProductViewModal - ONLY THIS PART CHANGED TO ADD PIN CHECK
 function ProductViewModal({ product, onClose, onWhatsApp }: any) {
   const [activeImg, setActiveImg] = useState(product.images?.[0])
+  const [phone, setPhone] = useState("")
+  const [boosting, setBoosting] = useState(false)
+  const [boostStatus, setBoostStatus] = useState("")
   useEffect(() => { setActiveImg(product.images?.[0]) }, [product])
   const timeLeft = getTimeLeft(product.boosted_until)
+
+  const handleBoost = async (days: number) => {
+    if (!phone) return alert("Enter MTN number: 07XXXXXXXX")
+    const cleanPhone = phone.replace(/\D/g,'')
+    if (cleanPhone.length < 9) return alert("Invalid number")
+
+    setBoosting(true)
+    setBoostStatus("Sending Momo request...")
+    const orderId = `BOOST-${product.id.slice(0,5)}-${Date.now()}`
+    const amount = days === 14 ? 10000 : days === 3 ? 2000 : 1000
+
+    try {
+      const payRes = await fetch('/api/pay', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ phone: cleanPhone, amount, orderId })
+      })
+      const payData = await payRes.json()
+      if (!payRes.ok) throw new Error(payData.message)
+
+      setBoostStatus("Momo sent! Enter PIN on phone... verifying...")
+      
+      // POLL FOR PIN ENTRY - ONLY BOOST IF PAID
+      let attempts = 0
+      const interval = setInterval(async () => {
+        attempts++
+        if (attempts > 12) {
+          clearInterval(interval)
+          setBoosting(false)
+          setBoostStatus("")
+          alert("Payment not confirmed. If you entered PIN, product will appear in Trending soon.")
+          return
+        }
+        try {
+          const statusRes = await fetch('/api/pay/status', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ orderId })
+          })
+          const statusData = await statusRes.json()
+          const isPaid = statusData.status === 'SUCCESS' || statusData.status === 'COMPLETED' || statusData.success === true || statusData.data?.status === 'SUCCESS'
+
+          if (isPaid) {
+            clearInterval(interval)
+            setBoostStatus("Payment confirmed! Boosting...")
+            const now = new Date()
+            const until = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
+            const { updateDoc } = await import('firebase/firestore')
+            await updateDoc(doc(db, 'products', product.id), {
+              is_boosted: true,
+              boosted_at: Timestamp.fromDate(now),
+              boosted_until: Timestamp.fromDate(until),
+              boostDurationDays: days,
+            })
+            setBoostStatus("")
+            setBoosting(false)
+            alert(`✅ Paid! Boosted for ${days} days - now in 🔥 TRENDING`)
+            onClose()
+          }
+        } catch {}
+      }, 5000)
+
+    } catch (e: any) {
+      setBoosting(false)
+      setBoostStatus("")
+      alert(e.message)
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl max-w-[420px] w-full max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-3 right-3 bg-black text-white w-8 h-8 rounded-full flex items-center justify-center z-20"><X size={16} /></button>
         <div className="relative bg-gray-100"><img src={activeImg} className="w-full h-80 object-contain bg-gray-100" /><div className="absolute bottom-2 left-2 bg-black/70 text-white text-[11px] px-3 py-1 rounded-full font-bold">{product.images?.findIndex((i:string)=>i===activeImg)+1} / {product.images?.length} pics</div>{timeLeft && <div className="absolute bottom-2 right-2 bg-red-600 text-white text-[11px] px-3 py-1 rounded-full font-bold flex items-center gap-1"><Clock size={12}/>{timeLeft}</div>}</div>
         {product.images?.length > 1 && <div className="flex gap-2 p-2 overflow-x-auto bg-white">{product.images.map((img: string, idx: number) => (<button key={idx} onClick={() => setActiveImg(img)} className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${activeImg === img? 'border-orange-600' : 'border-transparent opacity-70'}`}><img src={img} className="w-full h-full object-cover" /></button>))}</div>}
-        <div className="p-4"><span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-md font-bold">{product.category} • {product.images?.length} pics {product.is_boosted? `• ${timeLeft}`: ''}</span><h2 className="font-bold text-xl mt-2 text-black">{product.title}</h2><p className="font-bold text-2xl mt-1" style={{color: '#B45309'}}>{product.price} UGX</p><p className="text-sm text-gray-600 mt-3 whitespace-pre-wrap">{product.description || "No description"}</p><div className="mt-5 flex flex-col gap-2"><button onClick={() => onWhatsApp(product)} className="w-full bg-green-600 text-white py-3.5 rounded-full font-bold">📞 WhatsApp Seller</button><button onClick={onClose} className="w-full bg-gray-100 text-black py-3 rounded-full font-bold text-sm">Close</button></div></div>
+        <div className="p-4">
+          <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-md font-bold">{product.category} • {product.images?.length} pics {product.is_boosted? `• ${timeLeft}`: ''}</span>
+          <h2 className="font-bold text-xl mt-2 text-black">{product.title}</h2>
+          <p className="font-bold text-2xl mt-1" style={{color: '#B45309'}}>{product.price} UGX</p>
+          <p className="text-sm text-gray-600 mt-3 whitespace-pre-wrap">{product.description || "No description"}</p>
+          
+          {/* BOOST SECTION - ONLY ADDED PART - PIN CHECK LOGIC */}
+          <div className="mt-5 bg-[#FFF7ED] border border-orange-200 rounded-xl p-3">
+            <p className="font-black text-[13px] text-black">🚀 Boost to 🔥 TRENDING</p>
+            <p className="text-[11px] text-gray-500">Product goes to Trending ONLY after PIN entered and paid</p>
+            <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="07XXXXXXXX" className="w-full mt-2 bg-white border rounded-full px-4 py-2.5 text-[14px] text-black" />
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              <button disabled={boosting} onClick={()=>handleBoost(1)} className="bg-white border py-2 rounded-full text-[11px] font-bold text-black">24H<br/>1k</button>
+              <button disabled={boosting} onClick={()=>handleBoost(3)} className="bg-black text-white py-2 rounded-full text-[11px] font-bold">3 DAYS<br/>2k</button>
+              <button disabled={boosting} onClick={()=>handleBoost(14)} className="bg-yellow-400 text-black py-2 rounded-full text-[11px] font-bold">14 DAYS<br/>10k</button>
+            </div>
+            {boosting && <p className="text-center text-[11px] font-bold mt-2 text-orange-600 animate-pulse">{boostStatus}</p>}
+          </div>
+
+          <div className="mt-5 flex flex-col gap-2"><button onClick={() => onWhatsApp(product)} className="w-full bg-green-600 text-white py-3.5 rounded-full font-bold">📞 WhatsApp Seller</button><button onClick={onClose} className="w-full bg-gray-100 text-black py-3 rounded-full font-bold text-sm">Close</button></div>
+        </div>
       </div>
     </div>
   )
@@ -319,55 +412,23 @@ export default function HomePage() {
         {loading? <p className="p-3">Loading...</p> : selectedCategory === 'All'? (<>{HOME_CATEGORIES.map((cat, idx) => { const catProducts = getProductsByCat(cat.name); if(catProducts.length === 0) return null; const catShops = getShopsByCat(cat.name); return (<div key={cat.name}><CategoryRow title={cat.name} icon={cat.icon} products={catProducts} shops={catShops} onView={setViewProduct} onWhatsApp={handleWhatsApp} onSeeAll={() => { setSelectedCategory(cat.name); window.scrollTo({top: 0, behavior: 'smooth'}) }} /><PromoStrip catName={cat.name} catIndex={idx} setCategory={setSelectedCategory} router={router} />{idx === 1 && <BlackMarketBanner products={blackMarketProducts} adminSettings={adminSettings} onView={setViewProduct} onWhatsApp={handleWhatsApp} router={router} />}</div>)})}</>) : (<><div className="p-3"><div className="grid grid-cols-2 gap-3">{filteredProducts.map(p => (<div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border"><div className="relative w-full h-40 bg-gray-100"><img src={p.images?.[0]} className="w-full h-40 object-cover" /><button onClick={() => setViewProduct(p)} className="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center"><Eye size={14} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">+{p.images.length} pics</span>}</div><div className="p-2"><p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p><p className="font-bold text-[14px] line-clamp-2 text-black">{p.title}</p><p className="font-black text-[15px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p><button onClick={() => handleWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-sm py-2.5 rounded-md font-bold">WhatsApp</button></div></div>))}</div></div></>)}
         {viewProduct && <ProductViewModal product={viewProduct} onClose={() => setViewProduct(null)} onWhatsApp={handleWhatsApp} />}
       </div>
-
-      {/* === BLACK BUTTON - SANELFIX MOVIES AVAILABLE - WITH WIGGLE LIKE MELLYARTS YELLOW CART === */}
       <div className="fixed bottom-6 left-4 z-40 w-[88px] h-[88px] animate-[sanelWiggle_2.5s_ease-in-out_infinite]">
         <Link href="/movies" className="w-full h-full bg-black rounded-full shadow-2xl border-2 border-white flex items-center justify-center relative overflow-hidden">
           <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full animate-[spin_6s_linear_infinite]">
-            <defs>
-              <path id="movieCircleText" d="M 50,50 m -30,0 a 30,30 0 1,1 60,0 a 30,30 0 1,1 -60,0" />
-            </defs>
-            <text fill="white" fontSize="7" fontWeight="800" letterSpacing="0.4">
-              <textPath href="#movieCircleText">
-                Sanelfix movies available • Sanelfix movies available •
-              </textPath>
-            </text>
+            <defs><path id="movieCircleText" d="M 50,50 m -30,0 a 30,30 0 1,1 60,0 a 30,30 0 1,1 -60,0" /></defs>
+            <text fill="white" fontSize="7" fontWeight="800" letterSpacing="0.4"><textPath href="#movieCircleText">Sanelfix movies available • Sanelfix movies available •</textPath></text>
           </svg>
-          <div className="w-[36px] h-[36px] bg-white rounded-full flex items-center justify-center relative z-10">
-            <Film size={16} className="text-black" />
-          </div>
+          <div className="w-[36px] h-[36px] bg-white rounded-full flex items-center justify-center relative z-10"><Film size={16} className="text-black" /></div>
         </Link>
       </div>
-
-      {/* === WHITE BUTTON - SHOP - TEXT INSIDE - WHOLE BUTTON ROTATING === */}
-      <button
-        onClick={() => router.push('/sell')}
-        className="fixed bottom-6 right-4 z-40 w-[88px] h-[88px] bg-white rounded-full shadow-2xl border-[2px] border-black flex items-center justify-center overflow-hidden animate-[spin_8s_linear_infinite]"
-      >
+      <button onClick={() => router.push('/sell')} className="fixed bottom-6 right-4 z-40 w-[88px] h-[88px] bg-white rounded-full shadow-2xl border-[2px] border-black flex items-center justify-center overflow-hidden animate-[spin_8s_linear_infinite]">
         <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
-          <defs>
-            <path id="sanelFinalPath" d="M 50,50 m -30,0 a 30,30 0 1,1 60,0 a 30,30 0 1,1 -60,0" />
-          </defs>
-          <text fill="black" fontSize="7" fontWeight="900" letterSpacing="0.5">
-            <textPath href="#sanelFinalPath">
-              Start ur online shop with us • Start ur online •
-            </textPath>
-          </text>
+          <defs><path id="sanelFinalPath" d="M 50,50 m -30,0 a 30,30 0 1,1 60,0 a 30,30 0 1,1 -60,0" /></defs>
+          <text fill="black" fontSize="7" fontWeight="900" letterSpacing="0.5"><textPath href="#sanelFinalPath">Start ur online shop with us • Start ur online •</textPath></text>
         </svg>
         <img src="/icon.png" alt="S" className="w-7 h-7 object-contain relative z-10" />
       </button>
-
-      <style>{`
-        @keyframes sanelWiggle {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          15% { transform: translateY(-6px) rotate(-4deg); }
-          30% { transform: translateY(0px) rotate(4deg); }
-          45% { transform: translateY(-4px) rotate(-2deg); }
-          60% { transform: translateY(0px) rotate(2deg); }
-          75% { transform: translateY(-2px) rotate(0deg); }
-        }
-      `}</style>
-
+      <style>{`@keyframes sanelWiggle {0%, 100% { transform: translateY(0) rotate(0deg); }15% { transform: translateY(-6px) rotate(-4deg); }30% { transform: translateY(0px) rotate(4deg); }45% { transform: translateY(-4px) rotate(-2deg); }60% { transform: translateY(0px) rotate(2deg); }75% { transform: translateY(-2px) rotate(0deg); }}`}</style>
       <FooterSanel />
     </div>
   )
