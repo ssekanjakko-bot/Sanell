@@ -11,6 +11,7 @@ import { onAuthStateChanged, User } from 'firebase/auth'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Rocket, MessageCircle, Truck, Trash2, Pencil, Check, X, Zap, Crown, Flame, Store, ExternalLink } from 'lucide-react'
+import { payWithMomo } from '@/lib/api' // <-- LIVE PAYMENT ADDED
 
 const CATEGORIES = [
   'Vehicles','Phones','Houses & Rentals','Electronics','Home, Furniture & Appliances','Health','Fashion','Sports, Arts & Outdoor','Babies & Kids','Animals & Pets','Agriculture & Food','Commercial Equipment & Tools','Repair & Construction','Stationery','Services','Jobs'
@@ -74,6 +75,7 @@ export default function SellPage() {
   const [selectedProductToBoost, setSelectedProductToBoost] = useState<Product | null>(null)
   const [selectedPackage, setSelectedPackage] = useState<any>(BOOST_PACKAGES[1])
   const [myShop, setMyShop] = useState<any>(null)
+  const [momoPhone, setMomoPhone] = useState('') // <-- ADDED FOR PAYMENT
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => {
@@ -93,7 +95,6 @@ export default function SellPage() {
           },
           (err) => { console.error("CHAT ERROR:", err) }
         )
-        // SHOP FETCH - supports both ownerId and sellerId fields
         const fetchShop = async()=>{
           let snap = await getDocs(query(collection(db, 'shops'), where('ownerId','==', u.uid)))
           if(snap.empty) snap = await getDocs(query(collection(db, 'shops'), where('sellerId','==', u.uid)))
@@ -134,41 +135,57 @@ export default function SellPage() {
     }
     setSelectedProductToBoost(product)
     setSelectedPackage(BOOST_PACKAGES[1])
+    setMomoPhone(product.whatsapp || '') // auto-fill with whatsapp
     setShowBoostModal(true)
   }
 
+  // --- LIVE PAYMENT LOGIC - REPLACES MANUAL SEND ---
   const handleBoost = async () => {
     if (!selectedProductToBoost ||!user) return
+    if (!momoPhone.match(/^256\d{9}$/)) return alert('Enter Momo number as 2567xxxxxxx')
+    
     const product = selectedProductToBoost
     const pkg = selectedPackage
+    const orderId = `BOOST-${product.id.slice(0,6).toUpperCase()}-${Date.now()}`
     setBoostLoading(product.id)
+    
     try {
+      // 1. CALL REAL MOMO API - customer gets PIN prompt
+      await payWithMomo(momoPhone, pkg.price, orderId)
+      
+      // 2. Save request as pending payment verification
       await addDoc(collection(db, 'boost_requests'), {
         productId: product.id,
         productTitle: product.title,
         productImage: product.images[0] || '',
         sellerId: user.uid,
         sellerEmail: user.email,
-        sellerPhone: product.whatsapp,
+        sellerPhone: momoPhone,
         amount: pkg.price,
         packageId: pkg.id,
         packageName: pkg.name,
         durationDays: pkg.durationDays,
         status: 'pending',
+        paymentRef: orderId,
+        paymentPhone: momoPhone,
+        paymentStatus: 'pending',
         createdAt: serverTimestamp()
       })
+      
       await updateDoc(doc(db, 'products', product.id), {
         boost_pending: true,
         boost_pending_packageId: pkg.id,
         boost_pending_packageName: pkg.name,
         boost_pending_durationDays: pkg.durationDays,
-        boost_pending_amount: pkg.price
+        boost_pending_amount: pkg.price,
+        boost_pending_paymentRef: orderId
       })
-      alert(`Boost request sent!\n${pkg.name} - ${pkg.price} UGX for ${pkg.durationDays} days\n\nSend ${pkg.price} to 0767483636 with reason BOOST ${product.id.slice(0,6)}`)
+      
+      alert(`Momo request sent to ${momoPhone}!\nEnter PIN on your phone to pay ${pkg.price} UGX\nRef: ${orderId}`)
       setShowBoostModal(false)
     } catch (e:any) {
       console.error(e)
-      alert("Failed: " + e.message)
+      alert("Payment Failed: " + e.message)
     }
     setBoostLoading(null)
   }
@@ -232,7 +249,6 @@ export default function SellPage() {
           images: imageUrls, videoUrl, sellerId: user.uid,
           sellerEmail: user.email, createdAt: serverTimestamp(),
           is_boosted: false, boost_pending: false,
-          // AUTO TAG SHOP - THIS CONNECTS SELL TO MY-SHOP
           shopId: isShopActive()? myShop.id : null,
           shopName: isShopActive()? myShop.shopName : null,
           ownerId: user.uid
@@ -294,7 +310,6 @@ export default function SellPage() {
       </div>
 
       <div className="max-w-5xl mx-auto p-4 md:p-6">
-        {/* ===== SHOP CARD - EDITED TO LINK TO MY-SHOP ===== */}
         {!myShop? (
           <div className="bg-[#111] rounded-[20px] p-4 flex justify-between items-center mb-6 border border-yellow-500/30">
             <div className="flex items-center gap-3">
@@ -319,7 +334,6 @@ export default function SellPage() {
               <span className={`text-[9px] px-2 py-1 rounded-full font-black ${isShopActive()?'bg-black text-white':'bg-red-600 text-white'}`}>{isShopActive()?'ACTIVE':'EXPIRED'}</span>
             </div>
             <div className="flex gap-2 mt-3">
-              {/* THIS IS THE FIX - VIEW NOW GOES TO EDIT PAGE */}
               <button onClick={()=>router.push('/my-shop')} className="flex-1 bg-black text-white text-center py-2.5 rounded-full font-black text-[11px] flex items-center justify-center gap-1"><Pencil size={12}/> Edit Shop</button>
               <Link href={`/shop/${myShop.id}`} className="flex-1 bg-white border text-center py-2.5 rounded-full font-bold text-[11px] flex items-center justify-center gap-1"><ExternalLink size={12}/> Public View</Link>
               <button onClick={()=>{navigator.clipboard.writeText(`https://sanel-ug.online/shop/${myShop.id}`); alert('Link copied!')}} className="flex-1 bg-white border text-center py-2.5 rounded-full font-bold text-[11px]">Copy Link</button>
@@ -327,7 +341,7 @@ export default function SellPage() {
           </div>
         )}
 
-        {/* BOOST MODAL - same */}
+        {/* BOOST MODAL - NOW WITH LIVE PAYMENT */}
         {showBoostModal && selectedProductToBoost && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
             <div className="bg-white rounded-[24px] w-full max-w-[420px] p-5 shadow-2xl">
@@ -356,21 +370,29 @@ export default function SellPage() {
                   </button>
                 ))}
               </div>
-              <div className="mt-4 bg-[#FDF8F3] rounded-2xl p-3.5 border border-dashed">
-                <p className="font-bold text-[12px]">Pay to 0767483636</p>
-                <p className="text-[11px] mt-1">Send <b>{selectedPackage.price} UGX</b> • Reason: <b className="bg-black text-white px-2 py-0.5 rounded-full">BOOST {selectedProductToBoost.id.slice(0,6).toUpperCase()}</b></p>
+
+              {/* MOMO PHONE INPUT - LIVE */}
+              <div className="mt-4 bg-[#FDF8F3] rounded-2xl p-3.5 border">
+                <label className="text-[10px] font-black tracking-widest">MTN/AIRTEL NUMBER TO PAY FROM</label>
+                <input 
+                  value={momoPhone}
+                  onChange={e=>setMomoPhone(e.target.value)}
+                  placeholder="256772123456"
+                  className="w-full mt-2 bg-white border p-3 rounded-xl text-[13px] font-bold outline-none focus:border-black"
+                />
+                <p className="text-[10px] text-gray-500 mt-2">You will receive a PIN prompt on this number for <b>{selectedPackage.price} UGX</b></p>
               </div>
+
               <div className="mt-4 flex gap-2">
                 <button onClick={() => setShowBoostModal(false)} className="flex-1 bg-gray-100 py-3.5 rounded-full font-bold text-[13px]">Cancel</button>
                 <button onClick={handleBoost} disabled={boostLoading === selectedProductToBoost.id} className="flex-1 bg-black text-white py-3.5 rounded-full font-bold text-[13px] flex items-center justify-center gap-2">
-                  {boostLoading? 'Sending...' : <><Check size={16}/> I Have Paid</>}
+                  {boostLoading? 'Sending Momo...' : <><Zap size={16}/> Pay {selectedPackage.price} UGX</>}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* FORM CARD - same */}
         <div className="bg-white rounded-[24px] shadow-sm border p-5 md:p-6">
           <div className="flex justify-between items-center mb-5">
             <h1 className="text-[20px] font-black">{editing? 'Edit Product' : 'Post New Product'} {isShopActive() && <span className="ml-2 text-[10px] bg-yellow-400 text-black px-2.5 py-1 rounded-full">+ SHOP {myShop.shopName}</span>}</h1>
