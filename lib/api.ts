@@ -65,21 +65,12 @@ export const login = async (email: string, password: string): Promise<LoginRespo
   return res.json();
 };
 
-// 4. LIVE PAYMENT - MTN & Airtel via Relworx - REAL MONEY
+// 4. LIVE PAYMENT - FIXED - No more Load failed
 export const payWithMomo = async (phone: string, amount: number, orderId: string): Promise<MomoResponse> => {
-  const res = await fetch('https://payments.relworx.com/api/mobile-money/request', {
+  const res = await fetch('/api/pay', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer 0575c73fc4e07e.C4dZ5XNPmxIXWYbaymQthA`,
-    },
-    body: JSON.stringify({
-      account_no: '0575c73fc4e07e',
-      reference: orderId,
-      msisdn: phone, // Must be 2567XXXXXXXX
-      amount: amount,
-      currency: 'UGX',
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, amount, orderId }),
   });
 
   if (!res.ok) {
