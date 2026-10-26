@@ -265,82 +265,11 @@ function FooterSanel() {
   )
 }
 
-// FIXED ProductViewModal - ONLY THIS PART CHANGED TO ADD PIN CHECK
+// FIXED ProductViewModal - BOOST BOX REMOVED FROM MAIN PAGE
 function ProductViewModal({ product, onClose, onWhatsApp }: any) {
   const [activeImg, setActiveImg] = useState(product.images?.[0])
-  const [phone, setPhone] = useState("")
-  const [boosting, setBoosting] = useState(false)
-  const [boostStatus, setBoostStatus] = useState("")
   useEffect(() => { setActiveImg(product.images?.[0]) }, [product])
   const timeLeft = getTimeLeft(product.boosted_until)
-
-  const handleBoost = async (days: number) => {
-    if (!phone) return alert("Enter MTN number: 07XXXXXXXX")
-    const cleanPhone = phone.replace(/\D/g,'')
-    if (cleanPhone.length < 9) return alert("Invalid number")
-
-    setBoosting(true)
-    setBoostStatus("Sending Momo request...")
-    const orderId = `BOOST-${product.id.slice(0,5)}-${Date.now()}`
-    const amount = days === 14 ? 10000 : days === 3 ? 2000 : 1000
-
-    try {
-      const payRes = await fetch('/api/pay', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ phone: cleanPhone, amount, orderId })
-      })
-      const payData = await payRes.json()
-      if (!payRes.ok) throw new Error(payData.message)
-
-      setBoostStatus("Momo sent! Enter PIN on phone... verifying...")
-      
-      // POLL FOR PIN ENTRY - ONLY BOOST IF PAID
-      let attempts = 0
-      const interval = setInterval(async () => {
-        attempts++
-        if (attempts > 12) {
-          clearInterval(interval)
-          setBoosting(false)
-          setBoostStatus("")
-          alert("Payment not confirmed. If you entered PIN, product will appear in Trending soon.")
-          return
-        }
-        try {
-          const statusRes = await fetch('/api/pay/status', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ orderId })
-          })
-          const statusData = await statusRes.json()
-          const isPaid = statusData.status === 'SUCCESS' || statusData.status === 'COMPLETED' || statusData.success === true || statusData.data?.status === 'SUCCESS'
-
-          if (isPaid) {
-            clearInterval(interval)
-            setBoostStatus("Payment confirmed! Boosting...")
-            const now = new Date()
-            const until = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
-            const { updateDoc } = await import('firebase/firestore')
-            await updateDoc(doc(db, 'products', product.id), {
-              is_boosted: true,
-              boosted_at: Timestamp.fromDate(now),
-              boosted_until: Timestamp.fromDate(until),
-              boostDurationDays: days,
-            })
-            setBoostStatus("")
-            setBoosting(false)
-            alert(`✅ Paid! Boosted for ${days} days - now in 🔥 TRENDING`)
-            onClose()
-          }
-        } catch {}
-      }, 5000)
-
-    } catch (e: any) {
-      setBoosting(false)
-      setBoostStatus("")
-      alert(e.message)
-    }
-  }
 
   return (
     <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4" onClick={onClose}>
@@ -354,19 +283,6 @@ function ProductViewModal({ product, onClose, onWhatsApp }: any) {
           <p className="font-bold text-2xl mt-1" style={{color: '#B45309'}}>{product.price} UGX</p>
           <p className="text-sm text-gray-600 mt-3 whitespace-pre-wrap">{product.description || "No description"}</p>
           
-          {/* BOOST SECTION - ONLY ADDED PART - PIN CHECK LOGIC */}
-          <div className="mt-5 bg-[#FFF7ED] border border-orange-200 rounded-xl p-3">
-            <p className="font-black text-[13px] text-black">🚀 Boost to 🔥 TRENDING</p>
-            <p className="text-[11px] text-gray-500">Product goes to Trending ONLY after PIN entered and paid</p>
-            <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="07XXXXXXXX" className="w-full mt-2 bg-white border rounded-full px-4 py-2.5 text-[14px] text-black" />
-            <div className="grid grid-cols-3 gap-2 mt-3">
-              <button disabled={boosting} onClick={()=>handleBoost(1)} className="bg-white border py-2 rounded-full text-[11px] font-bold text-black">24H<br/>1k</button>
-              <button disabled={boosting} onClick={()=>handleBoost(3)} className="bg-black text-white py-2 rounded-full text-[11px] font-bold">3 DAYS<br/>2k</button>
-              <button disabled={boosting} onClick={()=>handleBoost(14)} className="bg-yellow-400 text-black py-2 rounded-full text-[11px] font-bold">14 DAYS<br/>10k</button>
-            </div>
-            {boosting && <p className="text-center text-[11px] font-bold mt-2 text-orange-600 animate-pulse">{boostStatus}</p>}
-          </div>
-
           <div className="mt-5 flex flex-col gap-2"><button onClick={() => onWhatsApp(product)} className="w-full bg-green-600 text-white py-3.5 rounded-full font-bold">📞 WhatsApp Seller</button><button onClick={onClose} className="w-full bg-gray-100 text-black py-3 rounded-full font-bold text-sm">Close</button></div>
         </div>
       </div>
