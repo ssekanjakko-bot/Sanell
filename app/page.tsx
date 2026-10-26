@@ -265,9 +265,10 @@ function FooterSanel() {
   )
 }
 
-// FIXED ProductViewModal - BOOST BOX REMOVED FROM MAIN PAGE
+// FIXED ProductViewModal - BOOST BOX REMOVED, VIEW FULL DETAILS KEPT
 function ProductViewModal({ product, onClose, onWhatsApp }: any) {
   const [activeImg, setActiveImg] = useState(product.images?.[0])
+  const router = useRouter()
   useEffect(() => { setActiveImg(product.images?.[0]) }, [product])
   const timeLeft = getTimeLeft(product.boosted_until)
 
@@ -283,7 +284,11 @@ function ProductViewModal({ product, onClose, onWhatsApp }: any) {
           <p className="font-bold text-2xl mt-1" style={{color: '#B45309'}}>{product.price} UGX</p>
           <p className="text-sm text-gray-600 mt-3 whitespace-pre-wrap">{product.description || "No description"}</p>
           
-          <div className="mt-5 flex flex-col gap-2"><button onClick={() => onWhatsApp(product)} className="w-full bg-green-600 text-white py-3.5 rounded-full font-bold">📞 WhatsApp Seller</button><button onClick={onClose} className="w-full bg-gray-100 text-black py-3 rounded-full font-bold text-sm">Close</button></div>
+          <div className="mt-5 flex flex-col gap-2">
+            <button onClick={() => onWhatsApp(product)} className="w-full bg-green-600 text-white py-3.5 rounded-full font-bold">📞 WhatsApp Seller</button>
+            <button onClick={() => { onClose(); router.push(`/product/${product.id}`); }} className="w-full bg-black text-white py-3.5 rounded-full font-bold">View Full Details →</button>
+            <button onClick={onClose} className="w-full bg-gray-100 text-black py-3 rounded-full font-bold text-sm">Close</button>
+          </div>
         </div>
       </div>
     </div>
