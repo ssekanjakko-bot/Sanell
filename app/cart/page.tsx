@@ -11,6 +11,8 @@ type CartItem = {
   imageUrl?: string
   shopId: string
   shopName: string
+  shopPhone?: string
+  whatsapp?: string
   cartShopId: string
   qty?: number
 }
@@ -79,13 +81,21 @@ export default function CartPage(){
     updateCart([])
   }
 
-  // Group by shop
+  // FIXED: Group by shop and KEEP phone
   const grouped = cart.reduce((acc:any, item, originalIndex)=>{
     const key = item.cartShopId || item.shopId || 'unknown'
-    if(!acc[key]) acc[key] = { shopId: key, shopName: item.shopName || 'Unknown Shop', items: [] as {item:CartItem, index:number}[] }
+    if(!acc[key]) acc[key] = { 
+      shopId: key, 
+      shopName: item.shopName || 'Unknown Shop',
+      shopPhone: item.shopPhone || item.whatsapp || '',
+      items: [] as {item:CartItem, index:number}[] 
+    }
+    if(item.shopPhone || (item as any).whatsapp){
+      acc[key].shopPhone = item.shopPhone || (item as any).whatsapp
+    }
     acc[key].items.push({item, index: originalIndex})
     return acc
-  }, {} as Record<string, {shopId:string, shopName:string, items:{item:CartItem,index:number}[]}>)
+  }, {} as Record<string, {shopId:string, shopName:string, shopPhone:string, items:{item:CartItem,index:number}[]}>)
 
   const total = cart.reduce((s,i)=> s + (Number(i.price)||0)*(i.qty||1), 0)
 
@@ -94,7 +104,14 @@ export default function CartPage(){
     const lines = shopGroup.items.map(({item}:any)=>`• ${item.title} x${item.qty||1} - ${Number(item.price).toLocaleString()} UGX`).join('%0A')
     const subtotal = shopGroup.items.reduce((s:number,{item}:any)=> s+Number(item.price)*(item.qty||1),0)
     const text = `Hello ${shopGroup.shopName}%0A%0AI want to order from Sanel Ug:%0A${lines}%0A%0ATotal for your shop: ${subtotal.toLocaleString()} UGX%0A%0AShop link: https://sanel-ug.online/shop/${shopGroup.shopId}`
-    window.open(`https://wa.me/?text=${text}`, '_blank')
+    
+    // FIXED: Get the shop's real number
+    let phone = (shopGroup.shopPhone || '').toString().replace(/\D/g,'')
+    if(phone.startsWith('0')) phone = '256' + phone.slice(1)
+    if(phone.length === 9) phone = '256' + phone
+    
+    const url = phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`
+    window.open(url, '_blank')
   }
 
   if(cart.length===0) return (
@@ -126,7 +143,7 @@ export default function CartPage(){
                   <Link href={`/shop/${group.shopId}`} className="font-black text-[13px] hover:underline">{group.shopName}</Link>
                   <span className="bg-[#FFD60A] text-black text-[8px] px-1.5 py-0.5 rounded-full font-black">OFFICIAL</span>
                 </div>
-                <span className="text-[11px] font-bold text-neutral-400">{group.items.length} items</span>
+                <span className="text-[11px] font-bold text-neutral-400">{group.items.length} items • {group.shopPhone || 'No WhatsApp'}</span>
               </div>
 
               <div className="divide-y divide-white/5">
@@ -152,7 +169,7 @@ export default function CartPage(){
 
               <div className="p-3 bg-black/30 flex justify-between items-center">
                 <p className="text-[12px] font-bold text-neutral-400">Subtotal: <span className="text-white font-black">{subtotal.toLocaleString()} UGX</span></p>
-                <button onClick={()=>checkoutShop(group)} className="bg-[#25D366] text-black px-5 py-2 rounded-full font-black text-[12px] active:scale-95">Order this shop via WhatsApp</button>
+                <button onClick={()=>checkoutShop(group)} className="bg-[#25D366] text-black px-5 py-2 rounded-full font-black text-[12px] active:scale-95">Order via WhatsApp</button>
               </div>
             </div>
           )
