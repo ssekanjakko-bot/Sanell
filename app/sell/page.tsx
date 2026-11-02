@@ -11,7 +11,7 @@ import { onAuthStateChanged, User } from 'firebase/auth'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Rocket, MessageCircle, Truck, Trash2, Pencil, Check, X, Zap, Crown, Flame, Store, ExternalLink } from 'lucide-react'
-import { payWithMomo } from '@/lib/api' // <-- LIVE PAYMENT ADDED
+import { payWithMomo } from '@/lib/api'
 
 const CATEGORIES = [
   'Vehicles','Phones','Houses & Rentals','Electronics','Home, Furniture & Appliances','Health','Fashion','Sports, Arts & Outdoor','Babies & Kids','Animals & Pets','Agriculture & Food','Commercial Equipment & Tools','Repair & Construction','Stationery','Services','Jobs'
@@ -75,7 +75,7 @@ export default function SellPage() {
   const [selectedProductToBoost, setSelectedProductToBoost] = useState<Product | null>(null)
   const [selectedPackage, setSelectedPackage] = useState<any>(BOOST_PACKAGES[1])
   const [myShop, setMyShop] = useState<any>(null)
-  const [momoPhone, setMomoPhone] = useState('') // <-- ADDED FOR PAYMENT
+  const [momoPhone, setMomoPhone] = useState('')
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => {
@@ -135,11 +135,11 @@ export default function SellPage() {
     }
     setSelectedProductToBoost(product)
     setSelectedPackage(BOOST_PACKAGES[1])
-    setMomoPhone(product.whatsapp || '') // auto-fill with whatsapp
+    setMomoPhone(product.whatsapp || '')
     setShowBoostModal(true)
   }
 
-  // --- LIVE PAYMENT LOGIC - REPLACES MANUAL SEND ---
+  // FIXED TAVUPAY LOGIC - NO RELWORX
   const handleBoost = async () => {
     if (!selectedProductToBoost ||!user) return
     if (!momoPhone.match(/^256\d{9}$/)) return alert('Enter Momo number as 2567xxxxxxx')
@@ -150,10 +150,8 @@ export default function SellPage() {
     setBoostLoading(product.id)
     
     try {
-      // 1. CALL REAL MOMO API - customer gets PIN prompt
       await payWithMomo(momoPhone, pkg.price, orderId)
       
-      // 2. Save request as pending payment verification
       await addDoc(collection(db, 'boost_requests'), {
         productId: product.id,
         productTitle: product.title,
@@ -341,7 +339,6 @@ export default function SellPage() {
           </div>
         )}
 
-        {/* BOOST MODAL - NOW WITH LIVE PAYMENT */}
         {showBoostModal && selectedProductToBoost && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
             <div className="bg-white rounded-[24px] w-full max-w-[420px] p-5 shadow-2xl">
@@ -371,7 +368,6 @@ export default function SellPage() {
                 ))}
               </div>
 
-              {/* MOMO PHONE INPUT - LIVE */}
               <div className="mt-4 bg-[#FDF8F3] rounded-2xl p-3.5 border">
                 <label className="text-[10px] font-black tracking-widest">MTN/AIRTEL NUMBER TO PAY FROM</label>
                 <input 
