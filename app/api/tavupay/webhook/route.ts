@@ -1,20 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { doc, updateDoc, Timestamp } from 'firebase/firestore'
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
-  // Tavupay sends: { reference, status: 'success', transaction_id }
+  const body = await req.json();
   
-  if(body.status === 'success' || body.status === 'completed') {
-    const ref = body.reference // BOOST-XXXX-123456
-    const productId = ref.split('-')[1] // extract if you need
-    
-    // Find product by paymentRef and activate boost
-    // We store boost_pending_paymentRef = reference
-    // You will need to query boost_requests then update products
-    // Simplified: client will handle activation after status check
+  console.log("Tavupay Callback:", body);
+  
+  // Tavupay sends: { transaction_id, status: "success" | "failed", amount, ... }
+  const { status, transaction_id, custom_ref } = body;
+
+  if (status === "success") {
+    // custom_ref = your product boost ID
+    // TODO: Update your DB - mark boost as PAID
+    // Example: await db.boost.update({ where: { id: custom_ref }, data: { paid: true } })
   }
 
-  return NextResponse.json({ received: true })
+  return NextResponse.json({ received: true });
+}
+
+export async function GET() {
+  return NextResponse.json({ ok: "webhook live" });
 }
