@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8081/api';
+const BASE_URL = '/api'; // FIXED - no more localhost, works on Vercel + local
 
 export interface RegisterResponse {
   message: string;
@@ -21,6 +21,7 @@ export interface MomoResponse {
   success: boolean;
   message: string;
   reference?: string;
+  data?: any;
 }
 
 // 1. Register
@@ -65,17 +66,24 @@ export const login = async (email: string, password: string): Promise<LoginRespo
   return res.json();
 };
 
-// 4. LIVE PAYMENT - FIXED - No more Load failed
+// 4. LIVE PAYMENT - FIXED TO USE NEW TAVUPAY ep_live + 9BD60...
 export const payWithMomo = async (phone: string, amount: number, orderId: string): Promise<MomoResponse> => {
-  const res = await fetch('/api/pay', {
+  const res = await fetch('/api/tavupay/pay', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, amount, orderId }),
+    body: JSON.stringify({ phone, amount, productId: orderId }),
   });
 
+  const data = await res.json();
+
   if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || 'Momo request failed - check phone & balance');
+    throw new Error(data.error || 'Momo request failed - check phone & balance');
   }
-  return res.json();
+  
+  return {
+    success: true,
+    message: data.message || 'Momo sent',
+    reference: orderId,
+    data: data
+  };
 };
