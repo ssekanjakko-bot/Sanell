@@ -3,28 +3,26 @@ import { NextRequest, NextResponse } from "next/server"
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    console.log("WEBHOOK RECEIVED:", JSON.stringify(body))
+    console.log("WEBHOOK:", JSON.stringify(body))
 
-    // Return 200 immediately so Tavupay doesn't retry fail
-    const reference = body.reference || body.custom_ref || body.order_id || body?.data?.reference
+    const reference = body.reference || body.custom_ref || body.order_id || body.meta?.reference || body.data?.reference
     
     if (!reference) {
-      console.log("No reference in body")
-      return NextResponse.json({ ok: true, msg: "no ref but ack" })
+      return NextResponse.json({ ok: true, msg: "no ref" })
     }
 
-    // Try Firebase - but don't crash if env missing
     try {
       const { initializeApp, cert, getApps } = await import("firebase-admin/app")
       const { getFirestore } = await import("firebase-admin/firestore")
       
-      let serviceAccount
-      const raw = process.env.FIREBASE_SERVICE_ACCOUNT!
-      try {
-        serviceAccount = JSON.parse(raw)
-      } catch {
-        // If user pasted with \n, try second parse
-        serviceAccount = JSON.parse(raw.replace(/\n/g, '\\n'))
+      const raw = process.env.FIREBASE_SERVICE_ACCOUNT
+      if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT missing")
+
+      const serviceAccount = JSON.parse(raw)
+      
+      // FIX private_key \n issue - this is the main bug
+      if (serviceAccount.private_key) {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n')
       }
 
       if (!getApps().length) {
@@ -35,9 +33,14 @@ export async function POST(req: NextRequest) {
       const snap = await db.collection('boost_requests').where('paymentRef', '==', reference).get()
       
       if (!snap.empty) {
-        const doc = snap.docs[0]
-        const data = doc.data()
-        await doc.ref.update({ status: 'paid', paymentStatus: 'success', paidAt: new Date() })
+        const docRef = snap.docs[0]
+        const data = docRef.data()
+        await docRef.ref.update({ 
+          status: 'paid', 
+          paymentStatus: 'success', 
+          paidAt: new Date(),
+          webhookBody: body
+        })
         
         const until = new Date()
         until.setDate(until.getDate() + (data.durationDays || 3))
@@ -48,19 +51,18 @@ export async function POST(req: NextRequest) {
           boosted_until: until,
           boost_pending: false,
         })
-        console.log("BOOSTED:", data.productId)
+        console.log("BOOSTED OK:", data.productId)
       } else {
-        console.log("No boost_request found for", reference)
+        console.log("No boost_request for:", reference)
       }
     } catch (firebaseError: any) {
-      console.error("FIREBASE ERROR (but webhook ack):", firebaseError.message)
-      // Still return OK so Tavupay stops retrying
+      console.error("FIREBASE FAIL:", firebaseError.message)
     }
 
     return NextResponse.json({ ok: true })
   } catch (e:any) {
-    console.error("WEBHOOK CRITICAL:", e.message)
-    return NextResponse.json({ ok: true }) // Always 200
+    console.error("WEBHOOK FAIL:", e.message)
+    return NextResponse.json({ ok: true })
   }
 }
 
