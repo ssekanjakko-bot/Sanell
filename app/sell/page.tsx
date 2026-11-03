@@ -11,7 +11,6 @@ import { onAuthStateChanged, User } from 'firebase/auth'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Rocket, MessageCircle, Truck, Trash2, Pencil, Check, X, Zap, Crown, Flame, Store, ExternalLink } from 'lucide-react'
-import { payWithMomo } from '@/lib/api'
 
 const CATEGORIES = [
   'Vehicles','Phones','Houses & Rentals','Electronics','Home, Furniture & Appliances','Health','Fashion','Sports, Arts & Outdoor','Babies & Kids','Animals & Pets','Agriculture & Food','Commercial Equipment & Tools','Repair & Construction','Stationery','Services','Jobs'
@@ -139,7 +138,7 @@ export default function SellPage() {
     setShowBoostModal(true)
   }
 
-  // FIXED TAVUPAY LOGIC - NO RELWORX
+  // FIXED - USES NEW TAVUPAY ep_live + 9BD60... via Vercel
   const handleBoost = async () => {
     if (!selectedProductToBoost ||!user) return
     if (!momoPhone.match(/^256\d{9}$/)) return alert('Enter Momo number as 2567xxxxxxx')
@@ -150,7 +149,18 @@ export default function SellPage() {
     setBoostLoading(product.id)
     
     try {
-      await payWithMomo(momoPhone, pkg.price, orderId)
+      const payRes = await fetch('/api/tavupay/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          phone: momoPhone, 
+          amount: pkg.price, 
+          productId: orderId,
+          packageId: pkg.id
+        }),
+      })
+      const payData = await payRes.json()
+      if (!payRes.ok) throw new Error(payData.error || 'Tavupay failed')
       
       await addDoc(collection(db, 'boost_requests'), {
         productId: product.id,
