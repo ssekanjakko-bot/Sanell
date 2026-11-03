@@ -138,11 +138,15 @@ export default function SellPage() {
     setShowBoostModal(true)
   }
 
-  // FIXED - USES NEW TAVUPAY ep_live + 9BD60... via Vercel
+  // FIXED - ACCEPTS 07 AND 256
   const handleBoost = async () => {
-    if (!selectedProductToBoost ||!user) return
-    if (!momoPhone.match(/^256\d{9}$/)) return alert('Enter Momo number as 2567xxxxxxx')
+    if (!selectedProductToBoost || !user) return
     
+    let cleanPhone = momoPhone.toString().replace(/\D/g, "")
+    if (cleanPhone.startsWith("0")) cleanPhone = "256" + cleanPhone.slice(1)
+    if (cleanPhone.length === 9) cleanPhone = "256" + cleanPhone
+    if (!/^256\d{9}$/.test(cleanPhone)) return alert('Enter valid: 0706826774 or 256706826774')
+
     const product = selectedProductToBoost
     const pkg = selectedPackage
     const orderId = `BOOST-${product.id.slice(0,6).toUpperCase()}-${Date.now()}`
@@ -153,7 +157,7 @@ export default function SellPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          phone: momoPhone, 
+          phone: cleanPhone, 
           amount: pkg.price, 
           productId: orderId,
           packageId: pkg.id
@@ -168,14 +172,14 @@ export default function SellPage() {
         productImage: product.images[0] || '',
         sellerId: user.uid,
         sellerEmail: user.email,
-        sellerPhone: momoPhone,
+        sellerPhone: cleanPhone,
         amount: pkg.price,
         packageId: pkg.id,
         packageName: pkg.name,
         durationDays: pkg.durationDays,
         status: 'pending',
         paymentRef: orderId,
-        paymentPhone: momoPhone,
+        paymentPhone: cleanPhone,
         paymentStatus: 'pending',
         createdAt: serverTimestamp()
       })
@@ -189,7 +193,7 @@ export default function SellPage() {
         boost_pending_paymentRef: orderId
       })
       
-      alert(`Momo request sent to ${momoPhone}!\nEnter PIN on your phone to pay ${pkg.price} UGX\nRef: ${orderId}`)
+      alert(`Momo request sent to ${cleanPhone}!\nEnter PIN on your phone to pay ${pkg.price} UGX\nRef: ${orderId}`)
       setShowBoostModal(false)
     } catch (e:any) {
       console.error(e)
@@ -240,20 +244,23 @@ export default function SellPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!user) return alert('You must be logged in')
-    if (!whatsapp.match(/^256\d{9}$/)) return alert('WhatsApp format: 2567xxxxxxx')
+    let cleanW = whatsapp.replace(/\D/g, "")
+    if (cleanW.startsWith("0")) cleanW = "256" + cleanW.slice(1)
+    if (cleanW.length === 9) cleanW = "256" + cleanW
+    if (!/^256\d{9}$/.test(cleanW)) return alert('WhatsApp format: 0706826774 or 2567xxxxxxx')
     setLoading(true)
     try {
       const { imageUrls, videoUrl } = await uploadFiles(user.uid)
       if (editing) {
         await updateDoc(doc(db, 'products', editing.id), {
-          title, description, price: Number(price), category, whatsapp,
+          title, description, price: Number(price), category, whatsapp: cleanW,
           images: imageUrls.length > 0? imageUrls : editing.images,
           videoUrl: videoUrl || editing.videoUrl,
         })
       } else {
         if (imageUrls.length === 0) throw new Error('Upload at least 1 photo')
         await addDoc(collection(db, 'products'), {
-          title, description, price: Number(price), category, whatsapp,
+          title, description, price: Number(price), category, whatsapp: cleanW,
           images: imageUrls, videoUrl, sellerId: user.uid,
           sellerEmail: user.email, createdAt: serverTimestamp(),
           is_boosted: false, boost_pending: false,
@@ -382,8 +389,9 @@ export default function SellPage() {
                 <label className="text-[10px] font-black tracking-widest">MTN/AIRTEL NUMBER TO PAY FROM</label>
                 <input 
                   value={momoPhone}
-                  onChange={e=>setMomoPhone(e.target.value)}
-                  placeholder="256772123456"
+                  onChange={e=>setMomoPhone(e.target.value.replace(/\D/g,""))}
+                  placeholder="0706826774 or 256706826774"
+                  inputMode="numeric"
                   className="w-full mt-2 bg-white border p-3 rounded-xl text-[13px] font-bold outline-none focus:border-black"
                 />
                 <p className="text-[10px] text-gray-500 mt-2">You will receive a PIN prompt on this number for <b>{selectedPackage.price} UGX</b></p>
@@ -410,7 +418,7 @@ export default function SellPage() {
             <div className="grid md:grid-cols-3 gap-3">
               <input className="w-full bg-[#FDF8F3] border border-transparent focus:border-black focus:bg-white outline-none p-3.5 rounded-2xl text-[14px] font-medium" type="number" placeholder="Price UGX" value={price} onChange={e => setPrice(e.target.value)} required min="0" />
               <select className="w-full bg-[#FDF8F3] border border-transparent focus:border-black outline-none p-3.5 rounded-2xl text-[14px] font-bold" value={category} onChange={e => setCategory(e.target.value)} required>{CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select>
-              <input className="w-full bg-[#FDF8F3] border border-transparent focus:border-black focus:bg-white outline-none p-3.5 rounded-2xl text-[14px] font-medium" placeholder="WhatsApp 2567xxxxxxx" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} required />
+              <input className="w-full bg-[#FDF8F3] border border-transparent focus:border-black focus:bg-white outline-none p-3.5 rounded-2xl text-[14px] font-medium" placeholder="WhatsApp 0706826774" value={whatsapp} onChange={e => setWhatsapp(e.target.value.replace(/\D/g,""))} required />
             </div>
             <div className="grid md:grid-cols-2 gap-3">
               <div className="bg-[#FDF8F3] rounded-2xl p-3 border border-dashed"><label className="text-[11px] font-black tracking-widest text-gray-500">PHOTOS {editing && '(leave empty to keep)'}</label><input type="file" multiple accept="image/*" onChange={(e: ChangeEvent<HTMLInputElement>) => setImageFiles(Array.from(e.target.files || []))} required={!editing} className="w-full mt-2 text-[12px]" /></div>
