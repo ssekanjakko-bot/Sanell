@@ -95,6 +95,47 @@ function BlackMarketBanner({ products, adminSettings, onView, onWhatsApp, router
   )
 }
 
+// --- NEW: PRICE FILTER CARDS - ABOVE TRENDING ---
+function PriceFilterCards({ selectedMax, setSelectedMax, counts }: any) {
+  const prices = [50000, 100000, 150000, 200000, 300000, 500000, 750000, 1000000]
+  return (
+    <div className="px-3 mt-4">
+      <h2 className="font-black text-[16px] mb-2.5 text-black px-1">Shop by Price - From 50K to 1M</h2>
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+        <button
+          onClick={() => setSelectedMax(null)}
+          className={`min-w-[170px] max-w-[170px] rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 shadow-sm text-left border ${selectedMax === null ? 'bg-black text-white border-black' : 'bg-[#FFF7ED] text-black border-gray-100'}`}
+        >
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[26px] border shrink-0">🌍</div>
+          <div><p className="font-bold text-[13px]">All Prices</p><p className="text-[12px] opacity-70">Show everything</p></div>
+        </button>
+        {prices.map((price) => {
+          const isActive = selectedMax === price
+          return (
+            <button
+              key={price}
+              onClick={() => setSelectedMax(isActive ? null : price)}
+              className={`min-w-[180px] max-w-[180px] rounded-xl p-3.5 flex items-center gap-3 flex-shrink-0 shadow-sm text-left border ${isActive ? 'bg-black text-white border-black' : 'bg-[#FFF7ED] text-black border-gray-100'}`}
+            >
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[14px] font-black text-[#8B4513] border shrink-0">S</div>
+              <div>
+                <p className="font-bold text-[13px]">Under {price.toLocaleString()}</p>
+                <p className="text-[12px] opacity-70">{counts?.[price] ?? 0} items • Tap to view</p>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+      {selectedMax && (
+        <div className="flex items-center gap-2 mt-1">
+          <span className="bg-black text-white text-[11px] px-3 py-1.5 rounded-full font-bold">Showing under {selectedMax.toLocaleString()} UGX • {counts?.[selectedMax] ?? 0} items</span>
+          <button onClick={() => setSelectedMax(null)} className="bg-gray-100 text-black text-[11px] px-3 py-1.5 rounded-full font-bold">Clear ✕</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TrendingSection({ products, onView, onWhatsApp }: any) {
   const [tick, setTick] = useState(0)
   useEffect(() => { const t = setInterval(()=>setTick(x=>x+1), 60000); return ()=>clearInterval(t)}, [])
@@ -310,6 +351,7 @@ export default function HomePage() {
   const [currentBanner, setCurrentBanner] = useState(0)
   const [adminSettings, setAdminSettings] = useState<any>({ showBlackMarket: true, blackMarketMaxPrice: 45000, blackMarketTitle: "BLACK MARKET - Everything ≤ 45K" })
   const [shops, setShops] = useState<any[]>([])
+  const [selectedMaxPrice, setSelectedMaxPrice] = useState<number | null>(null)
   const router = useRouter()
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => { const q = query(collection(db, 'banners'), orderBy("createdAt", "desc")); const unsub = onSnapshot(q, (snap) => setBanners(snap.docs.map(d => ({id: d.id,...d.data()})))); return () => unsub()}, [])
@@ -318,9 +360,30 @@ export default function HomePage() {
   useEffect(() => { const q = query(collection(db, 'products'), where("is_boosted", "==", true)); const unsub = onSnapshot(q, (snap) => { const now = new Date(); const boosted = snap.docs.map(d => ({ id: d.id,...d.data() } as any)).filter((p: any) => p.boosted_until && p.boosted_until.toDate() > now).sort((a: any, b: any) => b.boosted_at.toDate() - a.boosted_at.toDate()).slice(0, 30); setBoostedProducts(boosted)}); return () => unsub()}, [])
   useEffect(()=>{ const unsub = onSnapshot(doc(db, "admin_settings", "homepage"), (snap)=>{ if(snap.exists()) setAdminSettings((prev:any)=>({...prev,...snap.data()})) }); return ()=>unsub() }, [])
   useEffect(()=>{ const q = query(collection(db, 'shops'), where('is_active','==',true)); const unsub = onSnapshot(q, (snap)=>{ const now = Timestamp.now(); const all = snap.docs.map(d=>({id:d.id,...d.data()} as any)); const valid = all.filter((s:any)=>!s.paid_until || s.paid_until.seconds > now.seconds); setShops(valid) }); return ()=>unsub() }, [])
-  const filteredProducts = useMemo(() => products.filter(p => { const matchCategory = selectedCategory === 'All' || p.category === selectedCategory; const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase()); return matchCategory && matchSearch}), [products, selectedCategory, search])
-  const blackMarketProducts = useMemo(()=>{ const max = adminSettings.blackMarketMaxPrice || 45000; return products.filter((p:any)=>{ const num = Number(String(p.price).replace(/,/g,'')); return!isNaN(num) && num > 0 && num <= max }).sort((a:any,b:any)=> Number(String(a.price).replace(/,/g,'')) - Number(String(b.price).replace(/,/g,''))) }, [products, adminSettings.blackMarketMaxPrice])
-  const getProductsByCat = (catName: string) => products.filter(p => p.category === catName && p.title?.toLowerCase().includes(search.toLowerCase()))
+
+  const isUnderPrice = (p:any, max:number | null) => {
+    if(!max) return true
+    const num = Number(String(p.price).replace(/,/g,''))
+    return !isNaN(num) && num <= max
+  }
+
+  const priceCounts = useMemo(() => {
+    const prices = [50000, 100000, 150000, 200000, 300000, 500000, 750000, 1000000]
+    const out:any = {}
+    prices.forEach(max => { out[max] = products.filter(p => isUnderPrice(p, max)).length })
+    return out
+  }, [products])
+
+  const filteredProducts = useMemo(() => products.filter(p => {
+    const matchCategory = selectedCategory === 'All' || p.category === selectedCategory;
+    const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.category?.toLowerCase().includes(search.toLowerCase());
+    return matchCategory && matchSearch && isUnderPrice(p, selectedMaxPrice)
+  }), [products, selectedCategory, search, selectedMaxPrice])
+
+  const filteredBoosted = useMemo(() => boostedProducts.filter(p => isUnderPrice(p, selectedMaxPrice)), [boostedProducts, selectedMaxPrice])
+
+  const blackMarketProducts = useMemo(()=>{ const max = adminSettings.blackMarketMaxPrice || 45000; return products.filter((p:any)=>{ const num = Number(String(p.price).replace(/,/g,'')); return!isNaN(num) && num > 0 && num <= max && isUnderPrice(p, selectedMaxPrice) }).sort((a:any,b:any)=> Number(String(a.price).replace(/,/g,'')) - Number(String(b.price).replace(/,/g,''))) }, [products, adminSettings.blackMarketMaxPrice, selectedMaxPrice])
+  const getProductsByCat = (catName: string) => products.filter(p => p.category === catName && p.title?.toLowerCase().includes(search.toLowerCase()) && isUnderPrice(p, selectedMaxPrice))
   const getShopsByCat = (catName: string) => shops.filter((s:any)=> s.categories?.includes(catName))
   const shopsForSelected = useMemo(()=> selectedCategory==='All'? [] : getShopsByCat(selectedCategory), [shops, selectedCategory])
   const handleWhatsApp = (product: any) => { let phone = product.whatsapp || product.whatsApp || product.WhatsApp; if(!phone) return alert("Seller did not add WhatsApp number"); let cleanPhone = phone.toString().replace(/\D/g, ''); if(cleanPhone.startsWith('0')) cleanPhone = '256' + cleanPhone.substring(1); else if(!cleanPhone.startsWith('256')) cleanPhone = '256' + cleanPhone; const imageUrl = product.images?.[0] || ''; const message = `Hello! 👋\n\nI'm interested in this from *SANEL* 🛒\n\n📦 *${product.title}*\n💰 Price: ${product.price} UGX\n📂 Category: ${product.category}\n🖼️ Image: ${imageUrl}\n\nIs it still available?\n\nFrom sanel-ug.online`; window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank') }
@@ -330,10 +393,18 @@ export default function HomePage() {
       <div className="max-w-[1280px] mx-auto w-full">
         {showMenu && (<div className="fixed inset-0 bg-black/60 z-[999] flex"><div className="bg-white w-[85%] max-w-[330px] h-full overflow-y-auto"><div className="p-4 flex justify-between items-center border-b sticky top-0 bg-white z-10"><span className="font-black text-[16px]">Sanel Menu</span><button onClick={() => setShowMenu(false)} className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center"><X size={16}/></button></div><div className="p-3"><p className="text-[10px] font-bold text-gray-400 tracking-widest mb-2">NAVIGATION</p><div className="grid grid-cols-2 gap-2">{BOTTOM_NAV.map(n => (<button key={n.name} onClick={() => { router.push(n.href); setShowMenu(false) }} className="bg-[#FDF8F3] border rounded-xl p-3 flex items-center gap-2 font-bold text-[12px] text-black"><span className="text-[18px]">{n.icon}</span>{n.name}</button>))}<Link href="/sell" onClick={() => setShowMenu(false)} className="bg-black text-white rounded-xl p-3 flex items-center gap-2 font-bold text-[12px]"><span>💰</span>Sell</Link><Link href="/movies" onClick={() => setShowMenu(false)} className="bg-gray-900 text-white rounded-xl p-3 flex items-center gap-2 font-bold text-[12px]"><span>🎬</span>Movies</Link></div></div><div className="p-3 border-t mt-2"><p className="text-[10px] font-bold text-gray-400 tracking-widest mb-2">ALL CATEGORIES</p><div className="grid grid-cols-3 gap-2">{CATEGORIES.map(cat => (<button key={cat.name} onClick={() => { setSelectedCategory(cat.name); setShowMenu(false) }} className={`flex flex-col items-center gap-1 p-3 rounded-xl text-xs font-bold ${selectedCategory===cat.name?'bg-orange-600 text-white':'bg-white border shadow-sm text-gray-700'}`}><span className="text-xl">{cat.icon}</span><span className="text-[10px] text-center leading-tight">{cat.name}</span></button>))}</div></div></div><div className="flex-1" onClick={() => setShowMenu(false)}></div></div>)}
         <div className="px-3 pt-2">{banners.length > 0 && <><div ref={scrollRef} className="flex overflow-x-auto scroll-smooth rounded-2xl snap-x snap-mandatory scrollbar-hide">{banners.map((b) => (<Link key={b.id} href={b.link || "/"} className="w-full flex-shrink-0 snap-center"><img src={b.imageUrl} alt="banner" className="w-full h-44 object-cover rounded-2xl"/></Link>))}</div><div className="flex justify-center gap-1.5 mt-2">{banners.map((_, idx) => (<button key={idx} onClick={() => { setCurrentBanner(idx); scrollRef.current?.scrollTo({ left: idx * scrollRef.current.clientWidth, behavior: "smooth" }); }} className={`h-1.5 rounded-full ${currentBanner === idx? 'bg-orange-600 w-6' : 'bg-gray-300 w-1.5'}`} />))}</div></>}</div>
-        <TrendingSection products={boostedProducts} onView={setViewProduct} onWhatsApp={handleWhatsApp} />
+        <PriceFilterCards selectedMax={selectedMaxPrice} setSelectedMax={setSelectedMaxPrice} counts={priceCounts} />
+        <TrendingSection products={filteredBoosted} onView={setViewProduct} onWhatsApp={handleWhatsApp} />
         <SanelBestPicksSection />
         <div className="p-3 pb-0"><h2 className="font-black text-[18px] text-black">{selectedCategory === 'All'? 'Shop by Category' : `${selectedCategory} (${filteredProducts.length})`}{selectedCategory!== 'All' && <button onClick={() => setSelectedCategory('All')} className="ml-3 bg-black text-white text-[11px] px-3 py-1 rounded-full">Back</button>}</h2></div>
         {loading? <p className="p-3">Loading...</p> : selectedCategory === 'All'? (<>{HOME_CATEGORIES.map((cat, idx) => { const catProducts = getProductsByCat(cat.name); if(catProducts.length === 0) return null; const catShops = getShopsByCat(cat.name); return (<div key={cat.name}><CategoryRow title={cat.name} icon={cat.icon} products={catProducts} shops={catShops} onView={setViewProduct} onWhatsApp={handleWhatsApp} onSeeAll={() => { setSelectedCategory(cat.name); window.scrollTo({top: 0, behavior: 'smooth'}) }} /><PromoStrip catName={cat.name} catIndex={idx} setCategory={setSelectedCategory} router={router} />{idx === 1 && <BlackMarketBanner products={blackMarketProducts} adminSettings={adminSettings} onView={setViewProduct} onWhatsApp={handleWhatsApp} router={router} />}</div>)})}</>) : (<><div className="p-3"><div className="grid grid-cols-2 gap-3">{filteredProducts.map(p => (<div key={p.id} className="bg-white rounded-lg shadow-sm overflow-hidden border"><div className="relative w-full h-40 bg-gray-100"><img src={p.images?.[0]} className="w-full h-40 object-cover" /><button onClick={() => setViewProduct(p)} className="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center"><Eye size={14} /></button>{p.images?.length > 1 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">+{p.images.length} pics</span>}</div><div className="p-2"><p className="text-[10px] bg-orange-100 text-orange-800 w-fit px-2 py-0.5 rounded-md mb-1 font-bold">{p.category}</p><p className="font-bold text-[14px] line-clamp-2 text-black">{p.title}</p><p className="font-black text-[15px] mt-1" style={{color: '#B45309'}}>{p.price} UGX</p><button onClick={() => handleWhatsApp(p)} className="w-full mt-2 bg-green-500 text-white text-sm py-2.5 rounded-md font-bold">WhatsApp</button></div></div>))}</div></div></>)}
+        {selectedMaxPrice && filteredProducts.length === 0 && !loading && (
+          <div className="mx-3 mt-5 bg-white border rounded-xl p-4 text-center">
+            <p className="font-black text-[15px]">No items under {selectedMaxPrice.toLocaleString()} UGX yet</p>
+            <p className="text-[12px] text-gray-500 mt-1">Try a higher price or clear the filter.</p>
+            <button onClick={() => setSelectedMaxPrice(null)} className="mt-3 bg-black text-white px-4 py-2 rounded-full text-[12px] font-bold">Show All Prices</button>
+          </div>
+        )}
         {viewProduct && <ProductViewModal product={viewProduct} onClose={() => setViewProduct(null)} onWhatsApp={handleWhatsApp} />}
       </div>
       <div className="fixed bottom-6 left-4 z-40 w-[88px] h-[88px] animate-[sanelWiggle_2.5s_ease-in-out_infinite]">
